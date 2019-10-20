@@ -1,0 +1,3 @@
+﻿  DirectXTexUtil.cpp
+c:\program files (x86)\windows kits\8.1\include\um\wincodec.h(943): error C3646: 'PixelFormat': unknown override specifier
+c:\program files (x86)\windows kits\8.1\include\um\wincodec.h(943): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int

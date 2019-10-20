@@ -1,0 +1,50 @@
+﻿  stdafx.cpp
+  RigidBody.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\scene\rigidbody.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  ManagerApp.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\scene\managerapp.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  FixedRigidBody.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\scene\fixedrigidbody.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Entity.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\scene\entity.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  DDSTextureLoader.cpp
+  VertexStream.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\vertexstream.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  ShaderReflectionGUID.cpp
+  Shader.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\shader.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Shaded.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\shaded.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Nothing.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\nothing.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Multi.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\multi.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Mien.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\mien.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Material.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\material.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Instanced.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\instanced.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  InputBinder.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\inputbinder.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Indexed.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\indexed.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Importer.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\importer.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  GeometryLoader.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\geometryloader.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Flip.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\mesh\flip.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Generating Code...
+  Compiling...
+  constants.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\math\constants.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  FirstPerson.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\cam\firstperson.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  UtfConverter.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\app\utfconverter.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  SystemEnvironment.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\app\systemenvironment.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  App.cpp
+c:\users\attila\documents\fluidprojects\fluidbasic\projects\egg\app\app.cpp(1): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
+  Generating Code...
