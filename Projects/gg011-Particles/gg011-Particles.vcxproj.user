@@ -5,4 +5,9 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommandArguments>--solutionPath:"$(SolutionDir)" --projectPath:"$(ProjectDir)" --projectShaderPath:"$(OutDir)Shaders"</LocalDebuggerCommandArguments>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>--solutionPath:"$(SolutionDir)" --projectPath:"$(ProjectDir)" --projectShaderPath:"$(OutDir)Shaders"</LocalDebuggerCommandArguments>
+  </PropertyGroup>
 </Project>

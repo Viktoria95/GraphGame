@@ -7,13 +7,13 @@ using namespace Egg::Math;
 Cam::FirstPerson::FirstPerson()
 {
 	//position = float3::zero;
-	position = float3(-0.166, 0.291, -0.246);
+	position = float3(-0.6, 0.5, -0.6);
 	ahead = float3::zUnit;
 	right = float3::xUnit;
 	//yaw = 0.0;
 	//pitch = 0.0;
-	yaw = 0.560000181;
-	pitch = 0.480000049;
+	yaw = 0.56;
+	pitch = 0.48;
 
 	fov = 1.57f;
 	nearPlane = 0.1f;

@@ -12,75 +12,137 @@ cbuffer metaballPSEyePosCB
 StructuredBuffer<Particle> particles;
 
 
-float f(float3 p)
+bool MetaBallTest(float3 p)
 {
-	float A_m = 1.0;
-
+	const float minToHit = 1.0;
 	const float r = 0.005;
 
-	float fr = -A_m;
-	for (int i = 0; i < particleCount; i++) {
-		float eredmeny = pow((length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)) / r), -2.0);
-		fr += eredmeny;
+	float acc = 0.0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
+		if (acc > minToHit)
+		{
+			return true;
+		}
 	}
 
-	return fr;
+	return false;
 }
 
-float3 fGrad(float3 p)
+bool BallTest(float3 p)
 {
-
-	float3 eredmeny;
-	float A = 1.0;
-
 	const float r = 0.005;
 
-
-	for (int i = 0; i < particleCount; i++) {
-		eredmeny.x += ((pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)))) * (p.x - particles[i].position.x));
-		eredmeny.y += ((pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)))) * (p.y - particles[i].position.y));
-		eredmeny.z += ((pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position.x, particles[i].position.y, particles[i].position.z)))) * (p.z - particles[i].position.z));
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			return true;
+		}
 	}
 
-	return eredmeny;
+	return false;
+}
 
+float3 Grad(float3 p)
+{
+	float3 grad;
+	const float r = 0.005;
+
+	for (int i = 0; i < particleCount; i++)
+	{
+		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
+		grad.x += (weight * (p.x - particles[i].position.x));
+		grad.y += (weight * (p.y - particles[i].position.y));
+		grad.z += (weight * (p.z - particles[i].position.z));
+	}
+
+	return grad;
+}
+
+float SortColor (float3 p)
+{
+	const float r = 0.005;
+
+	float intensity = 0.0;
+	int hitCount = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			intensity += float(i);
+			hitCount++;
+		}
+	}
+
+	return intensity / hitCount / particleCount;
+}
+
+void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
+{
+	float3 invDirection = rcp (rayDir);
+	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
+	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
+	float3 tMin = min (t0, t1);
+	float3 tMax = max (t0, t1);
+	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
+	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
+
+	const float floatMax = 1000.0;
+	intersect = (tMinMax <= tMaxMin) & (tMaxMin >= 0.0f) & (tMinMax <= floatMax);
+	if (tMinMax < 0.0)
+	{
+		tMinMax = 0.0;
+	}
+	
+	tStart = tMinMax;
+	tEnd = tMaxMin;
 }
 
 float4 psMetaball(VsosQuad input) : SV_Target
 {
+	const int stepCount = 10;
+	const float boundarySideThreshold = boundarySide * 1.1;
+	const float boundaryTopThreshold = boundaryTop * 1.1;
+	const float boundaryBottomThreshold = boundaryBottom * 1.1;
+
 	float3 d = normalize(input.rayDir);
-	float3 p = eyePos;//+ d;
-	float3 step =	3.0 *  d / 500.0;
+	float3 p = eyePos;
 
-	p += step * 40;
-	float h;
-	for (int i = 0; i<40; i++)
+	bool intersect;
+	float tStart;
+	float tEnd;
+	BoxIntersect
+	(
+		p,
+		d,
+		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
+		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+		intersect,
+		tStart,
+		tEnd
+	);
+
+	if (intersect)
 	{
-		h = f(p);
-		if (h > 0.0) {
-			break;
+		float3 step = d * (tEnd - tStart) / float(stepCount);
+		p += d * tStart;
+
+		for (int i = 0; i<stepCount; i++)
+		{
+			//if (BallTest(p))
+			if (MetaBallTest(p))
+			{
+				return float4 (normalize (Grad(p)), 1.0);
+				//return float4 (SortColor (p), 0.0, 0.0, 1.0);
+			}
+			p += step;
 		}
-		p += step;
 	}
+	
+	return  float4 (0.0f, 0.0f, 1.0f, 1.0f);
 
-	float3 gradient = fGrad(p);
-	float3 gradnormalize = normalize(gradient);
-
-	float find = 0.0;
-	if (h>0.0) find = 1.0;
-
-	float3 normal = normalize(eyePos - gradnormalize);
-	float3 reflDir = reflect(normalize(input.rayDir), gradnormalize);
-
-
-	if (find>0.1)
-	{
-		return  float4 (gradnormalize.xyz, 1.0f);
-	}
-	else
-	{
-		return  float4 (0.0f, 0.0f, 1.0f, 1.0f);
-	}
 }
 
 

@@ -33,7 +33,9 @@ GG_SUBCLASS(Game, Egg::App)
 
 	// Animation
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> animationCSParticleUAV;
-	Egg::Mesh::Shader::P computeShader;
+	Egg::Mesh::Shader::P fluidSimulationShader;
+	Egg::Mesh::Shader::P simpleSortEvenShader;
+	Egg::Mesh::Shader::P simpleSortOddShader;
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);

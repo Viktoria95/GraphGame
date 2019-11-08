@@ -1,5 +1,11 @@
 
-#define particleCount 256
+#define particleCount 1024
+
+#define boundarySide 0.15
+#define boundaryBottom 0.0
+#define boundaryTop 1.0
+
+#define mortonBinPerAxis 
 
 struct Particle
 {

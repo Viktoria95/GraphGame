@@ -67,7 +67,13 @@
     <FxCompile Include="Shaders\vsBillboard.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csAnimation.hlsl">
+    <FxCompile Include="Shaders\csFluidSimulation.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csSimpleSortEven.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csSimpleSortOdd.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
   </ItemGroup>

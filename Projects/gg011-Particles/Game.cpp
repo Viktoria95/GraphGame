@@ -11,7 +11,7 @@
 #include <assimp/postProcess.h> // Post processing flags
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 256;
+const unsigned int defaultParticleCount = 1024;
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
 {
@@ -211,8 +211,14 @@ HRESULT Game::createResources() {
 
 
 		// ComputeShader
-		ComPtr<ID3DBlob> computeShaderByteCode = loadShaderCode("csAnimation.cso");
-		computeShader = Egg::Mesh::Shader::create("csBasicFluid.cso", device, computeShaderByteCode);
+		ComPtr<ID3DBlob>fluidSimulationShaderByteCode = loadShaderCode("csFluidSimulation.cso");
+		fluidSimulationShader = Egg::Mesh::Shader::create("csFluidSimulation.cso", device, fluidSimulationShaderByteCode);
+
+		ComPtr<ID3DBlob>simpleSortEvenShaderByteCode = loadShaderCode("csSimpleSortEven.cso");
+		simpleSortEvenShader = Egg::Mesh::Shader::create("csSimpleSortEven.cso", device, simpleSortEvenShaderByteCode);
+
+		ComPtr<ID3DBlob>simpleSortOddShaderByteCode = loadShaderCode("csSimpleSortOdd.cso");
+		simpleSortOddShader = Egg::Mesh::Shader::create("csSimpleSortOdd.cso", device, simpleSortOddShaderByteCode);
 	}
 
 	return S_OK;
@@ -293,9 +299,31 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	// Animation
 	{
 		uint zeros[2] = { 0, 0 };
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(computeShader->getShader().Get()), nullptr, 0);
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, animationCSParticleUAV.GetAddressOf(), zeros);
 		context->Dispatch(defaultParticleCount, 1, 1);
+	}
+
+	// Clear Context
+	{
+		UINT pNumViewports = 1;
+		D3D11_VIEWPORT pViewports[1];
+		context->RSGetViewports(&pNumViewports, pViewports);
+		context->ClearState();
+		context->RSSetViewports(pNumViewports, pViewports);
+		context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+	}
+
+	// Sort
+	{
+		uint zeros[2] = { 0, 0 };
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
+		context->CSSetUnorderedAccessViews(0, 1, animationCSParticleUAV.GetAddressOf(), zeros);
+		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
+
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortOddShader->getShader().Get()), nullptr, 0);
+		context->CSSetUnorderedAccessViews(0, 1, animationCSParticleUAV.GetAddressOf(), zeros);
+		context->Dispatch(defaultParticleCount / 2 - 2, 1, 1);
 	}
 
 	// Clear Context
