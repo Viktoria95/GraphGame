@@ -7,6 +7,7 @@ VsosBillboard vsBillboard(uint vid : SV_VertexID)
 {
 	VsosBillboard output;
 	output.pos = particles[vid].position.xyz;
+	output.id = vid;
 	return output;
 }
 
