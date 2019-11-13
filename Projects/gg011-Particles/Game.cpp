@@ -21,6 +21,34 @@ Game::~Game(void)
 {
 }
 
+HRESULT Game::createResources() {
+
+	//////////////////
+	//////// Common ////////
+	//////////////////
+
+	{
+
+		inputBinder = Egg::Mesh::InputBinder::create(device);
+
+		firstPersonCam = Egg::Cam::FirstPerson::create();
+
+		billboardsLoadAlgorithm = SBuffer;
+
+		windowHeight = 593;
+
+		windowWidth = 1152;
+	}
+
+	createParticles();
+	createBillboard();
+	createPrefixSum();
+	createMetaball();
+	createAnimation();
+
+	return S_OK;
+}
+
 void Game::createParticles() {
 	// Create Particles
 	for (int i = 0; i < defaultParticleCount; i++)
@@ -92,8 +120,17 @@ void Game::createBillboard() {
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
 
-	ComPtr<ID3DBlob> firePixelShaderByteCode = loadShaderCode("psBillboard.cso");
-	Egg::Mesh::Shader::P billboardPixelShader = Egg::Mesh::Shader::create("psBillboard.cso", device, firePixelShaderByteCode);
+	ComPtr<ID3DBlob> firePixelShaderByteCode;
+	Egg::Mesh::Shader::P billboardPixelShader;
+
+	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == Normal) {
+		firePixelShaderByteCode = loadShaderCode("psBillboardA.cso");
+		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardA.cso", device, firePixelShaderByteCode);
+	}
+	if (billboardsLoadAlgorithm == SBuffer) {
+		firePixelShaderByteCode = loadShaderCode("psBillboardS.cso");
+		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardS.cso", device, firePixelShaderByteCode);
+	}
 
 	ComPtr<ID3DBlob> billboardWithSBufferShaderByteCode = loadShaderCode("psBillboardWithSBuffer.cso");
 	Egg::Mesh::Shader::P billboardPixelShaderWithSbuffer = Egg::Mesh::Shader::create("psBillboardWithSBuffer.cso", device, billboardWithSBufferShaderByteCode);
@@ -277,8 +314,21 @@ void Game::createMetaball() {
 	ComPtr<ID3DBlob> metaballVertexShaderByteCode = loadShaderCode("vsMetaball.cso");
 	Egg::Mesh::Shader::P backgroundVertexShader = Egg::Mesh::Shader::create("vsMetaball.cso", device, metaballVertexShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballPixelShaderByteCode = loadShaderCode("psMetaball.cso");
-	Egg::Mesh::Shader::P backgroundPixelShader = Egg::Mesh::Shader::create("psMetaball.cso", device, metaballPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballPixelShaderByteCode;
+	Egg::Mesh::Shader::P backgroundPixelShader;
+
+	if (billboardsLoadAlgorithm == 0) {
+		metaballPixelShaderByteCode = loadShaderCode("psMetaballNormal.cso");
+		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballNormal.cso", device, metaballPixelShaderByteCode);
+	}
+	if (billboardsLoadAlgorithm == 1) {
+		metaballPixelShaderByteCode = loadShaderCode("psMetaballABuffer.cso");
+		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballABuffer.cso", device, metaballPixelShaderByteCode);
+	}
+	if (billboardsLoadAlgorithm == 2) {
+		metaballPixelShaderByteCode = loadShaderCode("psMetaballSBuffer.cso");
+		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballSBuffer.cso", device, metaballPixelShaderByteCode);
+	}
 
 	ComPtr<ID3DBlob> prefixSumPixelShaderByteCode = loadShaderCode("psPrefixSum.cso");
 	Egg::Mesh::Shader::P prefixSumPixelShader = Egg::Mesh::Shader::create("psPrefixSum.cso", device, prefixSumPixelShaderByteCode);
@@ -376,34 +426,6 @@ void Game::createPrefixSum() {
 	}
 }
 
-HRESULT Game::createResources() {
-
-		//////////////////
-	//////// Common ////////
-		//////////////////
-
-	{
-
-		inputBinder = Egg::Mesh::InputBinder::create(device);
-
-		firstPersonCam = Egg::Cam::FirstPerson::create();
-
-		billboardsLoadAlgorithm = Normal;
-
-		windowHeight = 593;
-
-		windowWidth = 1152;
-	}
-
-	createParticles();
-	createBillboard();
-	createPrefixSum();
-	createMetaball();
-	createAnimation();
-
-	return S_OK;
-}
-
 HRESULT Game::releaseResources()
 {
 	billboards.reset();
@@ -488,7 +510,8 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, metaballVSParticleSRV.GetAddressOf());
-	context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
+	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer)
+		context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
 		context->PSSetShaderResources(3, 1, linkSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == SBuffer)

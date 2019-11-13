@@ -12,52 +12,6 @@ cbuffer metaballPSEyePosCB
 StructuredBuffer<Particle> particles;
 Buffer<uint> offsetBuffer;
 StructuredBuffer<uint> idBuffer;
-StructuredBuffer<uint2> linkBuffer;
-
-bool MetaBallTest(float3 p)
-{
-	const float minToHit = 0.9;
-	const float r = 0.005;
-
-	float acc = 0.0;
-
-	for (int i = 0; i < particleCount; i++) {
-		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
-		if (acc > minToHit)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool MetaBallTest_ABuffer(float3 p, float4 pos)
-{
-	const float minToHit = 1.0;
-	const float r = 0.005;
-
-	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
-
-	uint offset = offsetBuffer[uIndex];
-
-	float acc = 0.0;
-
-	while (offset != 0)
-	{
-		uint2 element = linkBuffer[offset];
-		offset = element.x;
-		int i = element.y;
-
-		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
-		if (acc > minToHit)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
 
 bool MetaBallTest_SBuffer(float3 p, float4 pos) {
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
@@ -106,45 +60,6 @@ bool BallTest(float3 p)
 	return false;
 }
 
-float3 Grad(float3 p) {
-	float3 grad;
-	const float r = 0.005;
-
-	for (int i = 0; i < particleCount; i++) {
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
-		grad.x += (weight * (p.x - particles[i].position.x));
-		grad.y += (weight * (p.y - particles[i].position.y));
-		grad.z += (weight * (p.z - particles[i].position.z));
-	}
-
-	return grad;
-}
-
-float3 Grad_ABuffer(float3 p, float4 pos)
-{
-	float3 grad;
-	const float r = 0.005;
-
-	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
-
-	uint offset = offsetBuffer[uIndex];
-
-	while (offset != 0)
-	{
-		uint2 element = linkBuffer[offset];
-		offset = element.x;
-		int i = element.y;
-
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
-		grad.x += (weight * (p.x - particles[i].position.x));
-		grad.y += (weight * (p.y - particles[i].position.y));
-		grad.z += (weight * (p.z - particles[i].position.z));
-
-	}
-
-	return grad;
-}
-
 float3 Grad_SBuffer(float3 p, float4 pos) {
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 
@@ -173,36 +88,6 @@ float3 Grad_SBuffer(float3 p, float4 pos) {
 	return grad;
 }
 
-float SortColor (float3 p, float4 pos)
-{
-	const float height = 593.0;
-	const float width = 1152.0;
-
-	uint uIndex = (uint)pos.y * (uint)width + (uint)pos.x;
-
-	uint offset = offsetBuffer[uIndex];
-
-	const float r = 0.005;
-
-	float intensity = 0.0;
-	int hitCount = 0;
-
-	while (offset != 0)
-	{
-		uint2 element = linkBuffer[offset];
-		offset = element.x;
-		int i = element.y;
-
-		if (length(p - float3(particles[i].position)) < r)
-		{
-			intensity += float(i);
-			hitCount++;
-		}
-	}
-
-	return intensity / hitCount / particleCount;
-}
-
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
 	float3 invDirection = rcp (rayDir);
@@ -224,7 +109,7 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 	tEnd = tMaxMin;
 }
 
-float4 psMetaball(VsosQuad input) : SV_Target
+float4 psMetaballSBuffer(VsosQuad input) : SV_Target
 {
 	const int stepCount = 10;
 	const float boundarySideThreshold = boundarySide * 1.1;
@@ -254,27 +139,11 @@ float4 psMetaball(VsosQuad input) : SV_Target
 		p += d * tStart;
 
 		for (int i = 0; i<stepCount; i++)
-		{
-			if (billboardsLoadAlgorithm == 0) {
-				if (MetaBallTest(p))
-				{
-					return float4 (normalize(Grad(p)), 1.0);
-				}
-			}
-
-			if (billboardsLoadAlgorithm == 1) {
-				if (MetaBallTest_ABuffer(p, input.pos))
-				{
-					return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
-				}
-			}
-
-			if (billboardsLoadAlgorithm == 2) {
-				if (MetaBallTest_SBuffer(p, input.pos))
-				{
-					return float4 (normalize(Grad_SBuffer(p, input.pos)), 1.0);
-				}
-			}
+		{			
+			if (MetaBallTest_SBuffer(p, input.pos))
+			{
+				return float4 (normalize(Grad_SBuffer(p, input.pos)), 1.0);
+			}		
 
 			p += step;
 		}

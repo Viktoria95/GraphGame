@@ -28,6 +28,9 @@
     <Filter Include="Shaders\Particle">
       <UniqueIdentifier>{6fb04c0f-1560-42ea-af21-373db19bc7da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\PrefixSum">
+      <UniqueIdentifier>{78655ae1-937a-472b-9c57-b6168bb66e6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -55,14 +58,8 @@
     <FxCompile Include="Shaders\gsBillboard.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaball.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\vsMetaball.hlsl">
       <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psBillboard.hlsl">
-      <Filter>Shaders\Billboard</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\vsBillboard.hlsl">
       <Filter>Shaders\Billboard</Filter>
@@ -75,6 +72,48 @@
     </FxCompile>
     <FxCompile Include="Shaders\csSimpleSortOdd.hlsl">
       <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboardWithSBuffer.hlsl">
+      <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psPrefixSum.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPrefixSum.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csScanAddBucketResult.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csScanAddBucketResult2.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csScanBucketResult.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csScanBucketResult2.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPrefixSumF.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPrefixSumFAddBucket.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballNormal.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballABuffer.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballSBuffer.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboardA.hlsl">
+      <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboardS.hlsl">
+      <Filter>Shaders\Billboard</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,3 @@
-#define billboardsLoadAlgorithm 0 // 0 - Normal, 1 - ABuffer, 2 - SBuffer, 3 - SBuffer faster
 #define windowHeight 593.0
 #define windowWidth 1152.0
 
