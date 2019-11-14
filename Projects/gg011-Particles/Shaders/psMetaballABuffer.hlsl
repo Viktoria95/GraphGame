@@ -40,6 +40,24 @@ bool MetaBallTest_ABuffer(float3 p, float4 pos)
 	return false;
 }
 
+bool MetaBallTest(float3 p)
+{
+	const float minToHit = 0.9;
+	const float r = 0.005;
+
+	float acc = 1.0;
+
+	for (int i = 0; i < particleCount; i++) {
+		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
+		if (acc > minToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool BallTest(float3 p)
 {
 	const float r = 0.005;
@@ -80,6 +98,48 @@ float3 Grad_ABuffer(float3 p, float4 pos)
 	return grad;
 }
 
+uint Offset_ABuffer(float4 pos)
+{
+	float3 grad;
+	const float r = 0.005;
+
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint offset = offsetBuffer[uIndex];
+	return offset;
+}
+
+uint OffsetSecond_ABuffer(float4 pos)
+{
+	float3 grad;
+	const float r = 0.005;
+
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint offset = offsetBuffer[uIndex];
+	uint2 element = linkBuffer[offset];
+
+	return element.x;
+}
+
+uint Length_ABuffer(float4 pos)
+{
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint offset = offsetBuffer[uIndex];
+	uint length = 0;
+
+	while (offset != 0)
+	{
+		uint2 element = linkBuffer[offset];
+		offset = element.x;
+		int i = element.y;
+		length++;
+	}
+
+	return length;
+}
+
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
 	float3 invDirection = rcp(rayDir);
@@ -104,42 +164,43 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 float4 psMetaballABuffer(VsosQuad input) : SV_Target
 {
 	const int stepCount = 10;
-const float boundarySideThreshold = boundarySide * 1.1;
-const float boundaryTopThreshold = boundaryTop * 1.1;
-const float boundaryBottomThreshold = boundaryBottom * 1.1;
+	const float boundarySideThreshold = boundarySide * 1.1;
+	const float boundaryTopThreshold = boundaryTop * 1.1;
+	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-float3 d = normalize(input.rayDir);
-float3 p = eyePos;
+	float3 d = normalize(input.rayDir);
+	float3 p = eyePos;
 
-bool intersect;
-float tStart;
-float tEnd;
-BoxIntersect
-(
-	p,
-	d,
-	float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
-	float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
-	intersect,
-	tStart,
-	tEnd
-);
+	bool intersect;
+	float tStart;
+	float tEnd;
+	BoxIntersect
+	(
+		p,
+		d,
+		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
+		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+		intersect,
+		tStart,
+		tEnd
+	);
 
-if (intersect)
-{
-	float3 step = d * (tEnd - tStart) / float(stepCount);
-	p += d * tStart;
-
-	for (int i = 0; i<stepCount; i++)
+	if (intersect)
 	{
-		if (MetaBallTest_ABuffer(p, input.pos))
+		float3 step = d * (tEnd - tStart) / float(stepCount);
+		p += d * tStart;
+
+		for (int i = 0; i<stepCount; i++)
 		{
-			return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
+			if (MetaBallTest_ABuffer(p, input.pos))
+			{
+				return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
+			}
+			
+			p += step;
 		}
-		p += step;
 	}
-}
-return envTexture.Sample(ss, d);
+	return envTexture.Sample(ss, d);
 }
 
 

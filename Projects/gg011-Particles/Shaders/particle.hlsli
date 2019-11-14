@@ -13,5 +13,7 @@ struct Particle
 	float	massDensity;
 	float3	velocity;
 	float	pressure;
+	float3 temp;
+	uint zindex;
 };
 

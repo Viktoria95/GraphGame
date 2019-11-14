@@ -8,6 +8,8 @@ class Particle
 	float massDensity;
 	Egg::Math::float3 velocity;
 	float pressure;
+	Egg::Math::float3 temp;
+	unsigned int zindex;
 
 	//float lifespan;
 	//float age;

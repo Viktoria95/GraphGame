@@ -8,14 +8,21 @@
 #include "Particle.h"
 
 GG_SUBCLASS(Game, Egg::App)
+public:
+	
+	//static const unsigned int windowHeight = 720;
+	//static const unsigned int windowWidth = 1280;
 
+	static const unsigned int windowHeight = 593;
+	static const unsigned int windowWidth = 1152;
+
+private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferFaster };
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
 	Egg::Mesh::InputBinder::P inputBinder;
-	BillboardsAlgorithm billboardsLoadAlgorithm;
-	int windowHeight, windowWidth;
+	BillboardsAlgorithm billboardsLoadAlgorithm;	
 
 	// Environment
 	Egg::Mesh::Shaded::P backgroundMesh;
@@ -25,6 +32,7 @@ GG_SUBCLASS(Game, Egg::App)
 	// Particle
 	std::vector<Particle> particles;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
+
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardVSNothing;

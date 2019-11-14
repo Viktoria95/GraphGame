@@ -32,7 +32,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		L"Egg17",					// Window text
 		WS_OVERLAPPEDWINDOW,            // Window style
 										// Size and position
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, Game::windowWidth, Game::windowHeight,
 		NULL,       // Parent window    
 		NULL,       // Menu
 		hInstance,  // Instance handle

@@ -12,6 +12,8 @@
 using namespace Egg::Math;
 
 const unsigned int defaultParticleCount = 1024;
+const unsigned int linkbufferSizePerPixel = 256;
+const unsigned int sbufferSizePerPixel = 256;
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
 {
@@ -28,16 +30,11 @@ HRESULT Game::createResources() {
 	//////////////////
 
 	{
-
 		inputBinder = Egg::Mesh::InputBinder::create(device);
 
 		firstPersonCam = Egg::Cam::FirstPerson::create();
 
-		billboardsLoadAlgorithm = SBuffer;
-
-		windowHeight = 593;
-
-		windowWidth = 1152;
+		billboardsLoadAlgorithm = Normal;
 	}
 
 	createParticles();
@@ -175,7 +172,7 @@ void Game::createBillboard() {
 	ZeroMemory(&linkBufferDesc, sizeof(D3D11_BUFFER_DESC));
 	linkBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	linkBufferDesc.StructureByteStride = sizeof(unsigned int) * 2;
-	linkBufferDesc.ByteWidth = windowHeight * windowWidth * 16 * linkBufferDesc.StructureByteStride;
+	linkBufferDesc.ByteWidth = windowHeight * windowWidth * linkbufferSizePerPixel * linkBufferDesc.StructureByteStride;
 	linkBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	device->CreateBuffer(&linkBufferDesc, NULL, &linkBuffer);
 
@@ -192,7 +189,7 @@ void Game::createBillboard() {
 	linkUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	linkUAVDesc.Buffer.FirstElement = 0;
 	linkUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	linkUAVDesc.Buffer.NumElements = windowHeight * windowWidth * 16;
+	linkUAVDesc.Buffer.NumElements = windowHeight * windowWidth * linkbufferSizePerPixel;
 	linkUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
 	device->CreateUnorderedAccessView(linkBuffer.Get(), &linkUAVDesc, &linkUAV);
 
@@ -210,7 +207,7 @@ void Game::createBillboard() {
 	ZeroMemory(&idBufferDesc, sizeof(D3D11_BUFFER_DESC));
 	idBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	idBufferDesc.StructureByteStride = sizeof(unsigned int);
-	idBufferDesc.ByteWidth = windowHeight * windowWidth * 16 * idBufferDesc.StructureByteStride;
+	idBufferDesc.ByteWidth = windowHeight * windowWidth * sbufferSizePerPixel * idBufferDesc.StructureByteStride;
 	idBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	device->CreateBuffer(&idBufferDesc, NULL, &idBuffer);
 
@@ -244,7 +241,7 @@ void Game::createBillboard() {
 	idUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	idUAVDesc.Buffer.FirstElement = 0;
 	idUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	idUAVDesc.Buffer.NumElements = windowHeight * windowWidth * 16;
+	idUAVDesc.Buffer.NumElements = windowHeight * windowWidth * sbufferSizePerPixel;
 	idUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
 	device->CreateUnorderedAccessView(idBuffer.Get(), &idUAVDesc, &idUAV);
 
@@ -276,14 +273,14 @@ void Game::createMetaball() {
 	linkSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	linkSRVDesc.Buffer.FirstElement = 0;
 	linkSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	linkSRVDesc.Buffer.NumElements = windowWidth * windowHeight * 16;
+	linkSRVDesc.Buffer.NumElements = windowWidth * windowHeight * linkbufferSizePerPixel;
 	device->CreateShaderResourceView(linkBuffer.Get(), &linkSRVDesc, &linkSRV);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC idSRVDesc;
 	idSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	idSRVDesc.Buffer.FirstElement = 0;
 	idSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	idSRVDesc.Buffer.NumElements = windowWidth * windowHeight * 16;
+	idSRVDesc.Buffer.NumElements = windowWidth * windowHeight * sbufferSizePerPixel;
 	device->CreateShaderResourceView(idBuffer.Get(), &idSRVDesc, &idSRV);
 	
 	// metaballVSTransCB
