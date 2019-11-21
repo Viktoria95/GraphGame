@@ -11,5 +11,5 @@ void csScanAddBucketResult2(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThre
 {
 	uint temp;
 	uint i = resultBuffer.Load((512 + Gid.x) * 4);
-	offsetBuffer.InterlockedAdd((DTid.x + (512 * 512)+1) * 4, i, temp);
+	offsetBuffer.InterlockedAdd((DTid.x + (512 * 512) + 1) * 4, i, temp);
 }

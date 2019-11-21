@@ -10,11 +10,14 @@
 GG_SUBCLASS(Game, Egg::App)
 public:
 	
-	//static const unsigned int windowHeight = 720;
-	//static const unsigned int windowWidth = 1280;
+	static const unsigned int windowHeight = 720;
+	static const unsigned int windowWidth = 1280;
 
-	static const unsigned int windowHeight = 593;
-	static const unsigned int windowWidth = 1152;
+	//static const unsigned int windowHeight = 593;
+	//static const unsigned int windowWidth = 1152;
+
+	//static const unsigned int windowHeight = 750;
+	//static const unsigned int windowWidth = 1000;
 
 private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferFaster };
@@ -32,7 +35,6 @@ private:
 	// Particle
 	std::vector<Particle> particles;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
-
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardVSNothing;
@@ -75,8 +77,10 @@ private:
 	Egg::Mesh::Shader::P prefixSumComputeShader;
 	Egg::Mesh::Shader::P prefixSumScanBucketResultShader;
 	Egg::Mesh::Shader::P prefixSumScanBucketResult2Shader;
+	Egg::Mesh::Shader::P prefixSumScanBucketResult3Shader;
 	Egg::Mesh::Shader::P prefixSumScanAddBucketResultShader;
 	Egg::Mesh::Shader::P prefixSumScanAddBucketResult2Shader;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> scanBucketSizeCB;
 
 	//PrefixSumFast
 	Egg::Mesh::Shader::P prefixSumFComputeShader;

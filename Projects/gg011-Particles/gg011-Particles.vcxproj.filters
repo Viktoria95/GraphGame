@@ -115,6 +115,9 @@
     <FxCompile Include="Shaders\psBillboardS.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csScanBucketResult3.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">

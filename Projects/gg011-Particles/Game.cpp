@@ -34,7 +34,7 @@ HRESULT Game::createResources() {
 
 		firstPersonCam = Egg::Cam::FirstPerson::create();
 
-		billboardsLoadAlgorithm = Normal;
+		billboardsLoadAlgorithm = SBuffer;
 	}
 
 	createParticles();
@@ -109,6 +109,22 @@ void Game::createBillboard() {
 
 	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&billboardGSSizeCBDesc, &initialBbSize, billboardGSSizeCB.GetAddressOf());
+
+	//// scanBucketSizeCB
+	D3D11_BUFFER_DESC scanBucketSizeCBDesc;
+	scanBucketSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	scanBucketSizeCBDesc.CPUAccessFlags = 0;
+	scanBucketSizeCBDesc.MiscFlags = 0;
+	scanBucketSizeCBDesc.StructureByteStride = 0;
+	scanBucketSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	scanBucketSizeCBDesc.ByteWidth = sizeof(Egg::Math::int1)*4;
+
+	Egg::Math::int1 scanSize(0);
+	D3D11_SUBRESOURCE_DATA initialScanSize;
+	initialScanSize.pSysMem = &scanSize;
+
+	Egg::ThrowOnFail("Failed to create scanBucketSizeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&scanBucketSizeCBDesc, &initialScanSize, scanBucketSizeCB.GetAddressOf());
 
 	// Shaders
 	ComPtr<ID3DBlob> billboardVertexShaderByteCode = loadShaderCode("vsBillboard.cso");
@@ -408,6 +424,9 @@ void Game::createPrefixSum() {
 	ComPtr<ID3DBlob> computeShaderByteCode5 = loadShaderCode("csScanBucketResult2.cso");
 	prefixSumScanBucketResult2Shader = Egg::Mesh::Shader::create("csScanBucketResult2.cso", device, computeShaderByteCode5);
 
+	ComPtr<ID3DBlob> computeShaderByteCode6 = loadShaderCode("csScanBucketResult3.cso");
+	prefixSumScanBucketResult3Shader = Egg::Mesh::Shader::create("csScanBucketResult3.cso", device, computeShaderByteCode6);
+
 	ComPtr<ID3DBlob> computeShaderByteCode3 = loadShaderCode("csScanAddBucketResult.cso");
 	prefixSumScanAddBucketResultShader = Egg::Mesh::Shader::create("csScanAddBucketResult.cso", device, computeShaderByteCode3);
 
@@ -542,22 +561,25 @@ void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumComputeShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
-		context->Dispatch(1024, 1, 1);
+		context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
 
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResultShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
-		context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
-		context->Dispatch(1, 1, 1);
-
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResult2Shader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
-		context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
-		context->Dispatch(1, 1, 1);
+		int loopCount = (int)ceil(((windowHeight*windowWidth) / 512.0) / 512.0);
+	
+		for (int i = 0; i < loopCount; i++) {
+			context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResultShader->getShader().Get()), nullptr, 0);
+			context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
+			context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
+			Egg::Math::int1 sizeVector[1];
+			sizeVector[0] = i;
+			context->UpdateSubresource(scanBucketSizeCB.Get(), 0, nullptr, sizeVector, 0, 0);
+			context->CSSetConstantBuffers(0, 1, scanBucketSizeCB.GetAddressOf());
+			context->Dispatch(1, 1, 1);
+		}
 
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanAddBucketResultShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
 		context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
-		context->Dispatch(1024, 1, 1);
+		context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
 	}
 	if (billboardsLoadAlgorithm != SBufferFaster) { 
 
