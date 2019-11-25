@@ -158,90 +158,191 @@ struct RayMarchHit
 	float3 position;
 	float3 direction;
 	uint recursionDepth;
+	float alfa;
 };
+
+/*
+vec3 Fresnel(vec3 inDir, vec3 normal, vec3 n, vec3 kappa)
+{
+	float cosa = -dot(inDir, normal);
+	vec3 one = vec3(1.0, 1.0, 1.0);
+	vec3 F0 = ((n - one)*(n - one) + kappa*kappa) /
+		((n + one)*(n + one) + kappa*kappa);
+	return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
+}
+*/
+
+float Fresnel(float3 inDir, float3 normal, float n, float kappa)
+{
+	float cosa = -dot(inDir, normal);
+	float one = 1.0;
+	float F0 = ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa);
+	return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
+}
 
 float4 psMetaballNormal(VsosQuad input) : SV_Target
 {
 	const int stepCount = 20;
-const float boundarySideThreshold = boundarySide * 1.1;
-const float boundaryTopThreshold = boundaryTop * 1.1;
-const float boundaryBottomThreshold = boundaryBottom * 1.1;
+	const float boundarySideThreshold = boundarySide * 1.1;
+	const float boundaryTopThreshold = boundaryTop * 1.1;
+	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-RayMarchHit stack[16];
-uint stackSize = 1;
+	const float refractionIndex = 1.4f;
+	const float kappa = 0.01;
 
-RayMarchHit firstElem;
-firstElem.position = eyePos;
-firstElem.direction = normalize(input.rayDir);
-firstElem.recursionDepth = 0;
-stack[0] = firstElem;
+	RayMarchHit stack[16];
+	uint stackSize = 1;
 
-float3 color;
-uint killer = 16;
-while (stackSize > 0 && killer > 0)
-{
-	killer--;
+	RayMarchHit firstElem;
+	firstElem.position = eyePos;
+	firstElem.direction = normalize(input.rayDir);
+	firstElem.recursionDepth = 0;
+	firstElem.alfa = 1.0;
+	stack[0] = firstElem;
 
-	stackSize--;
-	float3 marchPos = stack[stackSize].position;
-	float3 marchDir = stack[stackSize].direction;
-	uint marchRecursionDepth = stack[stackSize].recursionDepth;
-
-	bool intersect;
-	float tStart;
-	float tEnd;
-	BoxIntersect
-	(
-		marchPos,
-		marchDir,
-		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
-		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
-		intersect,
-		tStart,
-		tEnd
-	);
-
-	if (intersect)
+	float3 color = float3(0.0, 0.0, 0.0);
+	uint killer = 32;
+	[unroll (32)]
+	while (stackSize > 0 && killer > 0)
 	{
-		float3 marchStep = marchDir * (tEnd - tStart) / float(stepCount);
-		marchPos += marchDir * tStart;
+		killer--;
 
-		bool marchHit = false;
-		for (int i = 0; i<stepCount && !marchHit; i++)
+		stackSize--;
+		float3 marchPos = stack[stackSize].position;
+		float3 marchDir = stack[stackSize].direction;
+		uint marchRecursionDepth = stack[stackSize].recursionDepth;
+		float marchAlfa = stack[stackSize].alfa;;
+
+		bool intersect;
+		float tStart;
+		float tEnd;
+		BoxIntersect
+		(
+			marchPos,
+			marchDir,
+			float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
+			float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+			intersect,
+			tStart,
+			tEnd
+		);
+
+		if (intersect)
 		{
-			if (MetaBallTest(marchPos))
+			float3 marchStep = marchDir * (tEnd - tStart) / float(stepCount);
+			marchPos += marchDir * tStart;
+
+			bool marchHit = false;
+			for (int i = 0; i<stepCount && !marchHit; i++)
 			{
-				marchHit = true;
+				// From outside
+				if (marchRecursionDepth % 2 == 0)
+				{
+					if (MetaBallTest(marchPos))
+					{
+						marchHit = true;
 
-				float3 normal = normalize(-Grad(marchPos));
-				RayMarchHit newElem;
-				newElem.direction = reflect(marchDir, normal);
-				newElem.position = marchPos + normal * 0.1;
-				newElem.recursionDepth = marchRecursionDepth + 1;
-				stack[stackSize] = newElem;
+						float3 normal = normalize(-Grad(marchPos));
 
-				stackSize++;
+						RayMarchHit reflectElem;
+						reflectElem.direction = reflect(marchDir, normal);
+						reflectElem.position = marchPos + normal * 0.1;
+						reflectElem.recursionDepth = marchRecursionDepth + 1;
+						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, refractionIndex, kappa);
+
+						if (reflectElem.alfa > 0.01)
+						{
+							stack[stackSize] = reflectElem;
+							stackSize++;
+						}
+
+						float3 refractDir = refract(marchDir, normal, refractionIndex);
+						if (length(refractDir) < 0.1)
+						{
+							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, refractionIndex, kappa)) * float3 (0.0, 1.0, 0.0);
+						}
+						else
+						{
+							RayMarchHit refractElem;
+							refractElem.direction = refractDir;
+							refractElem.position = marchPos - normal * 0.1;
+							refractElem.recursionDepth = marchRecursionDepth + 1;
+							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal, refractionIndex, kappa));
+
+							if (refractElem.alfa > 0.01)
+							{
+								stack[stackSize] = refractElem;
+								stackSize++;
+							}
+						}
+
+					}
+				}
+				// From inside
+				else 
+				{
+					//color += marchAlfa * float3 (0.0, 0.0, 1.0);
+					if (!MetaBallTest(marchPos))
+					{
+						marchHit = true;
+
+						float3 normal = normalize(Grad(marchPos));
+
+						RayMarchHit reflectElem;
+						reflectElem.direction = reflect(marchDir, normal);
+						reflectElem.position = marchPos + normal * 0.1;
+						reflectElem.recursionDepth = marchRecursionDepth + 1;
+						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0/ kappa);
+
+						if (reflectElem.alfa > 0.01)
+						{
+							stack[stackSize] = reflectElem;
+							stackSize++;
+						}						
+
+						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
+						if (length(refractDir) < 0.1)
+						{
+							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0 / kappa)) * float3 (0.0, 1.0, 0.0);
+						}
+						else
+						{
+							RayMarchHit refractElem;
+							refractElem.direction = refractDir;
+							refractElem.position = marchPos - normal * 0.1;
+							refractElem.recursionDepth = marchRecursionDepth + 1;
+							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal,1.0/ refractionIndex, 1.0 / kappa));
+
+							if (refractElem.alfa > 0.01)
+							{
+								stack[stackSize] = refractElem;
+								stackSize++;
+							}
+						}
+
+					}
+				}
+			
+				marchPos += marchStep;
 			}
-			marchPos += marchStep;
-		}
 
-		if (!marchHit)
+			if (!marchHit)
+			{
+				color += envTexture.Sample(ss, marchDir) * marchAlfa;
+			}
+		}
+		else
 		{
-			color = envTexture.Sample(ss, marchDir);
+			color += envTexture.Sample(ss, marchDir)  * marchAlfa;
 		}
 	}
-	else
+
+	if (killer == 0)
 	{
-		color = envTexture.Sample(ss, marchDir);
+		return float4 (1.0, 0.0, 0.0, 1.0);
 	}
-}
 
-if (killer == 0)
-{
-	return float4 (1.0, 0.0, 0.0, 1.0);
-}
-
-return float4 (color, 1.0);
+	return float4 (color, 1.0);
 
 }
 
