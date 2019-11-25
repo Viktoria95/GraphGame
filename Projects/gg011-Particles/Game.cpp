@@ -34,7 +34,7 @@ HRESULT Game::createResources() {
 
 		firstPersonCam = Egg::Cam::FirstPerson::create();
 
-		billboardsLoadAlgorithm = SBuffer;
+		billboardsLoadAlgorithm = Normal;
 	}
 
 	createParticles();

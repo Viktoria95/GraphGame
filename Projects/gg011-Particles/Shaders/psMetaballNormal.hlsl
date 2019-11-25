@@ -60,41 +60,41 @@ float3 Grad(float3 p) {
 
 /*float SortColor (float3 p, float4 pos)
 {
-	const float height = 593.0;
-	const float width = 1152.0;
+const float height = 593.0;
+const float width = 1152.0;
 
-	uint uIndex = (uint)pos.y * (uint)width + (uint)pos.x;
+uint uIndex = (uint)pos.y * (uint)width + (uint)pos.x;
 
-	uint offset = offsetBuffer[uIndex];
+uint offset = offsetBuffer[uIndex];
 
-	const float r = 0.005;
+const float r = 0.005;
 
-	float intensity = 0.0;
-	int hitCount = 0;
+float intensity = 0.0;
+int hitCount = 0;
 
-	while (offset != 0)
-	{
-		uint2 element = linkBuffer[offset];
-		offset = element.x;
-		int i = element.y;
+while (offset != 0)
+{
+uint2 element = linkBuffer[offset];
+offset = element.x;
+int i = element.y;
 
-		if (length(p - float3(particles[i].position)) < r)
-		{
-			intensity += float(i);
-			hitCount++;
-		}
-	}
+if (length(p - float3(particles[i].position)) < r)
+{
+intensity += float(i);
+hitCount++;
+}
+}
 
-	return intensity / hitCount / particleCount;
+return intensity / hitCount / particleCount;
 }*/
 
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
-	float3 invDirection = rcp (rayDir);
+	float3 invDirection = rcp(rayDir);
 	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
 	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
-	float3 tMin = min (t0, t1);
-	float3 tMax = max (t0, t1);
+	float3 tMin = min(t0, t1);
+	float3 tMax = max(t0, t1);
 	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
 	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
 
@@ -104,28 +104,96 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 	{
 		tMinMax = 0.0;
 	}
-	
+
 	tStart = tMinMax;
 	tEnd = tMaxMin;
 }
 
+/*
 float4 psMetaballNormal(VsosQuad input) : SV_Target
 {
-	const int stepCount = 10;
-	const float boundarySideThreshold = boundarySide * 1.1;
-	const float boundaryTopThreshold = boundaryTop * 1.1;
-	const float boundaryBottomThreshold = boundaryBottom * 1.1;
+const int stepCount = 10;
+const float boundarySideThreshold = boundarySide * 1.1;
+const float boundaryTopThreshold = boundaryTop * 1.1;
+const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	float3 d = normalize(input.rayDir);
-	float3 p = eyePos;
+float3 d = normalize(input.rayDir);
+float3 p = eyePos;
+
+bool intersect;
+float tStart;
+float tEnd;
+BoxIntersect
+(
+p,
+d,
+float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
+float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+intersect,
+tStart,
+tEnd
+);
+
+if (intersect)
+{
+float3 step = d * (tEnd - tStart) / float(stepCount);
+p += d * tStart;
+
+for (int i = 0; i<stepCount; i++)
+{
+if (MetaBallTest(p))
+{
+return float4 (normalize(Grad(p)), 1.0);
+}
+
+p += step;
+}
+}
+return envTexture.Sample(ss, d);
+}
+*/
+
+struct RayMarchHit
+{
+	float3 position;
+	float3 direction;
+	uint recursionDepth;
+};
+
+float4 psMetaballNormal(VsosQuad input) : SV_Target
+{
+	const int stepCount = 20;
+const float boundarySideThreshold = boundarySide * 1.1;
+const float boundaryTopThreshold = boundaryTop * 1.1;
+const float boundaryBottomThreshold = boundaryBottom * 1.1;
+
+RayMarchHit stack[16];
+uint stackSize = 1;
+
+RayMarchHit firstElem;
+firstElem.position = eyePos;
+firstElem.direction = normalize(input.rayDir);
+firstElem.recursionDepth = 0;
+stack[0] = firstElem;
+
+float3 color;
+uint killer = 16;
+while (stackSize > 0 && killer > 0)
+{
+	killer--;
+
+	stackSize--;
+	float3 marchPos = stack[stackSize].position;
+	float3 marchDir = stack[stackSize].direction;
+	uint marchRecursionDepth = stack[stackSize].recursionDepth;
 
 	bool intersect;
 	float tStart;
 	float tEnd;
 	BoxIntersect
 	(
-		p,
-		d,
+		marchPos,
+		marchDir,
 		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
 		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
 		intersect,
@@ -135,20 +203,46 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 	if (intersect)
 	{
-		float3 step = d * (tEnd - tStart) / float(stepCount);
-		p += d * tStart;
+		float3 marchStep = marchDir * (tEnd - tStart) / float(stepCount);
+		marchPos += marchDir * tStart;
 
-		for (int i = 0; i<stepCount; i++)
+		bool marchHit = false;
+		for (int i = 0; i<stepCount && !marchHit; i++)
 		{
-			if (MetaBallTest(p))
+			if (MetaBallTest(marchPos))
 			{
-				return float4 (normalize(Grad(p)), 1.0);
-			}
+				marchHit = true;
 
-			p += step;
+				float3 normal = normalize(-Grad(marchPos));
+				RayMarchHit newElem;
+				newElem.direction = reflect(marchDir, normal);
+				newElem.position = marchPos + normal * 0.1;
+				newElem.recursionDepth = marchRecursionDepth + 1;
+				stack[stackSize] = newElem;
+
+				stackSize++;
+			}
+			marchPos += marchStep;
+		}
+
+		if (!marchHit)
+		{
+			color = envTexture.Sample(ss, marchDir);
 		}
 	}
-	return envTexture.Sample(ss, d);
+	else
+	{
+		color = envTexture.Sample(ss, marchDir);
+	}
+}
+
+if (killer == 0)
+{
+	return float4 (1.0, 0.0, 0.0, 1.0);
+}
+
+return float4 (color, 1.0);
+
 }
 
 
