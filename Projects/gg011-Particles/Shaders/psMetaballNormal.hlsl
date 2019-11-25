@@ -4,6 +4,8 @@
 SamplerState ss;
 TextureCube envTexture;
 
+#define STACKSIZE 32
+
 cbuffer metaballPSEyePosCB
 {
 	float4 eyePos;
@@ -180,6 +182,15 @@ float Fresnel(float3 inDir, float3 normal, float n, float kappa)
 	return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
 }
 
+void AddToStack(inout RayMarchHit stack[STACKSIZE], inout uint stakSize, RayMarchHit newElem)
+{
+	if (newElem.alfa > 0.01)
+	{
+		stack[stakSize] = newElem;
+		stakSize++;
+	}
+}
+
 float4 psMetaballNormal(VsosQuad input) : SV_Target
 {
 	const int stepCount = 20;
@@ -190,7 +201,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 	const float refractionIndex = 1.4f;
 	const float kappa = 0.01;
 
-	RayMarchHit stack[16];
+	RayMarchHit stack[STACKSIZE];
 	uint stackSize = 1;
 
 	RayMarchHit firstElem;
@@ -250,11 +261,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						reflectElem.recursionDepth = marchRecursionDepth + 1;
 						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, refractionIndex, kappa);
 
-						if (reflectElem.alfa > 0.01)
-						{
-							stack[stackSize] = reflectElem;
-							stackSize++;
-						}
+						AddToStack(stack, stackSize, reflectElem);
 
 						float3 refractDir = refract(marchDir, normal, refractionIndex);
 						if (length(refractDir) < 0.1)
@@ -269,11 +276,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 							refractElem.recursionDepth = marchRecursionDepth + 1;
 							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal, refractionIndex, kappa));
 
-							if (refractElem.alfa > 0.01)
-							{
-								stack[stackSize] = refractElem;
-								stackSize++;
-							}
+							AddToStack(stack, stackSize, refractElem);
 						}
 
 					}
@@ -294,11 +297,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						reflectElem.recursionDepth = marchRecursionDepth + 1;
 						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0/ kappa);
 
-						if (reflectElem.alfa > 0.01)
-						{
-							stack[stackSize] = reflectElem;
-							stackSize++;
-						}						
+						AddToStack(stack, stackSize, reflectElem);
 
 						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
 						if (length(refractDir) < 0.1)
@@ -313,11 +312,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 							refractElem.recursionDepth = marchRecursionDepth + 1;
 							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal,1.0/ refractionIndex, 1.0 / kappa));
 
-							if (refractElem.alfa > 0.01)
-							{
-								stack[stackSize] = refractElem;
-								stackSize++;
-							}
+							AddToStack(stack, stackSize, refractElem);
 						}
 
 					}
