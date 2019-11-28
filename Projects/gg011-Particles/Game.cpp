@@ -23,20 +23,9 @@ Game::~Game(void)
 {
 }
 
-HRESULT Game::createResources() {
-
-	//////////////////
-	//////// Common ////////
-	//////////////////
-
-	{
-		inputBinder = Egg::Mesh::InputBinder::create(device);
-
-		firstPersonCam = Egg::Cam::FirstPerson::create();
-
-		billboardsLoadAlgorithm = SBuffer;
-	}
-
+HRESULT Game::createResources()
+{
+	CreateCommon();
 	CreateParticles();
 	createBillboard();
 	createPrefixSum();
@@ -46,7 +35,28 @@ HRESULT Game::createResources() {
 	return S_OK;
 }
 
-void Game::CreateParticles() {
+void Game::CreateCommon()
+{
+	inputBinder = Egg::Mesh::InputBinder::create(device);
+
+	firstPersonCam = Egg::Cam::FirstPerson::create();
+
+	billboardsLoadAlgorithm = Normal;
+
+	// billboardGSTransCB
+	D3D11_BUFFER_DESC modelViewProjCBDesc;
+	modelViewProjCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	modelViewProjCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
+	modelViewProjCBDesc.CPUAccessFlags = 0;
+	modelViewProjCBDesc.MiscFlags = 0;
+	modelViewProjCBDesc.StructureByteStride = 0;
+	modelViewProjCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create billboardGSTransCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&modelViewProjCBDesc, nullptr, modelViewProjCB.GetAddressOf());
+}
+
+void Game::CreateParticles()
+{
 	std::vector<Particle> particles;
 
 	// Create Particles
@@ -97,46 +107,26 @@ void Game::createBillboard() {
 	using namespace Microsoft::WRL;
 
 	// Vertex Input
-	billboardVSNothing = Egg::Mesh::Nothing::create(defaultParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-
-	// billboardVSParticleSRV
-	D3D11_SHADER_RESOURCE_VIEW_DESC billboardVSParticleSRVDesc;
-	billboardVSParticleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	billboardVSParticleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	billboardVSParticleSRVDesc.Buffer.FirstElement = 0;
-	billboardVSParticleSRVDesc.Buffer.NumElements = defaultParticleCount;
-
-	Egg::ThrowOnFail("Could not create billboardVSParticleSRV.", __FILE__, __LINE__) ^
-		device->CreateShaderResourceView(particleDataBuffer.Get(), &billboardVSParticleSRVDesc, &particleSRV);
-
-	// billboardGSTransCB
-	D3D11_BUFFER_DESC billboardGSTransCBDesc;
-	billboardGSTransCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	billboardGSTransCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
-	billboardGSTransCBDesc.CPUAccessFlags = 0;
-	billboardGSTransCBDesc.MiscFlags = 0;
-	billboardGSTransCBDesc.StructureByteStride = 0;
-	billboardGSTransCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	Egg::ThrowOnFail("Failed to create billboardGSTransCB.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&billboardGSTransCBDesc, nullptr, billboardGSTransCB.GetAddressOf());
+	billboardNothing = Egg::Mesh::Nothing::create(defaultParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	// billboardGSSizeCB
-	D3D11_BUFFER_DESC billboardGSSizeCBDesc;
-	billboardGSSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	billboardGSSizeCBDesc.CPUAccessFlags = 0;
-	billboardGSSizeCBDesc.MiscFlags = 0;
-	billboardGSSizeCBDesc.StructureByteStride = 0;
-	billboardGSSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	billboardGSSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
+	D3D11_BUFFER_DESC billboardSizeCBDesc;
+	billboardSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	billboardSizeCBDesc.CPUAccessFlags = 0;
+	billboardSizeCBDesc.MiscFlags = 0;
+	billboardSizeCBDesc.StructureByteStride = 0;
+	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
 
 	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
 	D3D11_SUBRESOURCE_DATA initialBbSize;
 	initialBbSize.pSysMem = &billboardSize;
 
 	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&billboardGSSizeCBDesc, &initialBbSize, billboardGSSizeCB.GetAddressOf());
+		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, billboardSizeCB.GetAddressOf());
 
-	//// scanBucketSizeCB
+	// TODO
+	// scanBucketSizeCB
 	D3D11_BUFFER_DESC scanBucketSizeCBDesc;
 	scanBucketSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	scanBucketSizeCBDesc.CPUAccessFlags = 0;
@@ -159,16 +149,16 @@ void Game::createBillboard() {
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
 
-	ComPtr<ID3DBlob> firePixelShaderByteCode;
+	ComPtr<ID3DBlob> billboardPixelShaderByteCode;
 	Egg::Mesh::Shader::P billboardPixelShader;
 
 	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == Normal) {
-		firePixelShaderByteCode = loadShaderCode("psBillboardA.cso");
-		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardA.cso", device, firePixelShaderByteCode);
+		billboardPixelShaderByteCode = loadShaderCode("psBillboardA.cso");
+		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderByteCode);
 	}
 	if (billboardsLoadAlgorithm == SBuffer) {
-		firePixelShaderByteCode = loadShaderCode("psBillboardS.cso");
-		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardS.cso", device, firePixelShaderByteCode);
+		billboardPixelShaderByteCode = loadShaderCode("psBillboardS.cso");
+		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardS.cso", device, billboardPixelShaderByteCode);
 	}
 
 	ComPtr<ID3DBlob> billboardWithSBufferShaderByteCode = loadShaderCode("psBillboardWithSBuffer.cso");
@@ -180,11 +170,11 @@ void Game::createBillboard() {
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
-		billboardMaterial->setCb("billboardGSTransCB", billboardGSTransCB, Egg::Mesh::ShaderStageFlag::Geometry);
-		billboardMaterial->setCb("billboardGSSizeCB", billboardGSSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+		billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+		billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
-		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardVSNothing);
-		billboards = Egg::Mesh::Shaded::create(billboardVSNothing, billboardMaterial, billboardInputLayout);
+		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
+		billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
 	} 
 
 	// Binding - SBuffer
@@ -193,11 +183,11 @@ void Game::createBillboard() {
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
 		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShaderWithSbuffer);
-		billboardMaterial->setCb("billboardGSTransCB", billboardGSTransCB, Egg::Mesh::ShaderStageFlag::Geometry);
-		billboardMaterial->setCb("billboardGSSizeCB", billboardGSSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+		billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+		billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
-		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardVSNothing);
-		billboardsSBuffer = Egg::Mesh::Shaded::create(billboardVSNothing, billboardMaterial, billboardInputLayout);
+		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
+		billboardsSBuffer = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
 	}
 
 	// Create Start Offset Buffer
@@ -482,7 +472,7 @@ void Game::renderBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(billboardGSTransCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
 
 	if (billboardsLoadAlgorithm != Normal) {
@@ -504,7 +494,7 @@ void Game::renderBillboardWithSBuffer(Microsoft::WRL::ComPtr<ID3D11DeviceContext
 	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(billboardGSTransCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];

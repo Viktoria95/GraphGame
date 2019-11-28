@@ -24,6 +24,8 @@ private:
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> modelViewProjCB;
+
 	Egg::Mesh::InputBinder::P inputBinder;
 	BillboardsAlgorithm billboardsLoadAlgorithm;	
 
@@ -36,10 +38,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
 
 	// Billboard
-	Egg::Mesh::Nothing::P billboardVSNothing;	
-	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardGSTransCB;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardGSSizeCB;
-	Egg::Mesh::Shaded::P billboards, billboardsSBuffer;
+	Egg::Mesh::Nothing::P billboardNothing;	
+	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
+	Egg::Mesh::Shaded::P billboards;
+	Egg::Mesh::Shaded::P billboardsSBuffer;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> offsetUAV;
@@ -101,6 +103,8 @@ public:
 	bool processMessage(HWND hWnd,
 		UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+
+	void CreateCommon();
 	void CreateParticles();
 	void createBillboard();
 	void createMetaball();
