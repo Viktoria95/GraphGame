@@ -31,6 +31,9 @@
     <Filter Include="Shaders\PrefixSum">
       <UniqueIdentifier>{78655ae1-937a-472b-9c57-b6168bb66e6f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Common">
+      <UniqueIdentifier>{1f53272b-90f4-44b0-b566-a9cf7d38fdd2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -73,28 +76,13 @@
     <FxCompile Include="Shaders\csSimpleSortOdd.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psPrefixSum.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csPrefixSum.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csScanAddBucketResult.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csScanAddBucketResult2.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csScanBucketResult.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csScanBucketResult2.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPrefixSumF.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPrefixSumFAddBucket.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\psMetaballNormal.hlsl">
@@ -108,9 +96,6 @@
     </FxCompile>
     <FxCompile Include="Shaders\psBillboardA.hlsl">
       <Filter>Shaders\Billboard</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csScanBucketResult3.hlsl">
-      <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\psBillboardS1.hlsl">
       <Filter>Shaders\Billboard</Filter>
@@ -128,6 +113,9 @@
     </None>
     <None Include="Shaders\particle.hlsli">
       <Filter>Shaders\Particle</Filter>
+    </None>
+    <None Include="Shaders\window.hlsli">
+      <Filter>Shaders\Common</Filter>
     </None>
   </ItemGroup>
 </Project>

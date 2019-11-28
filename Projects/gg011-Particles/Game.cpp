@@ -27,9 +27,10 @@ HRESULT Game::createResources()
 {
 	CreateCommon();
 	CreateParticles();
-	createBillboard();
-	createPrefixSum();
-	createMetaball();
+	CreateBillboard();
+	CreatePrefixSum();
+	CreateEnviroment();
+	CreateMetaball();
 	createAnimation();
 
 	return S_OK;
@@ -43,7 +44,7 @@ void Game::CreateCommon()
 
 	billboardsLoadAlgorithm = SBuffer;
 
-	// billboardGSTransCB
+	// modelViewProjCB
 	D3D11_BUFFER_DESC modelViewProjCBDesc;
 	modelViewProjCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	modelViewProjCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
@@ -53,6 +54,17 @@ void Game::CreateCommon()
 	modelViewProjCBDesc.Usage = D3D11_USAGE_DEFAULT;
 	Egg::ThrowOnFail("Failed to create billboardGSTransCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&modelViewProjCBDesc, nullptr, modelViewProjCB.GetAddressOf());
+
+	// eyePosCB
+	D3D11_BUFFER_DESC eyePosCBDesc;
+	eyePosCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	eyePosCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
+	eyePosCBDesc.CPUAccessFlags = 0;
+	eyePosCBDesc.MiscFlags = 0;
+	eyePosCBDesc.StructureByteStride = 0;
+	eyePosCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create metaballPerFrameConstantBuffer.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&eyePosCBDesc, nullptr, eyePosCB.GetAddressOf());
 }
 
 void Game::CreateParticles()
@@ -103,7 +115,7 @@ void Game::CreateParticles()
 		device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
 }
 
-void Game::createBillboard() {
+void Game::CreateBillboard() {
 	using namespace Microsoft::WRL;
 
 	// Vertex Input
@@ -125,44 +137,12 @@ void Game::createBillboard() {
 	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, billboardSizeCB.GetAddressOf());
 
-	// TODO
-	// scanBucketSizeCB
-	D3D11_BUFFER_DESC scanBucketSizeCBDesc;
-	scanBucketSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	scanBucketSizeCBDesc.CPUAccessFlags = 0;
-	scanBucketSizeCBDesc.MiscFlags = 0;
-	scanBucketSizeCBDesc.StructureByteStride = 0;
-	scanBucketSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	scanBucketSizeCBDesc.ByteWidth = sizeof(Egg::Math::int1)*4;
-
-	Egg::Math::int1 scanSize(0);
-	D3D11_SUBRESOURCE_DATA initialScanSize;
-	initialScanSize.pSysMem = &scanSize;
-
-	Egg::ThrowOnFail("Failed to create scanBucketSizeCB.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&scanBucketSizeCBDesc, &initialScanSize, scanBucketSizeCB.GetAddressOf());
-
 	// Shaders
 	ComPtr<ID3DBlob> billboardVertexShaderByteCode = loadShaderCode("vsBillboard.cso");
 	Egg::Mesh::Shader::P billboardVertexShader = Egg::Mesh::Shader::create("vsBillboard.cso", device, billboardVertexShaderByteCode);
 
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
-
-	/*
-	ComPtr<ID3DBlob> billboardPixelShaderByteCode;
-	Egg::Mesh::Shader::P billboardPixelShader;
-
-	
-	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == Normal) {
-		billboardPixelShaderByteCode = loadShaderCode("psBillboardA.cso");
-		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderByteCode);
-	}
-	if (billboardsLoadAlgorithm == SBuffer) {
-		billboardPixelShaderByteCode = loadShaderCode("psBillboardS.cso");
-		billboardPixelShader = Egg::Mesh::Shader::create("psBillboardS.cso", device, billboardPixelShaderByteCode);
-	}
-	*/
 
 	ComPtr<ID3DBlob> billboardPixelShaderAByteCode = loadShaderCode("psBillboardA.cso");
 	billboardsPixelShaderA = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderAByteCode);
@@ -173,37 +153,19 @@ void Game::createBillboard() {
 	ComPtr<ID3DBlob> billboardsPixelShaderS2ByteCode = loadShaderCode("psBillboardS2.cso");
 	billboardsPixelShaderS2 = Egg::Mesh::Shader::create("psBillboardS2.cso", device, billboardsPixelShaderS2ByteCode);
 
-	ComPtr<ID3DBlob> billboardWithSBufferShaderByteCode = loadShaderCode("psBillboardWithSBuffer.cso");
-	Egg::Mesh::Shader::P billboardPixelShaderWithSbuffer = Egg::Mesh::Shader::create("psBillboardWithSBuffer.cso", device, billboardWithSBufferShaderByteCode);
 
-	// Binding - Normal, ABuffer
-	{
-		Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
-		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
-		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
-		//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
-		billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
-		billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
+	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
+	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
-		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
-		billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
-	} 
-	/*
-	// Binding - SBuffer
-	{
-		Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
-		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
-		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
-		billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShaderWithSbuffer);
-		billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
-		billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
+	billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
 
-		ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
-		billboardsSBuffer = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
-	}
-	*/
 
-	// Create Start Offset Buffer
+	// Create Offset Buffer
 	D3D11_BUFFER_DESC offsetBufferDesc;
 	ZeroMemory(&offsetBufferDesc, sizeof(D3D11_BUFFER_DESC));
 	offsetBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
@@ -212,16 +174,15 @@ void Game::createBillboard() {
 	offsetBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 	device->CreateBuffer(&offsetBufferDesc, NULL, &offsetBuffer);
 
-	// Create Fragment and Link buffer.
-	D3D11_BUFFER_DESC linkBufferDesc;
-	ZeroMemory(&linkBufferDesc, sizeof(D3D11_BUFFER_DESC));
-	linkBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	linkBufferDesc.StructureByteStride = sizeof(unsigned int) * 2;
-	linkBufferDesc.ByteWidth = windowHeight * windowWidth * linkbufferSizePerPixel * linkBufferDesc.StructureByteStride;
-	linkBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	device->CreateBuffer(&linkBufferDesc, NULL, &linkBuffer);
+	// Create Offset Buffer Shader Resource Views
+	D3D11_SHADER_RESOURCE_VIEW_DESC offsetSRVDesc;
+	offsetSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	offsetSRVDesc.Buffer.FirstElement = 0;
+	offsetSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+	offsetSRVDesc.Buffer.NumElements = windowWidth * windowHeight;
+	device->CreateShaderResourceView(offsetBuffer.Get(), &offsetSRVDesc, &offsetSRV);
 
-	// Create Unordered Access Views
+	// Create Offset Buffer Unordered Access Views
 	D3D11_UNORDERED_ACCESS_VIEW_DESC offsetUAVDesc;
 	offsetUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	offsetUAVDesc.Buffer.FirstElement = 0;
@@ -230,6 +191,25 @@ void Game::createBillboard() {
 	offsetUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(offsetBuffer.Get(), &offsetUAVDesc, &offsetUAV);
 
+
+	// Create Link Buffer.
+	D3D11_BUFFER_DESC linkBufferDesc;
+	ZeroMemory(&linkBufferDesc, sizeof(D3D11_BUFFER_DESC));
+	linkBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	linkBufferDesc.StructureByteStride = sizeof(unsigned int) * 2;
+	linkBufferDesc.ByteWidth = windowHeight * windowWidth * linkbufferSizePerPixel * linkBufferDesc.StructureByteStride;
+	linkBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	device->CreateBuffer(&linkBufferDesc, NULL, &linkBuffer);
+
+	// Create Link Buffer Shader Resource Views
+	D3D11_SHADER_RESOURCE_VIEW_DESC linkSRVDesc;
+	linkSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	linkSRVDesc.Buffer.FirstElement = 0;
+	linkSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	linkSRVDesc.Buffer.NumElements = windowWidth * windowHeight * linkbufferSizePerPixel;
+	device->CreateShaderResourceView(linkBuffer.Get(), &linkSRVDesc, &linkSRV);
+
+	// Create Link Buffer Unordered Access Views
 	D3D11_UNORDERED_ACCESS_VIEW_DESC linkUAVDesc;
 	linkUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	linkUAVDesc.Buffer.FirstElement = 0;
@@ -237,6 +217,73 @@ void Game::createBillboard() {
 	linkUAVDesc.Buffer.NumElements = windowHeight * windowWidth * linkbufferSizePerPixel;
 	linkUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
 	device->CreateUnorderedAccessView(linkBuffer.Get(), &linkUAVDesc, &linkUAV);
+
+
+	// Create id Buffer
+	D3D11_BUFFER_DESC idBufferDesc;
+	ZeroMemory(&idBufferDesc, sizeof(D3D11_BUFFER_DESC));
+	idBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	idBufferDesc.StructureByteStride = sizeof(unsigned int);
+	idBufferDesc.ByteWidth = windowHeight * windowWidth * sbufferSizePerPixel * idBufferDesc.StructureByteStride;
+	idBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	device->CreateBuffer(&idBufferDesc, NULL, &idBuffer);
+
+	// Create id Buffer Shader Resource Views
+	D3D11_SHADER_RESOURCE_VIEW_DESC idSRVDesc;
+	idSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	idSRVDesc.Buffer.FirstElement = 0;
+	idSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	idSRVDesc.Buffer.NumElements = windowWidth * windowHeight * sbufferSizePerPixel;
+	device->CreateShaderResourceView(idBuffer.Get(), &idSRVDesc, &idSRV);
+
+	// Create id Buffer Unordered Access Views
+	D3D11_UNORDERED_ACCESS_VIEW_DESC idUAVDesc;
+	idUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	idUAVDesc.Buffer.FirstElement = 0;
+	idUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	idUAVDesc.Buffer.NumElements = windowHeight * windowWidth * sbufferSizePerPixel;
+	idUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
+	device->CreateUnorderedAccessView(idBuffer.Get(), &idUAVDesc, &idUAV);
+
+
+	// Create Count Buffer
+	D3D11_BUFFER_DESC countBufferDesc;
+	ZeroMemory(&countBufferDesc, sizeof(D3D11_BUFFER_DESC));
+	countBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	countBufferDesc.StructureByteStride = sizeof(unsigned int);
+	countBufferDesc.ByteWidth = windowHeight * windowWidth * countBufferDesc.StructureByteStride;
+	countBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+	device->CreateBuffer(&countBufferDesc, NULL, &countBuffer);
+
+	// Create Count Buffer Unordered Access Views
+	D3D11_UNORDERED_ACCESS_VIEW_DESC countUAVDesc;
+	countUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	countUAVDesc.Buffer.FirstElement = 0;
+	countUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	countUAVDesc.Buffer.NumElements = windowHeight * windowWidth;
+	countUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+	device->CreateUnorderedAccessView(countBuffer.Get(), &countUAVDesc, &countUAV);
+}
+
+void Game::CreatePrefixSum() {
+	using namespace Microsoft::WRL;
+
+	// scanBucketSizeCB
+	D3D11_BUFFER_DESC scanBucketSizeCBDesc;
+	scanBucketSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	scanBucketSizeCBDesc.CPUAccessFlags = 0;
+	scanBucketSizeCBDesc.MiscFlags = 0;
+	scanBucketSizeCBDesc.StructureByteStride = 0;
+	scanBucketSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	scanBucketSizeCBDesc.ByteWidth = sizeof(Egg::Math::int1) * 4;
+
+	Egg::Math::int1 scanSize(0);
+	D3D11_SUBRESOURCE_DATA initialScanSize;
+	initialScanSize.pSysMem = &scanSize;
+
+	Egg::ThrowOnFail("Failed to create scanBucketSizeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&scanBucketSizeCBDesc, &initialScanSize, scanBucketSizeCB.GetAddressOf());
+
 
 	// Create Result Buffer
 	D3D11_BUFFER_DESC resultBufferDesc;
@@ -247,24 +294,6 @@ void Game::createBillboard() {
 	resultBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 	device->CreateBuffer(&resultBufferDesc, NULL, &resultBuffer);
 
-	// Create idBuffer buffer.
-	D3D11_BUFFER_DESC idBufferDesc;
-	ZeroMemory(&idBufferDesc, sizeof(D3D11_BUFFER_DESC));
-	idBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	idBufferDesc.StructureByteStride = sizeof(unsigned int);
-	idBufferDesc.ByteWidth = windowHeight * windowWidth * sbufferSizePerPixel * idBufferDesc.StructureByteStride;
-	idBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	device->CreateBuffer(&idBufferDesc, NULL, &idBuffer);
-
-	// Create Count buffer
-	D3D11_BUFFER_DESC countBufferDesc;
-	ZeroMemory(&countBufferDesc, sizeof(D3D11_BUFFER_DESC));
-	countBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	countBufferDesc.StructureByteStride = sizeof(unsigned int);
-	countBufferDesc.ByteWidth = windowHeight * windowWidth * countBufferDesc.StructureByteStride;
-	countBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-	device->CreateBuffer(&countBufferDesc, NULL, &countBuffer);
-
 	// Create Unordered Access Views
 	D3D11_UNORDERED_ACCESS_VIEW_DESC resultUAVDesc;
 	resultUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
@@ -274,96 +303,21 @@ void Game::createBillboard() {
 	resultUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(resultBuffer.Get(), &resultUAVDesc, &resultUAV);
 
-	D3D11_UNORDERED_ACCESS_VIEW_DESC countUAVDesc;
-	countUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	countUAVDesc.Buffer.FirstElement = 0;
-	countUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	countUAVDesc.Buffer.NumElements = windowHeight * windowWidth;
-	countUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-	device->CreateUnorderedAccessView(countBuffer.Get(), &countUAVDesc, &countUAV);
 
-	D3D11_UNORDERED_ACCESS_VIEW_DESC idUAVDesc;
-	idUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	idUAVDesc.Buffer.FirstElement = 0;
-	idUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	idUAVDesc.Buffer.NumElements = windowHeight * windowWidth * sbufferSizePerPixel;
-	idUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
-	device->CreateUnorderedAccessView(idBuffer.Get(), &idUAVDesc, &idUAV);
+	// Compute shaders
+	ComPtr<ID3DBlob> computeShaderByteCode = loadShaderCode("csPrefixSum.cso");
+	prefixSumComputeShader = Egg::Mesh::Shader::create("csPrefixSum.cso", device, computeShaderByteCode);
 
+	ComPtr<ID3DBlob> computeShaderByteCode2 = loadShaderCode("csScanBucketResult.cso");
+	prefixSumScanBucketResultShader = Egg::Mesh::Shader::create("csScanBucketResult.cso", device, computeShaderByteCode2);
+
+	ComPtr<ID3DBlob> computeShaderByteCode3 = loadShaderCode("csScanAddBucketResult.cso");
+	prefixSumScanAddBucketResultShader = Egg::Mesh::Shader::create("csScanAddBucketResult.cso", device, computeShaderByteCode3);
 }
 
-void Game::createMetaball() {
+void Game::CreateEnviroment ()
+{
 	using namespace Microsoft::WRL;
-
-	// Create Shader Resource Views
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC offsetSRVDesc;
-	offsetSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	offsetSRVDesc.Buffer.FirstElement = 0;
-	offsetSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-	offsetSRVDesc.Buffer.NumElements = windowWidth * windowHeight;
-	device->CreateShaderResourceView(offsetBuffer.Get(), &offsetSRVDesc, &offsetSRV);
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC linkSRVDesc;
-	linkSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	linkSRVDesc.Buffer.FirstElement = 0;
-	linkSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	linkSRVDesc.Buffer.NumElements = windowWidth * windowHeight * linkbufferSizePerPixel;
-	device->CreateShaderResourceView(linkBuffer.Get(), &linkSRVDesc, &linkSRV);
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC idSRVDesc;
-	idSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	idSRVDesc.Buffer.FirstElement = 0;
-	idSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	idSRVDesc.Buffer.NumElements = windowWidth * windowHeight * sbufferSizePerPixel;
-	device->CreateShaderResourceView(idBuffer.Get(), &idSRVDesc, &idSRV);
-	
-	// metaballVSTransCB
-	D3D11_BUFFER_DESC metaballVSTransCBDesc;
-	metaballVSTransCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	metaballVSTransCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
-	metaballVSTransCBDesc.CPUAccessFlags = 0;
-	metaballVSTransCBDesc.MiscFlags = 0;
-	metaballVSTransCBDesc.StructureByteStride = 0;
-	metaballVSTransCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	Egg::ThrowOnFail("Failed to create metaballPerObjectConstantBuffer.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&metaballVSTransCBDesc, nullptr, metaballVSTransCB.GetAddressOf());
-
-	// metaballPSEyePosCB
-	D3D11_BUFFER_DESC metaballPSEyePosCBDesc;
-	metaballPSEyePosCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	metaballPSEyePosCBDesc.ByteWidth = sizeof(Egg::Math::float4x4) * 4;
-	metaballPSEyePosCBDesc.CPUAccessFlags = 0;
-	metaballPSEyePosCBDesc.MiscFlags = 0;
-	metaballPSEyePosCBDesc.StructureByteStride = 0;
-	metaballPSEyePosCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	Egg::ThrowOnFail("Failed to create metaballPerFrameConstantBuffer.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&metaballPSEyePosCBDesc, nullptr, metaballPSEyePosCB.GetAddressOf());
-
-	// Shaders
-	Egg::Mesh::Geometry::P fullQuadGeometry = Egg::Mesh::Indexed::createQuad(device);
-
-	ComPtr<ID3DBlob> metaballVertexShaderByteCode = loadShaderCode("vsMetaball.cso");
-	Egg::Mesh::Shader::P backgroundVertexShader = Egg::Mesh::Shader::create("vsMetaball.cso", device, metaballVertexShaderByteCode);
-
-	ComPtr<ID3DBlob> metaballPixelShaderByteCode;
-	Egg::Mesh::Shader::P backgroundPixelShader;
-
-	if (billboardsLoadAlgorithm == 0) {
-		metaballPixelShaderByteCode = loadShaderCode("psMetaballNormal.cso");
-		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballNormal.cso", device, metaballPixelShaderByteCode);
-	}
-	if (billboardsLoadAlgorithm == 1) {
-		metaballPixelShaderByteCode = loadShaderCode("psMetaballABuffer.cso");
-		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballABuffer.cso", device, metaballPixelShaderByteCode);
-	}
-	if (billboardsLoadAlgorithm == 2) {
-		metaballPixelShaderByteCode = loadShaderCode("psMetaballSBuffer.cso");
-		backgroundPixelShader = Egg::Mesh::Shader::create("psMetaballSBuffer.cso", device, metaballPixelShaderByteCode);
-	}
-
-	ComPtr<ID3DBlob> prefixSumPixelShaderByteCode = loadShaderCode("psPrefixSum.cso");
-	Egg::Mesh::Shader::P prefixSumPixelShader = Egg::Mesh::Shader::create("psPrefixSum.cso", device, prefixSumPixelShaderByteCode);
 
 	//Environment texture
 	Microsoft::WRL::ComPtr<ID3D11Resource> envTexture;
@@ -372,35 +326,38 @@ void Game::createMetaball() {
 	Egg::ThrowOnFail("Could not create ENV.", __FILE__, __LINE__) ^
 		DirectX::CreateDDSTextureFromFile(device.Get(), envfile.c_str(), envTexture.GetAddressOf(), envSrv.GetAddressOf());
 
-	ComPtr<ID3D11SamplerState> ss;
-	CD3D11_SAMPLER_DESC ssDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
-	device->CreateSamplerState(&ssDesc, ss.GetAddressOf());
+	CD3D11_SAMPLER_DESC samplerStateDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+	device->CreateSamplerState(&samplerStateDesc, samplerState.GetAddressOf());
+}
 
-	// Binding
+void Game::CreateMetaball() {
+	using namespace Microsoft::WRL;
+
+	// Shaders
+	Egg::Mesh::Geometry::P fullQuadGeometry = Egg::Mesh::Indexed::createQuad(device);
+
+	ComPtr<ID3DBlob> metaballVertexShaderByteCode = loadShaderCode("vsMetaball.cso");
+	Egg::Mesh::Shader::P metaballVertexShader = Egg::Mesh::Shader::create("vsMetaball.cso", device, metaballVertexShaderByteCode);
+
+	ComPtr<ID3DBlob> metaballRealisticPixelShaderByteCode = loadShaderCode("psMetaBallNormal.cso");
+	metaballRealisticPixelShader = Egg::Mesh::Shader::create("psMetaBallNormal.cso", device, metaballRealisticPixelShaderByteCode);
+
+	ComPtr<ID3DBlob> metaballRealisticAPixelShaderByteCode = loadShaderCode("psMetaBallABuffer.cso");
+	metaballRealisticAPixelShader = Egg::Mesh::Shader::create("psMetaBallABuffer.cso", device, metaballRealisticAPixelShaderByteCode);
+
+	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBuffer.cso");
+	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBuffer.cso", device, metaballRealisticSPixelShaderByteCode);
+
 
 	Egg::Mesh::Material::P metaballMaterial = Egg::Mesh::Material::create();
-	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, backgroundVertexShader);
-	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, backgroundPixelShader);
-	metaballMaterial->setCb("metaballVSTransCB", metaballVSTransCB, Egg::Mesh::ShaderStageFlag::Vertex);
-	metaballMaterial->setCb("metaballPSEyePosCB", metaballPSEyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-	metaballMaterial->setSamplerState("ss", ss, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, metaballVertexShader);
+	//metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, backgroundPixelShader);
+	//metaballMaterial->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	//metaballMaterial->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	//metaballMaterial->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	ComPtr<ID3D11InputLayout>metaballInputLayout = inputBinder->getCompatibleInputLayout(metaballVertexShaderByteCode, fullQuadGeometry);
-	metaballMesh = Egg::Mesh::Shaded::create(fullQuadGeometry, metaballMaterial, metaballInputLayout);
-
-	// Binding - Prefix sum
-	/*{
-		Egg::Mesh::Material::P prefixSumMaterial = Egg::Mesh::Material::create();
-		prefixSumMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, backgroundVertexShader);
-		prefixSumMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, prefixSumPixelShader);
-		prefixSumMaterial->setCb("metaballVSTransCB", metaballVSTransCB, Egg::Mesh::ShaderStageFlag::Vertex);
-		prefixSumMaterial->setCb("metaballPSEyePosCB", metaballPSEyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-		prefixSumMaterial->setSamplerState("ss", ss, Egg::Mesh::ShaderStageFlag::Pixel);
-		prefixSumMaterial->setShaderResource("envTexture", envSrv, Egg::Mesh::ShaderStageFlag::Pixel);
-
-		ComPtr<ID3D11InputLayout>metaballInputLayout = inputBinder->getCompatibleInputLayout(metaballVertexShaderByteCode, fullQuadGeometry);
-		prefixSumMesh = Egg::Mesh::Shaded::create(fullQuadGeometry, prefixSumMaterial, metaballInputLayout);
-	}*/
+	metaballs = Egg::Mesh::Shaded::create(fullQuadGeometry, metaballMaterial, metaballInputLayout);
 }
 
 void Game::createAnimation() {
@@ -415,39 +372,6 @@ void Game::createAnimation() {
 
 	ComPtr<ID3DBlob>simpleSortOddShaderByteCode = loadShaderCode("csSimpleSortOdd.cso");
 	simpleSortOddShader = Egg::Mesh::Shader::create("csSimpleSortOdd.cso", device, simpleSortOddShaderByteCode);
-}
-
-void Game::createPrefixSum() {
-	using namespace Microsoft::WRL;
-
-	Egg::Mesh::Geometry::P fullQuadGeometry = Egg::Mesh::Indexed::createQuad(device);
-	
-	// Compute shaders
-	ComPtr<ID3DBlob> computeShaderByteCode = loadShaderCode("csPrefixSum.cso");
-	prefixSumComputeShader = Egg::Mesh::Shader::create("csPrefixSum.cso", device, computeShaderByteCode);
-
-	ComPtr<ID3DBlob> computeShaderByteCode2 = loadShaderCode("csScanBucketResult.cso");
-	prefixSumScanBucketResultShader = Egg::Mesh::Shader::create("csScanBucketResult.cso", device, computeShaderByteCode2);
-
-	ComPtr<ID3DBlob> computeShaderByteCode5 = loadShaderCode("csScanBucketResult2.cso");
-	prefixSumScanBucketResult2Shader = Egg::Mesh::Shader::create("csScanBucketResult2.cso", device, computeShaderByteCode5);
-
-	ComPtr<ID3DBlob> computeShaderByteCode6 = loadShaderCode("csScanBucketResult3.cso");
-	prefixSumScanBucketResult3Shader = Egg::Mesh::Shader::create("csScanBucketResult3.cso", device, computeShaderByteCode6);
-
-	ComPtr<ID3DBlob> computeShaderByteCode3 = loadShaderCode("csScanAddBucketResult.cso");
-	prefixSumScanAddBucketResultShader = Egg::Mesh::Shader::create("csScanAddBucketResult.cso", device, computeShaderByteCode3);
-
-	ComPtr<ID3DBlob> computeShaderByteCode4 = loadShaderCode("csScanAddBucketResult2.cso");
-	prefixSumScanAddBucketResult2Shader = Egg::Mesh::Shader::create("csScanAddBucketResult2.cso", device, computeShaderByteCode4);
-
-	if (billboardsLoadAlgorithm == SBufferFaster) {
-		ComPtr<ID3DBlob> computeShaderByteCode = loadShaderCode("csPrefixSumF.cso");
-		prefixSumFComputeShader = Egg::Mesh::Shader::create("csPrefixSumF.cso", device, computeShaderByteCode);
-
-		ComPtr<ID3DBlob> computeShaderByteCode2 = loadShaderCode("csPrefixSumFAddBucket.cso");
-		prefixSumFComputeShader2 = Egg::Mesh::Shader::create("csPrefixSumFAddBucket.cso", device, computeShaderByteCode2);
-	}
 }
 
 HRESULT Game::releaseResources()
@@ -549,11 +473,11 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(metaballVSTransCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	float4 perFrameVectors[1];
 	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
-	context->UpdateSubresource(metaballPSEyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
@@ -564,7 +488,35 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	if (billboardsLoadAlgorithm == SBuffer)
 		context->PSSetShaderResources(3, 1, idSRV.GetAddressOf());
 
-	metaballMesh->draw(context);
+	switch (billboardsLoadAlgorithm)
+	{
+		case Normal:
+		{
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticPixelShader);
+			break;
+		}
+		case ABuffer:
+		{
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticAPixelShader);
+			break;
+		}
+		case SBuffer:
+		{
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
+			break;
+		}
+		default:
+		{
+			throw("Mateball No Shader");
+			break;
+		}
+	}
+
+	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	metaballs->draw(context);
 }
 
 void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
@@ -585,38 +537,32 @@ void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(defaultParticleCount / 2 - 2, 1, 1);
 }
 
-void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
 	uint zeros[1] = { 0 };
 
-	if (billboardsLoadAlgorithm != SBufferFaster)
-	{
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumComputeShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
-		context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumComputeShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
+	context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
 
-		int loopCount = (int)ceil(((windowHeight*windowWidth) / 512.0) / 512.0);
+	int loopCount = (int)ceil(((windowHeight*windowWidth) / 512.0) / 512.0);
 	
-		for (int i = 0; i < loopCount; i++) {
-			context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResultShader->getShader().Get()), nullptr, 0);
-			context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
-			context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
-			Egg::Math::int1 sizeVector[1];
-			sizeVector[0] = i;
-			context->UpdateSubresource(scanBucketSizeCB.Get(), 0, nullptr, sizeVector, 0, 0);
-			context->CSSetConstantBuffers(0, 1, scanBucketSizeCB.GetAddressOf());
-			context->Dispatch(1, 1, 1);
-		}
-
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanAddBucketResultShader->getShader().Get()), nullptr, 0);
+	for (int i = 0; i < loopCount; i++)
+	{
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResultShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
 		context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
-		context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
+		Egg::Math::int1 sizeVector[1];
+		sizeVector[0] = i;
+		context->UpdateSubresource(scanBucketSizeCB.Get(), 0, nullptr, sizeVector, 0, 0);
+		context->CSSetConstantBuffers(0, 1, scanBucketSizeCB.GetAddressOf());
+		context->Dispatch(1, 1, 1);
 	}
-	if (billboardsLoadAlgorithm != SBufferFaster) { 
 
-		// TODO
-
-	}
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanAddBucketResultShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, resultUAV.GetAddressOf(), zeros);
+	context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
 
 	resultBuffer.Reset();
 }

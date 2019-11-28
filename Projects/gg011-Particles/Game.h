@@ -8,16 +8,9 @@
 #include "Particle.h"
 
 GG_SUBCLASS(Game, Egg::App)
-public:
-	
+public:	
 	static const unsigned int windowHeight = 720;
 	static const unsigned int windowWidth = 1280;
-
-	//static const unsigned int windowHeight = 593;
-	//static const unsigned int windowWidth = 1152;
-
-	//static const unsigned int windowHeight = 750;
-	//static const unsigned int windowWidth = 1000;
 
 private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferFaster };
@@ -25,68 +18,65 @@ private:
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> modelViewProjCB;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> eyePosCB;
 
 	Egg::Mesh::InputBinder::P inputBinder;
-	BillboardsAlgorithm billboardsLoadAlgorithm;	
+	BillboardsAlgorithm billboardsLoadAlgorithm;
 
-	// Environment
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> envSrv; 
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
 
+
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
+
 	Egg::Mesh::Shaded::P billboards;
 	Egg::Mesh::Shader::P billboardsPixelShaderA;
 	Egg::Mesh::Shader::P billboardsPixelShaderS1;
 	Egg::Mesh::Shader::P billboardsPixelShaderS2;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> offsetSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> offsetUAV;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> resultBuffer;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> resultUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> startBuffer;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> startUAV;
-
 	Microsoft::WRL::ComPtr<ID3D11Buffer> linkBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> linkSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> linkUAV;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBufferResult;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> offsetUAVResult;
-
 	Microsoft::WRL::ComPtr<ID3D11Buffer> idBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> idSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> idUAV;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> countBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> countUAV;
 
-	// Metaball
-	Egg::Mesh::Shaded::P metaballMesh;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballVSTransCB;
-	Microsoft::WRL::ComPtr<ID3D11Buffer >metaballPSEyePosCB;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> offsetSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> linkSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> idSRV;
 
 	// Prefix sum
-	Egg::Mesh::Shader::P prefixSumComputeShader;
-	Egg::Mesh::Shader::P prefixSumScanBucketResultShader;
-	Egg::Mesh::Shader::P prefixSumScanBucketResult2Shader;
-	Egg::Mesh::Shader::P prefixSumScanBucketResult3Shader;
-	Egg::Mesh::Shader::P prefixSumScanAddBucketResultShader;
-	Egg::Mesh::Shader::P prefixSumScanAddBucketResult2Shader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scanBucketSizeCB;
 
-	//PrefixSumFast
-	Egg::Mesh::Shader::P prefixSumFComputeShader;
-	Egg::Mesh::Shader::P prefixSumFComputeShader2;
-	Egg::Mesh::Shaded::P prefixSumMesh;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> resultBuffer;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> resultUAV;
+
+	Egg::Mesh::Shader::P prefixSumComputeShader;
+	Egg::Mesh::Shader::P prefixSumScanBucketResultShader;
+	Egg::Mesh::Shader::P prefixSumScanAddBucketResultShader;
+
+
+	// Environment
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> envSrv;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+
+
+	// Metaball
+	Egg::Mesh::Shaded::P metaballs;
+	Egg::Mesh::Shader::P metaballRealisticPixelShader;
+	Egg::Mesh::Shader::P metaballRealisticAPixelShader;
+	Egg::Mesh::Shader::P metaballRealisticSPixelShader;
+
 
 	// Animation
 	Egg::Mesh::Shader::P fluidSimulationShader;
@@ -108,10 +98,11 @@ public:
 
 	void CreateCommon();
 	void CreateParticles();
-	void createBillboard();
-	void createMetaball();
-	void createAnimation();
-	void createPrefixSum();
+	void CreateBillboard();
+	void CreatePrefixSum();
+	void CreateEnviroment();
+	void CreateMetaball();
+	void createAnimation();	
 	void createEnvironment();
 
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

@@ -1,5 +1,6 @@
 #include "metaball.hlsli"
 #include "particle.hlsli"
+#include "window.hlsli"
 
 SamplerState ss;
 TextureCube envTexture;
