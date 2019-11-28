@@ -41,7 +41,9 @@ private:
 	Egg::Mesh::Nothing::P billboardNothing;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
 	Egg::Mesh::Shaded::P billboards;
-	Egg::Mesh::Shaded::P billboardsSBuffer;
+	Egg::Mesh::Shader::P billboardsPixelShaderA;
+	Egg::Mesh::Shader::P billboardsPixelShaderS1;
+	Egg::Mesh::Shader::P billboardsPixelShaderS2;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> offsetUAV;
@@ -114,8 +116,11 @@ public:
 
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderBillboardWithSBuffer(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
+	void renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

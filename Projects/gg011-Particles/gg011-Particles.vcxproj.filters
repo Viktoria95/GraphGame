@@ -73,9 +73,6 @@
     <FxCompile Include="Shaders\csSimpleSortOdd.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psBillboardWithSBuffer.hlsl">
-      <Filter>Shaders\Billboard</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\psPrefixSum.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
@@ -112,11 +109,14 @@
     <FxCompile Include="Shaders\psBillboardA.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psBillboardS.hlsl">
-      <Filter>Shaders\Billboard</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csScanBucketResult3.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboardS1.hlsl">
+      <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboardS2.hlsl">
+      <Filter>Shaders\Billboard</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

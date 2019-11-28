@@ -4,7 +4,7 @@ RWByteAddressBuffer offsetBuffer;
 RWByteAddressBuffer countBuffer;
 RWStructuredBuffer<uint> idBuffer;
 
-void psBillboardWithSBuffer(GsosBillboard input)
+void psBillboardS2(GsosBillboard input)
 {
 	uint uIndex = (uint)input.pos.y * (uint)windowWidth + (uint)input.pos.x;
 
