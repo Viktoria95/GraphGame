@@ -28,17 +28,15 @@ private:
 	BillboardsAlgorithm billboardsLoadAlgorithm;	
 
 	// Environment
-	Egg::Mesh::Shaded::P backgroundMesh;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> perObjectConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> envSrv; 
 
 	// Particle
-	std::vector<Particle> particles;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
 
 	// Billboard
-	Egg::Mesh::Nothing::P billboardVSNothing;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> billboardVSParticleSRV;
+	Egg::Mesh::Nothing::P billboardVSNothing;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardGSTransCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardGSSizeCB;
 	Egg::Mesh::Shaded::P billboards, billboardsSBuffer;
@@ -66,7 +64,6 @@ private:
 
 	// Metaball
 	Egg::Mesh::Shaded::P metaballMesh;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metaballVSParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballVSTransCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer >metaballPSEyePosCB;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> offsetSRV;
@@ -88,7 +85,6 @@ private:
 	Egg::Mesh::Shaded::P prefixSumMesh;
 
 	// Animation
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> animationCSParticleUAV;
 	Egg::Mesh::Shader::P fluidSimulationShader;
 	Egg::Mesh::Shader::P simpleSortEvenShader;
 	Egg::Mesh::Shader::P simpleSortOddShader;
@@ -105,7 +101,7 @@ public:
 	bool processMessage(HWND hWnd,
 		UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	void createParticles();
+	void CreateParticles();
 	void createBillboard();
 	void createMetaball();
 	void createAnimation();
