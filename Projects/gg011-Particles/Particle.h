@@ -31,3 +31,10 @@ public:
 
 
 };
+
+class ControlParticle
+{
+	friend class Game;
+	Egg::Math::float3 position;
+	float temp;
+};

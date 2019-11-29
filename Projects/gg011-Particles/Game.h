@@ -14,6 +14,7 @@ public:
 
 private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferFaster };
+	enum RenderMode { Realistic, Gradient, ControlParticles };
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -22,12 +23,18 @@ private:
 
 	Egg::Mesh::InputBinder::P inputBinder;
 	BillboardsAlgorithm billboardsLoadAlgorithm;
+	RenderMode renderMode;
 
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
+
+	// Control Particle
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
 
 
 	// Billboard
@@ -80,8 +87,14 @@ private:
 
 	// Animation
 	Egg::Mesh::Shader::P fluidSimulationShader;
+	Egg::Mesh::Shader::P controlledFluidSimulationShader;
 	Egg::Mesh::Shader::P simpleSortEvenShader;
 	Egg::Mesh::Shader::P simpleSortOddShader;
+
+
+	// Debug
+	Egg::Mesh::Shader::P controlParticleBallPixelShader;
+
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
@@ -98,12 +111,14 @@ public:
 
 	void CreateCommon();
 	void CreateParticles();
+	void CreateControlParticles();
 	void CreateBillboard();
 	void CreatePrefixSum();
 	void CreateEnviroment();
 	void CreateMetaball();
-	void createAnimation();	
-	void createEnvironment();
+	void CreateAnimation();	
+	void CreateEnvironment();
+	void CreateDebug();
 
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
@@ -113,6 +128,7 @@ public:
 	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

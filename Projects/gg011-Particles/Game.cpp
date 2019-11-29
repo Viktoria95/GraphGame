@@ -12,6 +12,7 @@
 using namespace Egg::Math;
 
 const unsigned int defaultParticleCount = 1024;
+const unsigned int controlParticleCount = 1024;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
@@ -27,11 +28,13 @@ HRESULT Game::createResources()
 {
 	CreateCommon();
 	CreateParticles();
+	CreateControlParticles();
 	CreateBillboard();
 	CreatePrefixSum();
 	CreateEnviroment();
 	CreateMetaball();
-	createAnimation();
+	CreateAnimation();
+	CreateDebug();
 
 	return S_OK;
 }
@@ -43,6 +46,7 @@ void Game::CreateCommon()
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
 	billboardsLoadAlgorithm = SBuffer;
+	renderMode = Realistic;
 
 	// modelViewProjCB
 	D3D11_BUFFER_DESC modelViewProjCBDesc;
@@ -113,6 +117,64 @@ void Game::CreateParticles()
 
 	Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
 		device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
+}
+
+void Game::CreateControlParticles()
+{
+	std::vector<ControlParticle> controlParticles;
+
+	Assimp::Importer importer;
+	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
+
+	// Create Particles
+	for (int i = 0; i < controlParticleCount; i++)
+	{		
+		ControlParticle cp;
+		cp.position.x = assScene->mMeshes[0]->mVertices[i].x;
+		cp.position.y = assScene->mMeshes[0]->mVertices[i].y;
+		cp.position.z = assScene->mMeshes[0]->mVertices[i].z;
+		cp.position *= 0.0001;
+		cp.temp = 0.0f;
+		controlParticles.push_back(cp);
+	}
+
+	// Data Buffer
+	D3D11_BUFFER_DESC particleBufferDesc;
+	particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	particleBufferDesc.CPUAccessFlags = 0;
+	particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	particleBufferDesc.StructureByteStride = sizeof(ControlParticle);
+	particleBufferDesc.ByteWidth = controlParticleCount * sizeof(ControlParticle);
+
+	D3D11_SUBRESOURCE_DATA initialParticleData;
+	initialParticleData.pSysMem = &controlParticles.at(0);
+
+	Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&particleBufferDesc, &initialParticleData, controlParticleDataBuffer.GetAddressOf());
+
+
+	// Shader Resource View
+	D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+	particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	particleSRVDesc.Buffer.FirstElement = 0;
+	particleSRVDesc.Buffer.NumElements = controlParticleCount;
+
+	Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+		device->CreateShaderResourceView(controlParticleDataBuffer.Get(), &particleSRVDesc, &controlParticleSRV);
+
+
+	// Unordered Access View
+	D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+	particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	particleUAVDesc.Buffer.FirstElement = 0;
+	particleUAVDesc.Buffer.NumElements = controlParticleCount;
+	particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+	Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+		device->CreateUnorderedAccessView(controlParticleDataBuffer.Get(), &particleUAVDesc, &controlParticleUAV);
 }
 
 void Game::CreateBillboard() {
@@ -360,18 +422,28 @@ void Game::CreateMetaball() {
 	metaballs = Egg::Mesh::Shaded::create(fullQuadGeometry, metaballMaterial, metaballInputLayout);
 }
 
-void Game::createAnimation() {
+void Game::CreateAnimation() {
 	using namespace Microsoft::WRL;
 
-	// ComputeShader
 	ComPtr<ID3DBlob>fluidSimulationShaderByteCode = loadShaderCode("csFluidSimulation.cso");
 	fluidSimulationShader = Egg::Mesh::Shader::create("csFluidSimulation.cso", device, fluidSimulationShaderByteCode);
+
+	ComPtr<ID3DBlob> controlledFluidSimulationShaderByteCode = loadShaderCode("csControlledFluidSimulation.cso");
+	controlledFluidSimulationShader = Egg::Mesh::Shader::create("csControlledFluidSimulation.cso", device, controlledFluidSimulationShaderByteCode);	
 
 	ComPtr<ID3DBlob>simpleSortEvenShaderByteCode = loadShaderCode("csSimpleSortEven.cso");
 	simpleSortEvenShader = Egg::Mesh::Shader::create("csSimpleSortEven.cso", device, simpleSortEvenShaderByteCode);
 
 	ComPtr<ID3DBlob>simpleSortOddShaderByteCode = loadShaderCode("csSimpleSortOdd.cso");
 	simpleSortOddShader = Egg::Mesh::Shader::create("csSimpleSortOdd.cso", device, simpleSortOddShaderByteCode);
+}
+
+void Game::CreateDebug()
+{
+	using namespace Microsoft::WRL;
+
+	ComPtr<ID3DBlob>controlParticleBallPixelShaderByteCode = loadShaderCode("psControlParticleBall.cso");
+	controlParticleBallPixelShader = Egg::Mesh::Shader::create("psControlParticleBall.cso", device, controlParticleBallPixelShaderByteCode);
 }
 
 HRESULT Game::releaseResources()
@@ -519,6 +591,31 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	metaballs->draw(context);
 }
 
+void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = float4x4::identity;
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
+	context->PSSetShaderResources(1, 1, controlParticleSRV.GetAddressOf());
+
+	metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, controlParticleBallPixelShader);
+
+
+	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	metaballs->draw(context);
+}
+
 void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	uint zeros[2] = { 0, 0 };
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationShader->getShader().Get()), nullptr, 0);
@@ -573,31 +670,41 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
-	// Billboard
-	if (billboardsLoadAlgorithm == ABuffer)
+	if (renderMode == Realistic)
 	{
-		renderBillboardA(context);
+
+		// Billboard
+		if (billboardsLoadAlgorithm == ABuffer)
+		{
+			renderBillboardA(context);
+			clearContext(context);
+		}
+		else if (billboardsLoadAlgorithm == SBuffer)
+		{
+			renderBillboardS1(context);
+			clearContext(context);
+
+			renderPrefixSum(context);
+			clearContext(context);
+
+			// Clear count buffer
+			const UINT zeros[4] = { 0,0,0,0 };
+			context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
+
+			renderBillboardS2(context);
+			clearContext(context);
+		}
+
+		// Metaball
+		renderMetaball(context);
 		clearContext(context);
-	}	
-	else if (billboardsLoadAlgorithm == SBuffer)
+
+	}
+	else if (renderMode == ControlParticles)
 	{
-		renderBillboardS1(context);
-		clearContext(context);
-
-		renderPrefixSum(context);
-		clearContext(context);
-
-		// Clear count buffer
-		const UINT zeros[4] = { 0,0,0,0 };
-		context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
-
-		renderBillboardS2(context);
+		renderControlBalls(context);
 		clearContext(context);
 	}
-
-	// Metaball
-	renderMetaball(context);
-	clearContext(context);
 
 	// Animation
 	renderAnimation(context);
@@ -619,5 +726,30 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (!firstPersonCam) return false;
 	firstPersonCam->processMessage(hWnd, uMsg, wParam, lParam);
+
+	if (uMsg == WM_KEYDOWN)
+	{
+		if (wParam == '0')
+		{
+			billboardsLoadAlgorithm = Normal;
+			renderMode = Realistic;
+		}
+		else if (wParam == '1')
+		{
+			billboardsLoadAlgorithm = ABuffer;
+			renderMode = Realistic;
+		}
+		else if (wParam == '2')
+		{
+			billboardsLoadAlgorithm = SBuffer;
+			renderMode = Realistic;
+		}
+		else if (wParam == '3')
+		{
+			billboardsLoadAlgorithm = Normal;
+			renderMode = ControlParticles;
+		}
+	}
+
 	return false;
 }
