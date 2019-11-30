@@ -33,6 +33,23 @@ bool BallTest(float3 p)
 	return false;
 }
 
+float ParticleCount(float3 p)
+{
+	const float r = 0.005;
+	const float maxHitCOunt = 2;
+
+	float hitCount = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+		}
+	}
+
+	return hitCount/ maxHitCOunt;
+}
+
 float Index (float3 p)
 {
 	const float r = 0.005;
@@ -51,7 +68,84 @@ float Index (float3 p)
 	return index / hitCount / particleCount;
 }
 
-float3 Grad(float3 p) {
+float Zindex(float3 p)
+{
+	const float r = 0.005;
+	const float maxZindex = 1073741823;
+
+	float hitCount = 0;
+	float index = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+			index += particles[i].zindex;
+		}
+	}
+
+	return index / hitCount / maxZindex;
+}
+
+float Pressure(float3 p)
+{
+	const float r = 0.005;
+	const float maxPressure = 1000.0;
+
+	float hitCount = 0;
+	float pressure = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+			pressure += particles[i].pressure;
+		}
+	}
+
+	return pressure / hitCount / maxPressure;
+}
+
+float MassDensity(float3 p)
+{
+	const float r = 0.005;
+	const float maxMassDensity = 1000.0;
+
+	float hitCount = 0;
+	float massDensity = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+			massDensity += particles[i].massDensity;
+		}
+	}
+
+	return massDensity / hitCount / maxMassDensity;
+}
+
+float Speed(float3 p)
+{
+	const float r = 0.005;
+	const float maxSpeed = 10.0;
+
+	float hitCount = 0;
+	float speed = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+			speed += length(particles[i].velocity);
+		}
+	}
+
+	return speed / hitCount / maxSpeed;
+}
+
+float3 Grad(float3 p)
+{
 	float3 grad;
 	const float r = 0.005;
 
@@ -123,9 +217,29 @@ float4 psParticleBall(VsosQuad input) : SV_Target
 				{
 					return float4 (normalize(Grad(p)), 1.0);
 				}
-				else if (debugType == 1)
+				if (debugType == 1)
+				{
+					return float4 (ParticleCount(p), 0.0, 0.0, 1.0);
+				}
+				else if (debugType == 2)
 				{
 					return float4 (Index(p), 0.0, 0.0, 1.0);
+				}
+				else if (debugType == 3)
+				{
+					return float4 (Zindex(p), 0.0, 0.0, 1.0);
+				}
+				else if (debugType == 4)
+				{
+					return float4 (0.0, 0.0, Pressure(p), 1.0);
+				}
+				else if (debugType == 5)
+				{
+					return float4 (0.0, 0.0, MassDensity(p), 1.0);
+				}
+				else if (debugType == 6)
+				{
+					return float4 (0.0, Speed(p), 0.0, 1.0);
 				}
 				else
 				{

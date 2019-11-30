@@ -439,6 +439,9 @@ void Game::CreateAnimation() {
 
 	ComPtr<ID3DBlob>simpleSortOddShaderByteCode = loadShaderCode("csSimpleSortOdd.cso");
 	simpleSortOddShader = Egg::Mesh::Shader::create("csSimpleSortOdd.cso", device, simpleSortOddShaderByteCode);
+
+	ComPtr<ID3DBlob>mortonHashShaderByteCode = loadShaderCode("csMortonHash.cso");
+	mortonHashShader = Egg::Mesh::Shader::create("csMortonHash.cso", device, mortonHashShaderByteCode);
 }
 
 void Game::CreateDebug()
@@ -466,28 +469,6 @@ void Game::CreateDebug()
 
 	Egg::ThrowOnFail("Failed to create debugTypeCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&debugTypeCBDesc, &initialDebugTypeData, debugTypeCB.GetAddressOf());
-
-	/*
-	// Vertex Input
-	billboardNothing = Egg::Mesh::Nothing::create(defaultParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-
-	// billboardGSSizeCB
-	D3D11_BUFFER_DESC billboardSizeCBDesc;
-	billboardSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	billboardSizeCBDesc.CPUAccessFlags = 0;
-	billboardSizeCBDesc.MiscFlags = 0;
-	billboardSizeCBDesc.StructureByteStride = 0;
-	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
-	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
-
-	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
-	D3D11_SUBRESOURCE_DATA initialBbSize;
-	initialBbSize.pSysMem = &billboardSize;
-
-	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, billboardSizeCB.GetAddressOf());
-		*/
-
 }
 
 HRESULT Game::releaseResources()
@@ -709,6 +690,11 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 
 void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	uint zeros[2] = { 0, 0 };
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(mortonHashShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount, 1, 1);
+
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 	context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);

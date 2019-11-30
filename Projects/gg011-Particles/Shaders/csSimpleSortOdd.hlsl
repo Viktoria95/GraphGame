@@ -11,7 +11,7 @@ void csSimpleSortOdd(uint3 DTid : SV_GroupID)
 	unsigned int firstIdx = tid * 2;
 	unsigned int secondIdx = firstIdx + 1;
 
-	if (particles[firstIdx].position.x > particles[secondIdx].position.x)
+	if (particles[firstIdx].zindex > particles[secondIdx].zindex)
 	{
 		Particle temp = particles[firstIdx];
 		particles[firstIdx] = particles[secondIdx];

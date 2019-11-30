@@ -91,6 +91,7 @@ private:
 	Egg::Mesh::Shader::P controlledFluidSimulationShader;
 	Egg::Mesh::Shader::P simpleSortEvenShader;
 	Egg::Mesh::Shader::P simpleSortOddShader;
+	Egg::Mesh::Shader::P mortonHashShader;
 
 
 	// Debug
@@ -98,7 +99,7 @@ private:
 	Egg::Mesh::Shader::P particleBallPixelShader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> debugTypeCB;
 	uint debugType;
-	const uint maxDebugType = 3;
+	const uint maxDebugType = 7;
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
