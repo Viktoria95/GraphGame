@@ -188,7 +188,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	const float refractionIndex = 1.4f;
+	const float refractionIndex = 1.1f;
 	const float kappa = 0.01;
 
 	RayMarchHit stack[16];
@@ -203,8 +203,8 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 	float3 color = float3(0.0, 0.0, 0.0);
 	uint killer = 32;
-	[unroll (32)]
-	while (stackSize > 0 && killer > 0)
+	//[unroll (32)]
+	//while (stackSize > 0 && killer > 0)
 	{
 		killer--;
 
@@ -244,39 +244,54 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						marchHit = true;
 
 						float3 normal = normalize(-Grad(marchPos));
-
-						RayMarchHit reflectElem;
-						reflectElem.direction = reflect(marchDir, normal);
-						reflectElem.position = marchPos + normal * 0.1;
-						reflectElem.recursionDepth = marchRecursionDepth + 1;
-						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, refractionIndex, kappa);
-
-						if (reflectElem.alfa > 0.01)
-						{
-							stack[stackSize] = reflectElem;
-							stackSize++;
-						}
+						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.01, 0.0001);
+						//float fresnelAlfa = Fresnel(marchDir, normal, 1.0, 0.0);
+						//float fresnelAlfa = 0.0;
+						float reflectAlfa = fresnelAlfa * marchAlfa;
+						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
 						float3 refractDir = refract(marchDir, normal, refractionIndex);
 						if (length(refractDir) < 0.1)
 						{
-							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, refractionIndex, kappa)) * float3 (0.0, 1.0, 0.0);
+							return float4(reflectAlfa, refractAlfa, 1.0, 1.0);
 						}
 						else
 						{
-							RayMarchHit refractElem;
-							refractElem.direction = refractDir;
-							refractElem.position = marchPos - normal * 0.1;
-							refractElem.recursionDepth = marchRecursionDepth + 1;
-							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal, refractionIndex, kappa));
+							return float4(reflectAlfa, refractAlfa, 0.0, 1.0);
+						}
+						
 
-							if (refractElem.alfa > 0.01)
+						if (reflectAlfa > 0.01)
+						{
+							RayMarchHit reflectElem;
+							reflectElem.direction = reflect(marchDir, normal);
+							reflectElem.position = marchPos + normal * 0.1;
+							reflectElem.recursionDepth = marchRecursionDepth + 1;
+							reflectElem.alfa = reflectAlfa;
+
+							stack[stackSize] = reflectElem;
+							stackSize++;
+						}
+
+						if (refractAlfa > 0.01)
+						{
+							float3 refractDir = refract(marchDir, normal, refractionIndex);
+							if (length(refractDir) < 0.1)
 							{
+								color += refractAlfa * float3 (1.0, 0.0, 0.0);
+							}
+							else
+							{
+								RayMarchHit refractElem;
+								refractElem.direction = refractDir;
+								refractElem.position = marchPos - normal * 0.1;
+								refractElem.recursionDepth = marchRecursionDepth + 1;
+								refractElem.alfa = refractAlfa;
+
 								stack[stackSize] = refractElem;
 								stackSize++;
 							}
 						}
-
 					}
 				}
 				// From inside
@@ -304,7 +319,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
 						if (length(refractDir) < 0.1)
 						{
-							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0 / kappa)) * float3 (0.0, 1.0, 0.0);
+							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0 / kappa)) * float3 (0.0, 0.0, 1.0);
 						}
 						else
 						{
