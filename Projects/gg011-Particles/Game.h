@@ -13,8 +13,9 @@ public:
 	static const unsigned int windowWidth = 1280;
 
 private:
-	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferFaster };
-	enum RenderMode { Realistic, Gradient, ControlParticles };
+	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer };
+	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
+	enum FlowControl { RealisticFlow, ControlledFlow };
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -24,7 +25,7 @@ private:
 	Egg::Mesh::InputBinder::P inputBinder;
 	BillboardsAlgorithm billboardsLoadAlgorithm;
 	RenderMode renderMode;
-
+	FlowControl flowControl;
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
@@ -94,7 +95,10 @@ private:
 
 	// Debug
 	Egg::Mesh::Shader::P controlParticleBallPixelShader;
-
+	Egg::Mesh::Shader::P particleBallPixelShader;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> debugTypeCB;
+	uint debugType;
+	const uint maxDebugType = 3;
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
@@ -129,6 +133,7 @@ public:
 
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

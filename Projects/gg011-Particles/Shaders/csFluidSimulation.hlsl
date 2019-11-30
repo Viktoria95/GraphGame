@@ -206,6 +206,12 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 		particles[tid].velocity.y = 0.0;
 	}
 
+	if (particles[tid].position.y > boundaryTop)
+	{
+		particles[tid].position.y = boundaryTop;
+		particles[tid].velocity.y = 0.0;
+	}
+
 	if (particles[tid].position.z > boundarySide)
 	{
 		particles[tid].position.z = boundarySide;

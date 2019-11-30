@@ -112,6 +112,9 @@
     <FxCompile Include="Shaders\psControlParticleBall.hlsl">
       <Filter>Shaders\Debug</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\psParticleBall.hlsl">
+      <Filter>Shaders\Debug</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">

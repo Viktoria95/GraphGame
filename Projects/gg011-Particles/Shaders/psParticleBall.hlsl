@@ -10,15 +10,21 @@ cbuffer metaballPSEyePosCB
 	float4 eyePos;
 };
 
-StructuredBuffer<ControlParticle> controlParticles;
+cbuffer debugTypeCB
+{
+	uint debugType;
+	uint3 temp;
+};
+
+StructuredBuffer<Particle> particles;
 
 bool BallTest(float3 p)
 {
 	const float r = 0.005;
 
-	for (int i = 0; i < controlParticleCount; i++)
+	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(controlParticles[i].position)) < r)
+		if (length(p - float3(particles[i].position)) < r)
 		{
 			return true;
 		}
@@ -27,15 +33,33 @@ bool BallTest(float3 p)
 	return false;
 }
 
+float Index (float3 p)
+{
+	const float r = 0.005;
+
+	float hitCount = 0;
+	float index = 0;
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (length(p - float3(particles[i].position)) < r)
+		{
+			hitCount++;
+			index += i;
+		}
+	}
+
+	return index / hitCount / particleCount;
+}
+
 float3 Grad(float3 p) {
 	float3 grad;
 	const float r = 0.005;
 
-	for (int i = 0; i < controlParticleCount; i++) {
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(controlParticles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(controlParticles[i].position))));
-		grad.x += (weight * (p.x - controlParticles[i].position.x));
-		grad.y += (weight * (p.y - controlParticles[i].position.y));
-		grad.z += (weight * (p.z - controlParticles[i].position.z));
+	for (int i = 0; i < particleCount; i++) {
+		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
+		grad.x += (weight * (p.x - particles[i].position.x));
+		grad.y += (weight * (p.y - particles[i].position.y));
+		grad.z += (weight * (p.z - particles[i].position.z));
 	}
 
 	return grad;
@@ -62,7 +86,7 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 	tEnd = tMaxMin;
 }
 
-float4 psControlParticleBall(VsosQuad input) : SV_Target
+float4 psParticleBall(VsosQuad input) : SV_Target
 {
 	const int stepCount = 30;
 	const float boundarySideThreshold = boundarySide * 1.1;
@@ -95,7 +119,18 @@ float4 psControlParticleBall(VsosQuad input) : SV_Target
 		{
 			if (BallTest(p))
 			{
-				return float4 (normalize(Grad(p)), 1.0);
+				if (debugType == 0)
+				{
+					return float4 (normalize(Grad(p)), 1.0);
+				}
+				else if (debugType == 1)
+				{
+					return float4 (Index(p), 0.0, 0.0, 1.0);
+				}
+				else
+				{
+					return float4 (0.0, 0.0, 0.0, 1.0);
+				}				
 			}
 
 			p += step;
