@@ -7,6 +7,8 @@
 #include "Cam/FirstPerson.h"
 #include "Particle.h"
 
+#include <array>
+
 GG_SUBCLASS(Game, Egg::App)
 public:	
 	static const unsigned int windowHeight = 720;
@@ -92,6 +94,8 @@ private:
 	Egg::Mesh::Shader::P simpleSortEvenShader;
 	Egg::Mesh::Shader::P simpleSortOddShader;
 	Egg::Mesh::Shader::P mortonHashShader;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParamsCB;
+	std::array<float, 8> controlParams;
 
 
 	// Debug

@@ -36,7 +36,7 @@ bool BallTest(float3 p)
 float ParticleCount(float3 p)
 {
 	const float r = 0.005;
-	const float maxHitCOunt = 2;
+	const float maxHitCount = 2;
 
 	float hitCount = 0;
 	for (int i = 0; i < particleCount; i++)
@@ -47,7 +47,7 @@ float ParticleCount(float3 p)
 		}
 	}
 
-	return hitCount/ maxHitCOunt;
+	return hitCount/ maxHitCount;
 }
 
 float Index (float3 p)

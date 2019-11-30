@@ -5,6 +5,11 @@
 RWStructuredBuffer<Particle> particles;
 RWStructuredBuffer<ControlParticle> controlParticles;
 
+cbuffer controlParamsCB
+{
+	float4 controlParams[2];
+};
+
 #define pi 3.1415
 
 const float controlParticlePressure = -0.0001f;
@@ -214,9 +219,31 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		//sumForce = pressureForce + surfaceTensionForce + gravitationalForce;
 
 		//sumForce = pressureForce + viscosityForce + surfaceTensionForce + gravitationalForce + controlForce;
-		sumForce = pressureForce + viscosityForce + controlForce;
+		//sumForce = pressureForce + viscosityForce + controlForce;
 		//sumForce = pressureForce + viscosityForce + surfaceTensionForce;
 		//sumForce = pressureForce;
+
+		if (controlParams[0].x > 0.5)
+		{
+			sumForce += gravitationalForce;
+		}
+		if (controlParams[0].y >0.5)
+		{
+			sumForce += pressureForce;
+		}
+		if (controlParams[0].z > 0.5)
+		{
+			sumForce += viscosityForce;
+		}
+		if (controlParams[0].w > 0.5)
+		{
+			sumForce += surfaceTensionForce;
+		}
+		if (controlParams[1].x > 0.5)
+		{
+			sumForce += controlForce;
+		}
+
 	}
 
 	// V. Apply force

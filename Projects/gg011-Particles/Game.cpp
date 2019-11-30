@@ -442,6 +442,23 @@ void Game::CreateAnimation() {
 
 	ComPtr<ID3DBlob>mortonHashShaderByteCode = loadShaderCode("csMortonHash.cso");
 	mortonHashShader = Egg::Mesh::Shader::create("csMortonHash.cso", device, mortonHashShaderByteCode);
+
+	controlParams = { 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+	// debugTypeCB
+	D3D11_BUFFER_DESC controlParamsCBDesc;
+	controlParamsCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	controlParamsCBDesc.CPUAccessFlags = 0;
+	controlParamsCBDesc.MiscFlags = 0;
+	controlParamsCBDesc.StructureByteStride = 0;
+	controlParamsCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	controlParamsCBDesc.ByteWidth = sizeof(float) * 8;
+
+	D3D11_SUBRESOURCE_DATA initialControlParamsData;
+	initialControlParamsData.pSysMem = &controlParams[0];
+
+	Egg::ThrowOnFail("Failed to create debugTypeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&controlParamsCBDesc, &initialControlParamsData, controlParamsCB.GetAddressOf());
 }
 
 void Game::CreateDebug()
@@ -684,6 +701,9 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(controlledFluidSimulationShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 		context->CSSetUnorderedAccessViews(1, 1, controlParticleUAV.GetAddressOf(), zeros);
+		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
+		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
+		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
 		context->Dispatch(defaultParticleCount, 1, 1);
 	}	
 }
@@ -807,36 +827,100 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		if (wParam == '0')
 		{
-			billboardsLoadAlgorithm = Normal;
 			renderMode = Realistic;
+			if (billboardsLoadAlgorithm == Normal)
+			{
+				billboardsLoadAlgorithm = ABuffer;
+			}
+			else if (billboardsLoadAlgorithm == ABuffer)
+			{
+				billboardsLoadAlgorithm = SBuffer;
+			}
+			else if (billboardsLoadAlgorithm == SBuffer)
+			{
+				billboardsLoadAlgorithm = Normal;
+			}
 		}
 		else if (wParam == '1')
 		{
-			billboardsLoadAlgorithm = ABuffer;
-			renderMode = Realistic;
+			billboardsLoadAlgorithm = Normal;
+			if (renderMode != Particles)
+			{
+				renderMode = Particles;
+				debugType = 0;
+			}
+			else
+			{
+				debugType = (debugType + 1) % maxDebugType;
+			}
 		}
 		else if (wParam == '2')
 		{
-			billboardsLoadAlgorithm = SBuffer;
-			renderMode = Realistic;
-		}
+			billboardsLoadAlgorithm = Normal;
+			renderMode = ControlParticles;
+		}		
 		else if (wParam == '3')
 		{
-			billboardsLoadAlgorithm = Normal;
-			renderMode = Particles;
-		}		
+			flowControl = (FlowControl)((flowControl + 1) % 2);
+		}
 		else if (wParam == '4')
 		{
-			debugType = (debugType + 1) % maxDebugType;
+			if (controlParams[0] < 0.5)
+			{
+				controlParams[0] = 1.0;
+			}
+			else
+			{
+				controlParams[0] = 0.0;
+			}
 		}
 		else if (wParam == '5')
 		{
-			billboardsLoadAlgorithm = Normal;
-			renderMode = ControlParticles;
+			if (controlParams[1] < 0.5)
+			{
+				controlParams[1] = 1.0;
+			}
+			else
+			{
+				controlParams[1] = 0.0;
+			}
 		}
 		else if (wParam == '6')
 		{
-			flowControl = (FlowControl)((flowControl + 1) % 2);
+			if (controlParams[2] < 0.5)
+			{
+				controlParams[2] = 1.0;
+			}
+			else
+			{
+				controlParams[2] = 0.0;
+			}
+		}
+		else if (wParam == '7')
+		{
+			if (controlParams[3] < 0.5)
+			{
+				controlParams[3] = 1.0;
+			}
+			else
+			{
+				controlParams[3] = 0.0;
+			}
+		}
+		else if (wParam == '8')
+		{
+			if (controlParams[4] < 0.5)
+			{
+				controlParams[4] = 1.0;
+			}
+			else
+			{
+				controlParams[4] = 0.0;
+			}
+		}
+		else if (wParam == '9')
+		{
+
 		}
 	}
 
