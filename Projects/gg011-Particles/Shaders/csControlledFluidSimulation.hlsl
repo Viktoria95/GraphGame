@@ -158,6 +158,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		}
 
 		// IV.c SurfaceTension force
+		// IV.c SurfaceTension force
 		float3 surfaceTensionForce = float3(0.0, 0.0, 0.0);
 		{
 			float3 inwardSurfaceNormal = float3(0.0, 0.0, 0.0);
@@ -166,10 +167,11 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient (deltaPos, supportRadius);
+					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient(deltaPos, supportRadius);
 				}
 			}
 
+			uint tempCount = 0;
 			float surfaceTensionForceAmplitude = 0.0;
 			for (int i = 0; i < particleCount; i++)
 			{
@@ -177,9 +179,16 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
 					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius);
+					if (length(deltaPos) < supportRadius)
+					{
+						tempCount++;
+					}
 				}
 			}
-			surfaceTensionForce = -surfaceTension * normalize(inwardSurfaceNormal) * surfaceTensionForceAmplitude;
+			if (tempCount > 0)
+			{
+				surfaceTensionForce = -surfaceTension * normalize(inwardSurfaceNormal) * surfaceTensionForceAmplitude;
+			}
 		}
 
 		// IV.d Gravitational force
@@ -200,13 +209,22 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 			}
 		}
 
+		float controlAmplitude = length(controlForce);
+		if (controlAmplitude > 0.001)
+		{
+			controlForce *= 100000.0 / length(controlForce);
+		}
+
 		
 		//float3 controlForce = float3 (0.0f, 0.0f, 0.0f);
+		//controlForce = float3 (0.0f, 0.0f, 0.0f);
+		/*
 		for (int i = 0; i < controlParticleCount; i++)
 		{
 			float3 deltaPos = particles[tid].position - controlParticles[i].position;
 			controlForce -=  10.0f * deltaPos;
 		}
+		*/
 		
 
 		// IV.e sum forces
@@ -239,7 +257,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		{
 			sumForce += surfaceTensionForce;
 		}
-		if (controlParams[1].x > 0.5)
+		//if (controlParams[1].x > 0.5)
 		{
 			sumForce += controlForce;
 		}

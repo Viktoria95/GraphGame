@@ -162,16 +162,24 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 				}
 			}
 
+			uint tempCount = 0;
 			float surfaceTensionForceAmplitude = 0.0;
 			for (int i = 0; i < particleCount; i++)
 			{
 				if (i != tid)
-				{
+				{					
 					float3 deltaPos = particles[tid].position - particles[i].position;
 					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius);
+					if (length(deltaPos) < supportRadius)
+					{
+						tempCount++;
+					}
 				}
 			}
-			surfaceTensionForce = -surfaceTension * normalize(inwardSurfaceNormal) * surfaceTensionForceAmplitude;
+			if (tempCount > 0)
+			{
+				surfaceTensionForce = -surfaceTension * normalize(inwardSurfaceNormal) * surfaceTensionForceAmplitude;
+			}			
 		}
 
 		// IV.d Gravitational force
@@ -239,7 +247,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 	*/
 
 	const float boundaryEps = 0.0001;
-	const float boundaryVelDec = 0.98;
+	const float boundaryVelDec = 0.9;
 
 	if (particles[tid].position.y < boundaryBottom)
 	{

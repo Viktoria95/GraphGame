@@ -36,6 +36,9 @@ HRESULT Game::createResources()
 	CreateAnimation();
 	CreateDebug();
 
+	controlParams[5] = 1.0;
+	flowControl = ControlledFlow;
+
 	return S_OK;
 }
 

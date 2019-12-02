@@ -173,12 +173,25 @@ vec3 Fresnel(vec3 inDir, vec3 normal, vec3 n, vec3 kappa)
 }
 */
 
+/*
+
+float cosa = -dot(inDir, normal);
+vec3 one = vec3(1.0, 1.0, 1.0);
+vec3 F0 = ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa);
+return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
+
+
+((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa) + (1 - ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa)) * pow (1.0 - x, 0.5)
+*/
 float Fresnel(float3 inDir, float3 normal, float n, float kappa)
 {
 	float cosa = -dot(inDir, normal);
 	float one = 1.0;
 	float F0 = ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa);
-	return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
+	float fresnel = F0 + (one - F0) * pow(1.0 - cosa, 5.0);
+	float absDot = abs(dot(-inDir, normal)) +0.5;
+	return absDot;
+	return min (absDot, fresnel);
 }
 
 float4 psMetaballNormal(VsosQuad input) : SV_Target
@@ -188,7 +201,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	const float refractionIndex = 1.1f;
+	const float refractionIndex = 1.01f;
 	const float kappa = 0.01;
 
 	RayMarchHit stack[16];
@@ -244,20 +257,31 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						marchHit = true;
 
 						float3 normal = normalize(-Grad(marchPos));
-						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.01, 0.0001);
+						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.0 / refractionIndex, 0.0001);
 						//float fresnelAlfa = Fresnel(marchDir, normal, 1.0, 0.0);
 						//float fresnelAlfa = 0.0;
 						float reflectAlfa = fresnelAlfa * marchAlfa;
 						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
 						float3 refractDir = refract(marchDir, normal, refractionIndex);
-						if (length(refractDir) < 0.1)
+						if (length(refractDir) < 0.01)
 						{
-							return float4(reflectAlfa, refractAlfa, 1.0, 1.0);
+							//return float4(reflectAlfa, refractAlfa, 1.0, 1.0);
+							//return float4(reflectAlfa, 0.0, 1.0, 1.0);
+							if (refractAlfa > 0.01)
+							{
+								return float4(1.0, 0.0, 0.0, 1.0);
+							}
+							else
+							{
+								return float4(1.0, 1.0, 1.0, 1.0);
+							}
 						}
 						else
 						{
-							return float4(reflectAlfa, refractAlfa, 0.0, 1.0);
+							//return float4(reflectAlfa, refractAlfa, 0.0, 1.0);
+							//return float4(reflectAlfa, 0.0, 0.0, 1.0);
+							return float4(0.0, 0.0, 0.0, 1.0);
 						}
 						
 
