@@ -222,7 +222,7 @@ float Fresnel(float3 inDir, float3 normal, float n)
 
 float4 psMetaballNormal(VsosQuad input) : SV_Target
 {
-	const int stepCount = 30;
+	const int stepCount = 20;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
@@ -287,7 +287,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						float reflectAlfa = fresnelAlfa * marchAlfa;
 						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
-						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
+						float3 refractDir = refract(marchDir, normal, refractionIndex);
 
 						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
 						{
@@ -332,7 +332,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						float reflectAlfa = fresnelAlfa * marchAlfa;
 						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
-						float3 refractDir = refract(marchDir, normal, refractionIndex);
+						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
 
 						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
 						{
