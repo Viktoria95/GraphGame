@@ -183,6 +183,9 @@ return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
 
 ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa) + (1 - ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa)) * pow (1.0 - x, 0.5)
 */
+
+/* Metal*/
+/*
 float Fresnel(float3 inDir, float3 normal, float n, float kappa)
 {
 	float cosa = -dot(inDir, normal);
@@ -193,15 +196,38 @@ float Fresnel(float3 inDir, float3 normal, float n, float kappa)
 	return absDot;
 	return min (absDot, fresnel);
 }
+*/
+
+float Fresnel(float3 inDir, float3 normal, float n)
+{
+	float cosa = dot(-inDir, normal);
+	float sina = sqrt(1 - cosa * cosa);
+	float cosd = sqrt(1 - pow(sina / n, 2));
+	float Rs = pow((cosa - n * cosd) / (cosa + n * cosd), 2);
+	float Rp = pow((cosd - n * cosa) / (cosd +  n * cosa), 2);
+	float fresnel = (Rs + Rp) / 2.0f;
+	if (fresnel > 1.0)
+	{
+		return 1.0;
+	}
+	if (fresnel < 0.0)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return fresnel;
+	}
+}
 
 float4 psMetaballNormal(VsosQuad input) : SV_Target
 {
-	const int stepCount = 20;
+	const int stepCount = 30;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	const float refractionIndex = 1.01f;
+	const float refractionIndex = 1.5f;
 	const float kappa = 0.01;
 
 	RayMarchHit stack[16];
@@ -216,8 +242,8 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 	float3 color = float3(0.0, 0.0, 0.0);
 	uint killer = 32;
-	//[unroll (32)]
-	//while (stackSize > 0 && killer > 0)
+	[unroll (32)]
+	while (stackSize > 0 && killer > 0)
 	{
 		killer--;
 
@@ -257,33 +283,16 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						marchHit = true;
 
 						float3 normal = normalize(-Grad(marchPos));
-						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.0 / refractionIndex, 0.0001);
-						//float fresnelAlfa = Fresnel(marchDir, normal, 1.0, 0.0);
-						//float fresnelAlfa = 0.0;
+						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractionIndex);
 						float reflectAlfa = fresnelAlfa * marchAlfa;
 						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
-						float3 refractDir = refract(marchDir, normal, refractionIndex);
-						if (length(refractDir) < 0.01)
+						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
+
+						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
 						{
-							//return float4(reflectAlfa, refractAlfa, 1.0, 1.0);
-							//return float4(reflectAlfa, 0.0, 1.0, 1.0);
-							if (refractAlfa > 0.01)
-							{
-								return float4(1.0, 0.0, 0.0, 1.0);
-							}
-							else
-							{
-								return float4(1.0, 1.0, 1.0, 1.0);
-							}
+							return float4(1.0, 0.0, 0.0, 1.0);
 						}
-						else
-						{
-							//return float4(reflectAlfa, refractAlfa, 0.0, 1.0);
-							//return float4(reflectAlfa, 0.0, 0.0, 1.0);
-							return float4(0.0, 0.0, 0.0, 1.0);
-						}
-						
 
 						if (reflectAlfa > 0.01)
 						{
@@ -299,22 +308,14 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 						if (refractAlfa > 0.01)
 						{
-							float3 refractDir = refract(marchDir, normal, refractionIndex);
-							if (length(refractDir) < 0.1)
-							{
-								color += refractAlfa * float3 (1.0, 0.0, 0.0);
-							}
-							else
-							{
-								RayMarchHit refractElem;
-								refractElem.direction = refractDir;
-								refractElem.position = marchPos - normal * 0.1;
-								refractElem.recursionDepth = marchRecursionDepth + 1;
-								refractElem.alfa = refractAlfa;
+							RayMarchHit refractElem;
+							refractElem.direction = refractDir;
+							refractElem.position = marchPos - normal * 0.1;
+							refractElem.recursionDepth = marchRecursionDepth + 1;
+							refractElem.alfa = refractAlfa;
 
-								stack[stackSize] = refractElem;
-								stackSize++;
-							}
+							stack[stackSize] = refractElem;
+							stackSize++;
 						}
 					}
 				}
@@ -327,37 +328,39 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 						marchHit = true;
 
 						float3 normal = normalize(Grad(marchPos));
+						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.0 / refractionIndex);
+						float reflectAlfa = fresnelAlfa * marchAlfa;
+						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
 
-						RayMarchHit reflectElem;
-						reflectElem.direction = reflect(marchDir, normal);
-						reflectElem.position = marchPos + normal * 0.1;
-						reflectElem.recursionDepth = marchRecursionDepth + 1;
-						reflectElem.alfa = marchAlfa * Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0/ kappa);
+						float3 refractDir = refract(marchDir, normal, refractionIndex);
 
-						if (reflectElem.alfa > 0.01)
+						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
 						{
+							return float4(1.0, 0.0, 0.0, 1.0);
+						}
+
+						if (reflectAlfa > 0.01)
+						{
+							RayMarchHit reflectElem;
+							reflectElem.direction = reflect(marchDir, normal);
+							reflectElem.position = marchPos + normal * 0.1;
+							reflectElem.recursionDepth = marchRecursionDepth + 1;
+							reflectElem.alfa = reflectAlfa;
+
 							stack[stackSize] = reflectElem;
 							stackSize++;
-						}						
-
-						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
-						if (length(refractDir) < 0.1)
-						{
-							color += marchAlfa * (1.0 - Fresnel(marchDir, normal, 1.0 / refractionIndex, 1.0 / kappa)) * float3 (0.0, 0.0, 1.0);
 						}
-						else
+
+						if (refractAlfa > 0.01)
 						{
 							RayMarchHit refractElem;
 							refractElem.direction = refractDir;
 							refractElem.position = marchPos - normal * 0.1;
 							refractElem.recursionDepth = marchRecursionDepth + 1;
-							refractElem.alfa = marchAlfa * (1.0 - Fresnel(marchDir, normal,1.0/ refractionIndex, 1.0 / kappa));
+							refractElem.alfa = refractAlfa;
 
-							if (refractElem.alfa > 0.01)
-							{
-								stack[stackSize] = refractElem;
-								stackSize++;
-							}
+							stack[stackSize] = refractElem;
+							stackSize++;
 						}
 
 					}
@@ -379,7 +382,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 	if (killer == 0)
 	{
-		return float4 (1.0, 0.0, 0.0, 1.0);
+		//return float4 (1.0, 0.0, 0.0, 1.0);
 	}
 
 	return float4 (color, 1.0);

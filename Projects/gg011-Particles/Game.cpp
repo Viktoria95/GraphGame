@@ -36,8 +36,7 @@ HRESULT Game::createResources()
 	CreateAnimation();
 	CreateDebug();
 
-	controlParams[5] = 1.0;
-	flowControl = ControlledFlow;
+	//controlParams[5] = 1.0;
 
 	return S_OK;
 }
@@ -48,7 +47,7 @@ void Game::CreateCommon()
 
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
-	billboardsLoadAlgorithm = SBuffer;
+	billboardsLoadAlgorithm = ABuffer;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
 

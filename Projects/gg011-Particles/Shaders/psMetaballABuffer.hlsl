@@ -164,7 +164,7 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 
 float4 psMetaballABuffer(VsosQuad input) : SV_Target
 {
-	const int stepCount = 10;
+	const int stepCount = 30;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
