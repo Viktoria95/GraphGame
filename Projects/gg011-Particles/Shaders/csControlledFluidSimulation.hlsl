@@ -201,7 +201,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 			{
 				if (i != tid)
 				{
-					float3 deltaPos = particles[tid].position - controlParticles[i].position;
+					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
 					controlForce += ((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + 1.0)
 						* massPerParticle * pressureSmoothingKernelGradient(deltaPos, supportRadius);

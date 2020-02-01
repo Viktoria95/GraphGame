@@ -41,6 +41,44 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
+float3 RandColor(float3 p) {
+	const float r = 0.005;
+
+	for (int i = 0; i < controlParticleCount; i++)
+	{
+		if (length(p - float3(controlParticles[i].position)) < r)
+		{
+			int div = i % 6;
+			if (div == 0)
+			{
+				return float3 (1, 0, 0);
+			}
+			else if (div == 1)
+			{
+				return float3 (0, 1, 0);
+			}
+			else if (div == 2)
+			{
+				return float3 (0, 0, 1);
+			}
+			else if (div == 3)
+			{
+				return float3 (1, 1, 0);
+			}
+			else if (div == 4)
+			{
+				return float3 (1, 0, 1);
+			}
+			else if (div == 5)
+			{
+				return float3 (0, 1, 1);
+			}
+		}
+	}
+
+	return float3 (0,0,0);
+}
+
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
 	float3 invDirection = rcp(rayDir);
@@ -64,10 +102,10 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 
 float4 psControlParticleBall(VsosQuad input) : SV_Target
 {
-	const int stepCount = 30;
-	const float boundarySideThreshold = boundarySide * 1.1;
-	const float boundaryTopThreshold = boundaryTop * 1.1;
-	const float boundaryBottomThreshold = boundaryBottom * 1.1;
+	const int stepCount = 50;
+	const float boundarySideThreshold = boundarySide * 1.3;
+	const float boundaryTopThreshold = boundaryTop * 1.3;
+	const float boundaryBottomThreshold = boundaryBottom * 1.3;
 
 	float3 d = normalize(input.rayDir);
 	float3 p = eyePos;
@@ -84,24 +122,24 @@ float4 psControlParticleBall(VsosQuad input) : SV_Target
 		intersect,
 		tStart,
 		tEnd
-		);
+	);
 
 	if (intersect)
 	{
 		float3 step = d * (tEnd - tStart) / float(stepCount);
 		p += d * tStart;
 
-		for (int i = 0; i<stepCount; i++)
+		for (int i = -3; i<stepCount + 3; i++)
 		{
 			if (BallTest(p))
 			{
-				return float4 (normalize(Grad(p)), 1.0);
+				return float4 ((RandColor(p)), 1.0);
 			}
 
 			p += step;
 		}
 	}
-	return envTexture.Sample(ss, d);
+	return envTexture.Sample(ss, d) + float4(1, 1, 1, 0);
 
 }
 

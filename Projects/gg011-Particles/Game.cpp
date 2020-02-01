@@ -47,7 +47,7 @@ void Game::CreateCommon()
 
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
-	billboardsLoadAlgorithm = ABuffer;
+	billboardsLoadAlgorithm = Normal;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
 
@@ -911,18 +911,11 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '8')
 		{
-			if (controlParams[4] < 0.5)
-			{
-				controlParams[4] = 1.0;
-			}
-			else
-			{
-				controlParams[4] = 0.0;
-			}
+			controlParams[7] += 0.1;
 		}
 		else if (wParam == '9')
 		{
-
+			controlParams[7] -= 0.1;
 		}
 	}
 

@@ -185,6 +185,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 		// IV.d Gravitational force
 		float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0);
 
+
 		// IV.e sum forces
 		//sumForce = pressureForce + gravitationalForce;
 		//sumForce = gravitationalForce;
@@ -247,7 +248,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 	*/
 
 	const float boundaryEps = 0.0001;
-	const float boundaryVelDec = 0.9;
+	const float boundaryVelDec = 0.2;
 
 	if (particles[tid].position.y < boundaryBottom)
 	{

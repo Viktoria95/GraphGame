@@ -242,7 +242,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 	float3 color = float3(0.0, 0.0, 0.0);
 	uint killer = 32;
-	[unroll (32)]
+	[loop (32)]
 	while (stackSize > 0 && killer > 0)
 	{
 		killer--;
