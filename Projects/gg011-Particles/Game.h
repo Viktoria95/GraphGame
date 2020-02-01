@@ -18,6 +18,7 @@ private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
+	enum ControlParticlePlacement { Vertex, Render };
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -28,6 +29,7 @@ private:
 	BillboardsAlgorithm billboardsLoadAlgorithm;
 	RenderMode renderMode;
 	FlowControl flowControl;
+	ControlParticlePlacement controlParticlePlacement;
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
@@ -38,7 +40,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
-
+	Egg::Mesh::Shaded::P controlMesh;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	

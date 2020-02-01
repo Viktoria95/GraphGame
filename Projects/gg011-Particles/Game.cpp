@@ -50,6 +50,7 @@ void Game::CreateCommon()
 	billboardsLoadAlgorithm = Normal;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
+	controlParticlePlacement = Render;
 
 	debugType = 0;
 
@@ -126,22 +127,51 @@ void Game::CreateParticles()
 
 void Game::CreateControlParticles()
 {
+	using namespace Microsoft::WRL;
+
 	std::vector<ControlParticle> controlParticles;
 
 	Assimp::Importer importer;
+	
 	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe.obj"), 0);
 
-	// Create Particles
-	for (int i = 0; i < controlParticleCount; i++)
-	{		
-		ControlParticle cp;
-		cp.position.x = assScene->mMeshes[0]->mVertices[i].x;
-		cp.position.y = assScene->mMeshes[0]->mVertices[i].y;
-		cp.position.z = assScene->mMeshes[0]->mVertices[i].z;
-		cp.position *= 0.0002;
-		cp.temp = 0.0f;
-		controlParticles.push_back(cp);
+	//if (controlParticlePlacement == Vertex)
+	{
+		// Create Particles
+		for (int i = 0; i < controlParticleCount; i++)
+		{
+			ControlParticle cp;
+			cp.position.x = assScene->mMeshes[0]->mVertices[i].x;
+			cp.position.y = assScene->mMeshes[0]->mVertices[i].y;
+			cp.position.z = assScene->mMeshes[0]->mVertices[i].z;
+			cp.position *= 0.0002;
+			cp.temp = 0.0f;
+			controlParticles.push_back(cp);
+		}
 	}
+	//else 
+	if (controlParticlePlacement == Render)
+	{
+		Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[0]);
+
+		ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsTrafo.cso");
+		Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsTrafo.cso", device, vertexShaderByteCode);
+
+		ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
+		Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
+
+		Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+		material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+		material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+
+		ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+		controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
+
+
+	}
+	
 
 	// Data Buffer
 	D3D11_BUFFER_DESC particleBufferDesc;
@@ -164,7 +194,7 @@ void Game::CreateControlParticles()
 	particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	particleSRVDesc.Buffer.FirstElement = 0;
-	particleSRVDesc.Buffer.NumElements = controlParticleCount;
+	particleSRVDesc.Buffer.NumElements = controlParticles.size ();
 
 	Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
 		device->CreateShaderResourceView(controlParticleDataBuffer.Get(), &particleSRVDesc, &controlParticleSRV);
@@ -175,7 +205,7 @@ void Game::CreateControlParticles()
 	particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	particleUAVDesc.Buffer.FirstElement = 0;
-	particleUAVDesc.Buffer.NumElements = controlParticleCount;
+	particleUAVDesc.Buffer.NumElements = controlParticles.size ();
 	particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
 
 	Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
@@ -762,6 +792,23 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
+	
+
+	
+	if (controlParticlePlacement == Render)
+	{
+		float4x4 matrices[4];
+		matrices[0] = float4x4::identity;
+		matrices[1] = float4x4::identity;
+		matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+		matrices[3] = firstPersonCam->getViewDirMatrix();
+		context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+		controlMesh->draw(context);
+		clearContext(context);
+	}
+
+	
 	if (renderMode == Realistic)
 	{
 
@@ -803,7 +850,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		clearContext(context);
 	}
 	
-
+	
 	// Animation
 	renderAnimation(context);
 	clearContext(context);
@@ -811,6 +858,13 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	// Sort
 	renderSort(context);
 	clearContext(context);
+	
+	if (controlParticlePlacement == Render)
+	{
+		controlMesh->draw(context);
+		clearContext(context);
+	}
+
 }
 
 void Game::animate(double dt, double t)
