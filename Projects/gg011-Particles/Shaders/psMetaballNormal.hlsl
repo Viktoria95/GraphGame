@@ -15,12 +15,14 @@ StructuredBuffer<Particle> particles;
 bool MetaBallTest(float3 p)
 {
 	const float minToHit = 0.9;
-	const float r = 0.005;
+	const float r = 1.0/0.005;
 
 	float acc = 0.0;
 
 	for (int i = 0; i < particleCount; i++) {
-		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
+		float3 diff = p - particles[i].position;
+
+		acc += 1.0 / (dot(diff, diff) * r * r);
 		if (acc > minToHit)
 		{
 			return true;
@@ -47,13 +49,13 @@ bool BallTest(float3 p)
 
 float3 Grad(float3 p) {
 	float3 grad;
-	const float r = 0.005;
+	const float r = 1.0/0.005;
 
 	for (int i = 0; i < particleCount; i++) {
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
-		grad.x += (weight * (p.x - particles[i].position.x));
-		grad.y += (weight * (p.y - particles[i].position.y));
-		grad.z += (weight * (p.z - particles[i].position.z));
+		float3 diff = p - particles[i].position;
+		float s2 = dot(diff, diff) * r * r;
+		float s4 = s2*s2;
+		grad += diff * -2.0 / s4;
 	}
 
 	return grad;
@@ -200,24 +202,17 @@ float Fresnel(float3 inDir, float3 normal, float n, float kappa)
 
 float Fresnel(float3 inDir, float3 normal, float n)
 {
-	float cosa = dot(-inDir, normal);
-	float sina = sqrt(1 - cosa * cosa);
-	float cosd = sqrt(1 - pow(sina / n, 2));
-	float Rs = pow((cosa - n * cosd) / (cosa + n * cosd), 2);
-	float Rp = pow((cosd - n * cosa) / (cosd +  n * cosa), 2);
+	float cosa = abs(dot(-inDir, normal));	// 1
+	float sina = sqrt(1 - cosa * cosa);		// 0
+	float disc = 1 - sina * sina / (n*n);	// 1
+	if (disc < 0) return 1;
+	float cosd = sqrt(disc);				// 1
+	float Rs = (cosa - n * cosd) / (cosa + n * cosd); // -0.2/2.2
+	Rs *= Rs;
+	float Rp = (cosd - n * cosa) / (cosd +  n * cosa);
+	Rp *= Rp;
 	float fresnel = (Rs + Rp) / 2.0f;
-	if (fresnel > 1.0)
-	{
-		return 1.0;
-	}
-	if (fresnel < 0.0)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return fresnel;
-	}
+	return saturate(fresnel);
 }
 
 float4 psMetaballNormal(VsosQuad input) : SV_Target
@@ -227,8 +222,8 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	const float refractionIndex = 1.5f;
-	const float kappa = 0.01;
+	//const float refractionIndex = 1.5f;
+	//const float kappa = 0.01;
 
 	RayMarchHit stack[16];
 	uint stackSize = 1;
@@ -241,8 +236,8 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 	stack[0] = firstElem;
 
 	float3 color = float3(0.0, 0.0, 0.0);
-	uint killer = 32;
-	[loop (32)]
+	uint killer = 10;
+	[loop]
 	while (stackSize > 0 && killer > 0)
 	{
 		killer--;
@@ -251,7 +246,7 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 		float3 marchPos = stack[stackSize].position;
 		float3 marchDir = stack[stackSize].direction;
 		uint marchRecursionDepth = stack[stackSize].recursionDepth;
-		float marchAlfa = stack[stackSize].alfa;;
+		float marchAlfa = stack[stackSize].alfa;
 
 		bool intersect;
 		float tStart;
@@ -267,102 +262,59 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 			tEnd
 		);
 
-		if (intersect)
+		if (intersect && marchRecursionDepth < 4)
 		{
+			bool startedInside = MetaBallTest(marchPos);
 			float3 marchStep = marchDir * (tEnd - tStart) / float(stepCount);
 			marchPos += marchDir * tStart;
 
 			bool marchHit = false;
 			for (int i = 0; i<stepCount && !marchHit; i++)
 			{
-				// From outside
-				if (marchRecursionDepth % 2 == 0)
+				bool inside = MetaBallTest(marchPos);
+				if (inside && !startedInside || !inside && startedInside)
 				{
-					if (MetaBallTest(marchPos))
-					{
-						marchHit = true;
+					marchHit = true;
 
-						float3 normal = normalize(-Grad(marchPos));
-						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractionIndex);
-						float reflectAlfa = fresnelAlfa * marchAlfa;
-						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
-
-						float3 refractDir = refract(marchDir, normal, refractionIndex);
-
-						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
-						{
-							return float4(1.0, 0.0, 0.0, 1.0);
-						}
-
-						if (reflectAlfa > 0.01)
-						{
-							RayMarchHit reflectElem;
-							reflectElem.direction = reflect(marchDir, normal);
-							reflectElem.position = marchPos + normal * 0.1;
-							reflectElem.recursionDepth = marchRecursionDepth + 1;
-							reflectElem.alfa = reflectAlfa;
-
-							stack[stackSize] = reflectElem;
-							stackSize++;
-						}
-
-						if (refractAlfa > 0.01)
-						{
-							RayMarchHit refractElem;
-							refractElem.direction = refractDir;
-							refractElem.position = marchPos - normal * 0.1;
-							refractElem.recursionDepth = marchRecursionDepth + 1;
-							refractElem.alfa = refractAlfa;
-
-							stack[stackSize] = refractElem;
-							stackSize++;
-						}
+					float3 normal = normalize(-Grad(marchPos));
+					float refractiveIndex = 1.4;
+					if (dot(normal, marchDir) > 0) {
+						normal = -normal;
+						refractiveIndex = 1.0 / refractiveIndex;
 					}
-				}
-				// From inside
-				else 
-				{
-					//color += marchAlfa * float3 (0.0, 0.0, 1.0);
-					if (!MetaBallTest(marchPos))
+					float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
+					float reflectAlfa = fresnelAlfa * marchAlfa;
+					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
+
+					float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
+					
+					//if (length(refractDir) < 0.01 && refractAlfa > 0.01)
+					//{
+					//	return float4(1.0, 0.0, 0.0, 1.0);
+					//}
+
+					if (reflectAlfa > 0.01)
 					{
-						marchHit = true;
+						RayMarchHit reflectElem;
+						reflectElem.direction = reflect(marchDir, normal);
+						reflectElem.position = marchPos + normal * 0.1;
+						reflectElem.recursionDepth = marchRecursionDepth + 1;
+						reflectElem.alfa =  reflectAlfa;
+					
+						stack[stackSize] = reflectElem;
+						stackSize++;
+					}
 
-						float3 normal = normalize(Grad(marchPos));
-						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), 1.0 / refractionIndex);
-						float reflectAlfa = fresnelAlfa * marchAlfa;
-						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
+					if (refractAlfa > 0.01)
+					{
+						RayMarchHit refractElem;
+						refractElem.direction = refractDir;
+						refractElem.position = marchPos;// -normal * marchStep * 2.0;
+						refractElem.recursionDepth = marchRecursionDepth + 1;
+						refractElem.alfa = refractAlfa;
 
-						float3 refractDir = refract(marchDir, normal, 1.0 / refractionIndex);
-
-						if (length(refractDir) < 0.01 && refractAlfa > 0.01)
-						{
-							return float4(1.0, 0.0, 0.0, 1.0);
-						}
-
-						if (reflectAlfa > 0.01)
-						{
-							RayMarchHit reflectElem;
-							reflectElem.direction = reflect(marchDir, normal);
-							reflectElem.position = marchPos + normal * 0.1;
-							reflectElem.recursionDepth = marchRecursionDepth + 1;
-							reflectElem.alfa = reflectAlfa;
-
-							stack[stackSize] = reflectElem;
-							stackSize++;
-						}
-
-						if (refractAlfa > 0.01)
-						{
-							RayMarchHit refractElem;
-							refractElem.direction = refractDir;
-							refractElem.position = marchPos - normal * 0.1;
-							refractElem.recursionDepth = marchRecursionDepth + 1;
-							refractElem.alfa = refractAlfa;
-
-							stack[stackSize] = refractElem;
-							stackSize++;
-						}
-
+						stack[stackSize] = refractElem;
+						stackSize++;
 					}
 				}
 			
@@ -371,12 +323,13 @@ float4 psMetaballNormal(VsosQuad input) : SV_Target
 
 			if (!marchHit)
 			{
-				color += envTexture.Sample(ss, marchDir) * marchAlfa;
+				//color += float4(1, 1, 1, 1)/*envTexture.Sample(ss, marchDir)*/ * marchAlfa;
+				color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
 			}
 		}
 		else
 		{
-			color += envTexture.Sample(ss, marchDir)  * marchAlfa;
+			color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
 		}
 	}
 
