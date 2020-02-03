@@ -165,6 +165,7 @@ void Game::CreateControlParticles()
 		material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
 		material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
 		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 
 		ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
 		controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
@@ -436,15 +437,23 @@ void Game::CreateMetaball() {
 	ComPtr<ID3DBlob> metaballVertexShaderByteCode = loadShaderCode("vsMetaball.cso");
 	Egg::Mesh::Shader::P metaballVertexShader = Egg::Mesh::Shader::create("vsMetaball.cso", device, metaballVertexShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticPixelShaderByteCode = loadShaderCode("psMetaBallNormal.cso");
-	metaballRealisticPixelShader = Egg::Mesh::Shader::create("psMetaBallNormal.cso", device, metaballRealisticPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticPixelShaderByteCode = loadShaderCode("psMetaBallNormalRealistic.cso");
+	metaballRealisticPixelShader = Egg::Mesh::Shader::create("psMetaBallNormalRealistic.cso", device, metaballRealisticPixelShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticAPixelShaderByteCode = loadShaderCode("psMetaBallABuffer.cso");
-	metaballRealisticAPixelShader = Egg::Mesh::Shader::create("psMetaBallABuffer.cso", device, metaballRealisticAPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticAPixelShaderByteCode = loadShaderCode("psMetaballABufferRealistic.cso");
+	metaballRealisticAPixelShader = Egg::Mesh::Shader::create("psMetaballABufferRealistic.cso", device, metaballRealisticAPixelShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBuffer.cso");
-	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBuffer.cso", device, metaballRealisticSPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferRealistic.cso");
+	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferRealistic.cso", device, metaballRealisticSPixelShaderByteCode);
 
+	ComPtr<ID3DBlob> metaballGradientPixelShaderByteCode = loadShaderCode("psMetaBallNormalGradient.cso");
+	metaballGradientPixelShader = Egg::Mesh::Shader::create("psMetaBallNormalGradient.cso", device, metaballGradientPixelShaderByteCode);
+
+	ComPtr<ID3DBlob> metaballGradientAPixelShaderByteCode = loadShaderCode("psMetaballABufferGradient.cso");
+	metaballGradientAPixelShader = Egg::Mesh::Shader::create("psMetaballABufferGradient.cso", device, metaballGradientAPixelShaderByteCode);
+
+	ComPtr<ID3DBlob> metaballGradientSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferGradient.cso");
+	metaballGradientSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferGradient.cso", device, metaballGradientSPixelShaderByteCode);
 
 	Egg::Mesh::Material::P metaballMaterial = Egg::Mesh::Material::create();
 	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, metaballVertexShader);
@@ -550,7 +559,7 @@ void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -575,7 +584,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -595,7 +604,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -616,7 +625,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -624,6 +633,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4 perFrameVectors[1];
 	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
@@ -638,17 +648,26 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	{
 		case Normal:
 		{
-			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticPixelShader);
+			if (renderMode == Realistic)
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticPixelShader);
+			else 
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientPixelShader);
 			break;
 		}
 		case ABuffer:
 		{
-			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticAPixelShader);
+			if (renderMode == Realistic)
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticAPixelShader);
+			else 
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientAPixelShader);
 			break;
 		}
 		case SBuffer:
 		{
-			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
+			if (renderMode == Realistic)
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
+			else
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientSPixelShader);
 			break;
 		}
 		default:
@@ -660,6 +679,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
@@ -685,6 +705,7 @@ void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> contex
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
@@ -693,7 +714,7 @@ void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> contex
 void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -710,6 +731,7 @@ void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setCb("debugTypeCB", debugTypeCB, Egg::Mesh::ShaderStageFlag::Pixel);
 
@@ -809,7 +831,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	}
 
 	
-	if (renderMode == Realistic)
+	if (renderMode == Realistic || renderMode == Gradient)
 	{
 
 		// Billboard
@@ -881,9 +903,16 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	if (uMsg == WM_KEYDOWN)
 	{
-		if (wParam == '0')
+		if (wParam == 'G')
+		{
+			renderMode = Gradient;
+		}
+		else if (wParam == 'R')
 		{
 			renderMode = Realistic;
+		}
+		else if (wParam == '0')
+		{
 			if (billboardsLoadAlgorithm == Normal)
 			{
 				billboardsLoadAlgorithm = ABuffer;

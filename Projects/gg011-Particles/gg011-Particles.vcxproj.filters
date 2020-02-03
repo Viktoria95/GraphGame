@@ -88,15 +88,6 @@
     <FxCompile Include="Shaders\csScanBucketResult.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaballNormal.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballABuffer.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballSBuffer.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\psBillboardA.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
@@ -123,6 +114,24 @@
     </FxCompile>
     <FxCompile Include="Shaders\vsTrafo.hlsl">
       <Filter>Shaders\Common</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballNormalRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballNormalGradient.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballABufferRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballSBufferRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballABufferGradient.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballSBufferGradient.hlsl">
+      <Filter>Shaders\Metaball</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

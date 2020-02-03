@@ -10,33 +10,35 @@ cbuffer metaballPSEyePosCB
 	float4 eyePos;
 };
 
+cbuffer metaballVSTransCB {
+	row_major float4x4 modelMatrix;
+	row_major float4x4 modelViewProjMatrixInverse;
+	row_major float4x4 modelViewProjMatrix;
+	row_major float4x4 rayDirMatrix;
+};
+
 StructuredBuffer<Particle> particles;
 Buffer<uint> offsetBuffer;
-StructuredBuffer<uint> idBuffer;
+StructuredBuffer<uint2> linkBuffer;
 
-bool MetaBallTest_SBuffer(float3 p, float4 pos) {
-	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
-
-	uint startIdx;
-	if (uIndex > 0) {
-		startIdx = offsetBuffer[uIndex - 1];
-	}
-	else
-	{
-		startIdx = 0;
-	}
-
-	uint endIdx = offsetBuffer[uIndex];
-	
+bool MetaBallTest_ABuffer(float3 p, float4 pos)
+{
 	const float minToHit = 1.0;
 	const float r = 0.005;
 
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint offset = offsetBuffer[uIndex];
+
 	float acc = 0.0;
 
-	for (uint i = startIdx; i < endIdx; i++) {
-		uint j = idBuffer[i];
+	while (offset != 0)
+	{
+		uint2 element = linkBuffer[offset];
+		offset = element.x;
+		int i = element.y;
 
-		acc += pow((length(p - float3(particles[j].position)) / r), -2.0);
+		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
 		if (acc > minToHit)
 		{
 			return true;
@@ -46,13 +48,16 @@ bool MetaBallTest_SBuffer(float3 p, float4 pos) {
 	return false;
 }
 
-bool BallTest(float3 p)
+bool MetaBallTest(float3 p)
 {
+	const float minToHit = 0.9;
 	const float r = 0.005;
 
-	for (int i = 0; i < particleCount; i++)
-	{
-		if (length(p - float3(particles[i].position)) < r)
+	float acc = 1.0;
+
+	for (int i = 0; i < particleCount; i++) {
+		acc += pow((length(p - float3(particles[i].position)) / r), -2.0);
+		if (acc > minToHit)
 		{
 			return true;
 		}
@@ -61,29 +66,26 @@ bool BallTest(float3 p)
 	return false;
 }
 
-float3 Grad_SBuffer(float3 p, float4 pos) {
-	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
-
-	uint startIdx;
-	if (uIndex > 0) {
-		startIdx = offsetBuffer[uIndex - 1];
-	}
-	else
-	{
-		startIdx = 0;
-	}
-
-	uint endIdx = offsetBuffer[uIndex];
-
+float3 Grad_ABuffer(float3 p, float4 pos)
+{
 	float3 grad;
 	const float r = 0.005;
 
-	for (int i = startIdx; i < endIdx; i++) {
-		uint j = idBuffer[i];
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[j].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[j].position))));
-		grad.x += (weight * (p.x - particles[j].position.x));
-		grad.y += (weight * (p.y - particles[j].position.y));
-		grad.z += (weight * (p.z - particles[j].position.z));
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint offset = offsetBuffer[uIndex];
+
+	while (offset != 0)
+	{
+		uint2 element = linkBuffer[offset];
+		offset = element.x;
+		int i = element.y;
+
+		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(particles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(particles[i].position))));
+		grad.x += (weight * (p.x - particles[i].position.x));
+		grad.y += (weight * (p.y - particles[i].position.y));
+		grad.z += (weight * (p.z - particles[i].position.z));
+
 	}
 
 	return grad;
@@ -91,11 +93,11 @@ float3 Grad_SBuffer(float3 p, float4 pos) {
 
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
-	float3 invDirection = rcp (rayDir);
+	float3 invDirection = rcp(rayDir);
 	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
 	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
-	float3 tMin = min (t0, t1);
-	float3 tMax = max (t0, t1);
+	float3 tMin = min(t0, t1);
+	float3 tMax = max(t0, t1);
 	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
 	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
 
@@ -105,12 +107,12 @@ void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox,
 	{
 		tMinMax = 0.0;
 	}
-	
+
 	tStart = tMinMax;
 	tEnd = tMaxMin;
 }
 
-float4 psMetaballSBuffer(VsosQuad input) : SV_Target
+float4 psMetaballABufferGradient(VsosQuad input) : SV_Target
 {
 	const int stepCount = 30;
 	const float boundarySideThreshold = boundarySide * 1.1;
@@ -140,11 +142,11 @@ float4 psMetaballSBuffer(VsosQuad input) : SV_Target
 		p += d * tStart;
 
 		for (int i = 0; i<stepCount; i++)
-		{			
-			if (MetaBallTest_SBuffer(p, input.pos))
+		{
+			if (MetaBallTest_ABuffer(p, input.pos))
 			{
-				return float4 (normalize(Grad_SBuffer(p, input.pos)), 1.0);
-			}		
+				return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
+			}
 
 			p += step;
 		}

@@ -61,36 +61,6 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
-/*float SortColor (float3 p, float4 pos)
-{
-const float height = 593.0;
-const float width = 1152.0;
-
-uint uIndex = (uint)pos.y * (uint)width + (uint)pos.x;
-
-uint offset = offsetBuffer[uIndex];
-
-const float r = 0.005;
-
-float intensity = 0.0;
-int hitCount = 0;
-
-while (offset != 0)
-{
-uint2 element = linkBuffer[offset];
-offset = element.x;
-int i = element.y;
-
-if (length(p - float3(particles[i].position)) < r)
-{
-intensity += float(i);
-hitCount++;
-}
-}
-
-return intensity / hitCount / particleCount;
-}*/
-
 void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
 {
 	float3 invDirection = rcp(rayDir);
@@ -164,42 +134,6 @@ struct RayMarchHit
 	float alfa;
 };
 
-/*
-vec3 Fresnel(vec3 inDir, vec3 normal, vec3 n, vec3 kappa)
-{
-	float cosa = -dot(inDir, normal);
-	vec3 one = vec3(1.0, 1.0, 1.0);
-	vec3 F0 = ((n - one)*(n - one) + kappa*kappa) /
-		((n + one)*(n + one) + kappa*kappa);
-	return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
-}
-*/
-
-/*
-
-float cosa = -dot(inDir, normal);
-vec3 one = vec3(1.0, 1.0, 1.0);
-vec3 F0 = ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa);
-return F0 + (one - F0) * pow(1.0 - cosa, 5.0);
-
-
-((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa) + (1 - ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa)) * pow (1.0 - x, 0.5)
-*/
-
-/* Metal*/
-/*
-float Fresnel(float3 inDir, float3 normal, float n, float kappa)
-{
-	float cosa = -dot(inDir, normal);
-	float one = 1.0;
-	float F0 = ((n - one)*(n - one) + kappa*kappa) / ((n + one)*(n + one) + kappa*kappa);
-	float fresnel = F0 + (one - F0) * pow(1.0 - cosa, 5.0);
-	float absDot = abs(dot(-inDir, normal)) +0.5;
-	return absDot;
-	return min (absDot, fresnel);
-}
-*/
-
 float Fresnel(float3 inDir, float3 normal, float n)
 {
 	float cosa = abs(dot(-inDir, normal));	// 1
@@ -215,7 +149,7 @@ float Fresnel(float3 inDir, float3 normal, float n)
 	return saturate(fresnel);
 }
 
-float4 psMetaballNormal(VsosQuad input) : SV_Target
+float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 {
 	const int stepCount = 20;
 	const float boundarySideThreshold = boundarySide * 1.1;

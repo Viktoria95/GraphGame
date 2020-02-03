@@ -86,8 +86,11 @@ private:
 	// Metaball
 	Egg::Mesh::Shaded::P metaballs;
 	Egg::Mesh::Shader::P metaballRealisticPixelShader;
+	Egg::Mesh::Shader::P metaballGradientPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticAPixelShader;
+	Egg::Mesh::Shader::P metaballGradientAPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticSPixelShader;
+	Egg::Mesh::Shader::P metaballGradientSPixelShader;
 
 
 	// Animation
