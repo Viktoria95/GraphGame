@@ -1,9 +1,11 @@
 
-#define particleCount 1024
+#define particleCount 1024 * 2
 
-#define controlParticleCount 1024 * 4
+//#define controlParticleCount 1024 * 4
 
-#define boundarySide 0.15
+#define controlParticleCount 4630
+
+#define boundarySide 0.3
 #define boundaryBottom 0.0
 #define boundaryTop 1.0
 

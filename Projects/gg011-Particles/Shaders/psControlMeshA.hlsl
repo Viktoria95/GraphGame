@@ -15,7 +15,7 @@ void psControlMeshA(float4 pos : SV_POSITION)
 	uint uPixelCount = linkBuffer.IncrementCounter();
 
 	// Read and update Start Offset Buffer.
-	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+	uint uIndex = (uint)pos.y * (uint)fillWindowWidth + (uint)pos.x;
 	uint uStartOffsetAddress = 4 * uIndex;
 	uint uOldStartOffset;
 	offsetBuffer.InterlockedExchange(uStartOffsetAddress, uPixelCount, uOldStartOffset);

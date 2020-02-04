@@ -13,6 +13,8 @@ GG_SUBCLASS(Game, Egg::App)
 public:	
 	static const unsigned int windowHeight = 720;
 	static const unsigned int windowWidth = 1280;
+	static const unsigned int fillWindowHeight = 200;
+	static const unsigned int fillWindowWidth = 200;
 
 private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer };
@@ -43,6 +45,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
 	Egg::Mesh::Shaded::P controlMesh;
 	Egg::Mesh::Shaded::P controlMeshFill;
+	Egg::Cam::FirstPerson::P fillCam;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	

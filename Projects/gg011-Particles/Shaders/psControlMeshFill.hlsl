@@ -52,7 +52,8 @@ void AddControlParticle(float3 pos, float pressure)
 
 float3 NDCToWorld(float2 screenPos, float depth)
 {
-	float4 worldPos = mul(float4(screenPos.x / windowWidth * 2.0 - 1.0, screenPos.y / windowHeight * -2.0 + 1.0, depth, 1.0), modelViewProjMatrixInverse);
+	//float4 worldPos = mul(float4(screenPos.x / windowWidth * 2.0 - 1.0, screenPos.y / windowHeight * -2.0 + 1.0, depth, 1.0), modelViewProjMatrixInverse);
+	float4 worldPos = mul(float4(screenPos.x / fillWindowWidth * 2.0 - 1.0, screenPos.y / fillWindowHeight * -2.0 + 1.0, depth, 1.0), modelViewProjMatrixInverse);
 	worldPos /= worldPos.w;
 	return worldPos.xyz;
 }
@@ -61,9 +62,9 @@ float3 NDCToWorld(float2 screenPos, float depth)
 void psControlMeshFill(VsosQuad input)
 {
 	
-	const float placementDistance = 0.3;
+	const float placementDistance = 0.01;
 
-	uint uIndex = (uint)input.pos.y * (uint)windowWidth + (uint)input.pos.x;
+	uint uIndex = (uint)input.pos.y * (uint)fillWindowWidth + (uint)input.pos.x;
 	uint offset = offsetBuffer[uIndex];
 
 	while (offset != 0 /*frontface*/ && linkBuffer[offset].link != 0 /*backface*/)
@@ -77,6 +78,9 @@ void psControlMeshFill(VsosQuad input)
 		float3 step = endWorldPos - startWorldPos;
 		float dist = length(step);
 		step *= (placementDistance / dist);
+
+		//AddControlParticle(startWorldPos);
+		//return;
 
 		if (dist < placementDistance)
 		{

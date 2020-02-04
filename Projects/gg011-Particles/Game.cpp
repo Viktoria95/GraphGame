@@ -9,9 +9,12 @@
 #include <assimp/importer.hpp>      
 #include <assimp/scene.h>       
 #include <assimp/postProcess.h> 
+
+#include <iostream> 
+
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024;
+const unsigned int defaultParticleCount = 1024 * 2;
 const unsigned int controlParticleCount = 1024 * 64;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
@@ -37,6 +40,7 @@ HRESULT Game::createResources()
 	CreateDebug();
 
 	//controlParams[5] = 1.0;
+	controlParams[7] = 0.0;
 
 	return S_OK;
 }
@@ -153,6 +157,8 @@ void Game::CreateControlParticles()
 	//else 
 	if (controlParticlePlacement == Render)
 	{
+		fillCam = Egg::Cam::FirstPerson::create();
+		fillCam->setView(float3 (0.0, 0.5, -1.0), float3 (0,0,1));
 
 		// First round
 		{
@@ -717,12 +723,19 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
 }
 
-void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	UINT pNumViewports = 1;
-	D3D11_VIEWPORT pViewports[1];
-	context->RSGetViewports(&pNumViewports, pViewports);
+void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
 	context->ClearState();
-	context->RSSetViewports(pNumViewports, pViewports);
+
+	D3D11_VIEWPORT pViewports[1];
+	pViewports->Height = windowHeight;
+	pViewports->Width = windowWidth;
+	pViewports->TopLeftX = 0;
+	pViewports->TopLeftY = 0;
+	pViewports->MaxDepth = 1.0;
+	pViewports->MinDepth = 0.0;
+	context->RSSetViewports(1, pViewports);
+
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 }
 
@@ -988,6 +1001,9 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
+	static bool first = true;
+
+	if (first)
 	if (controlParticlePlacement == Render)
 	{
 		{
@@ -997,9 +1013,10 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 			float4x4 matrices[4];
 			matrices[0] = float4x4::identity;
-			matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
-			matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-			matrices[3] = firstPersonCam->getViewDirMatrix();
+			//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
+			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
+			matrices[2] = float4x4::scaling(float3(0.0004, 0.0004, 0.0004)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+			matrices[3] = fillCam->getViewDirMatrix();
 			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 			ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
@@ -1007,6 +1024,15 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 			ppUnorderedAccessViews[1] = linkUAV.Get();
 			uint t[2] = { 0,0 };
 			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+
+			D3D11_VIEWPORT pViewports[1];
+			pViewports->Height = fillWindowHeight;
+			pViewports->Width = fillWindowWidth;
+			pViewports->TopLeftX = 0;
+			pViewports->TopLeftY = 0;
+			pViewports->MaxDepth = 1.0;
+			pViewports->MinDepth = 0.0;
+			context->RSSetViewports(1, pViewports);
 
 			controlMesh->draw(context);
 			clearContext(context);
@@ -1016,9 +1042,9 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 			// Round2
 			float4x4 matrices[4];
 			matrices[0] = float4x4::identity;
-			matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
-			matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-			matrices[3] = firstPersonCam->getViewDirMatrix();
+			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
+			matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+			matrices[3] = fillCam->getViewDirMatrix();
 			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 			controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
@@ -1032,10 +1058,22 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 			uint t[1] = { 0 };
 			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
 
+
+			D3D11_VIEWPORT pViewports[1];
+			pViewports->Height = fillWindowHeight;
+			pViewports->Width = fillWindowWidth;
+			pViewports->TopLeftX = 0;
+			pViewports->TopLeftY = 0;
+			pViewports->MaxDepth = 1.0;
+			pViewports->MinDepth = 0.0;
+			context->RSSetViewports(1, pViewports);
+
 			controlMeshFill->draw(context);
 			clearContext(context);
 		}
 	}
+
+	first = false;
 	
 	if (renderMode == Realistic || renderMode == Gradient)
 	{
@@ -1194,11 +1232,13 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '8')
 		{
-			controlParams[7] += 0.1;
+			controlParams[7] -= 0.1;
+			std::cout << controlParams[7] << std::endl;
 		}
 		else if (wParam == '9')
 		{
-			controlParams[7] -= 0.1;
+			controlParams[7] += 0.1;
+			std::cout << controlParams[7] << std::endl;
 		}
 	}
 
