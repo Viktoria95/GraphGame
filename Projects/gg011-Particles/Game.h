@@ -26,6 +26,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> eyePosCB;
 
 	Egg::Mesh::InputBinder::P inputBinder;
+
 	BillboardsAlgorithm billboardsLoadAlgorithm;
 	RenderMode renderMode;
 	FlowControl flowControl;
@@ -41,6 +42,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
 	Egg::Mesh::Shaded::P controlMesh;
+	Egg::Mesh::Shaded::P controlMeshFill;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	

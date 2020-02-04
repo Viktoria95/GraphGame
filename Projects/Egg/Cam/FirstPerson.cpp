@@ -17,7 +17,7 @@ Cam::FirstPerson::FirstPerson()
 
 	fov = 1.57f;
 	nearPlane = 0.1f;
-	farPlane = 1000.0f;
+	farPlane = 10.0f;
 	setAspect(1.33f);
 
 	viewMatrix = float4x4::view(position, ahead, float3::yUnit);

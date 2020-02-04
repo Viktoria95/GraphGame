@@ -8,14 +8,13 @@ cbuffer modelViewProjCB {
 
 struct IaosTrafo
 {
-	float4 pos	: POSITION;
+	float4 pos : POSITION;
 
 };
 
 struct VsosTrafo
 {
-	float4 pos 		: SV_POSITION;
-
+	float4 pos : SV_POSITION;
 };
 
 VsosTrafo vsTrafo(IaosTrafo input)

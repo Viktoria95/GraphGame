@@ -10,10 +10,12 @@ namespace Egg { namespace Mesh
 		Microsoft::WRL::ComPtr<ID3DBlob> inputSignature;
 
 		std::map<ShaderStageFlag, Shader::P> shaders;
+	public:
 		Microsoft::WRL::ComPtr<ID3D11RasterizerState>	rasterizerState;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilState>	depthStencilState;
 		Microsoft::WRL::ComPtr<ID3D11BlendState>		blendState;
 
+	private:
 		std::map<ShaderStageFlag, std::vector<Microsoft::WRL::ComPtr<ID3D11Buffer	>	>	> cbs;
 		std::map<ShaderStageFlag, std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState	>	>	> sss;
 		std::map<ShaderStageFlag, std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView	>	>	> srs;
