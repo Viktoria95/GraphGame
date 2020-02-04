@@ -109,40 +109,38 @@
     <FxCompile Include="Shaders\csMortonHash.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psIdle.hlsl">
-      <Filter>Shaders\Common</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\vsTrafo.hlsl">
-      <Filter>Shaders\Common</Filter>
-    </FxCompile>
-<<<<<<< HEAD
     <FxCompile Include="Shaders\psControlMeshA.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\psControlMeshFill.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\psIdle.hlsl">
+      <Filter>Shaders\Common</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\vsTrafo.hlsl">
+      <Filter>Shaders\Common</Filter>
+    </FxCompile>
     <FxCompile Include="Shaders\vsControlMeshFill.hlsl">
       <Filter>Shaders\Animation</Filter>
-=======
-    <FxCompile Include="Shaders\psMetaballNormalRealistic.hlsl">
-      <Filter>Shaders\Metaball</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaballNormalGradient.hlsl">
+    <FxCompile Include="Shaders\psMetaballABufferGradient.hlsl">
       <Filter>Shaders\Metaball</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\psMetaballABufferRealistic.hlsl">
       <Filter>Shaders\Metaball</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaballSBufferRealistic.hlsl">
+    <FxCompile Include="Shaders\psMetaballNormalGradient.hlsl">
       <Filter>Shaders\Metaball</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaballABufferGradient.hlsl">
+    <FxCompile Include="Shaders\psMetaballNormalRealistic.hlsl">
       <Filter>Shaders\Metaball</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\psMetaballSBufferGradient.hlsl">
       <Filter>Shaders\Metaball</Filter>
->>>>>>> 35e192490456c6a4f39c3480527e6d78c1313a21
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballSBufferRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
