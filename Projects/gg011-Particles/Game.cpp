@@ -171,6 +171,7 @@ void Game::CreateControlParticles()
 			material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
 			material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
 			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 
 
 			// Depth settings
@@ -193,24 +194,15 @@ void Game::CreateControlParticles()
 			dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 			dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-<<<<<<< HEAD
 			// Stencil operations if pixel is back-facing
 			dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 			dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
 			dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 			dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-=======
-		Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
-		material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
-		material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
-		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
-		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
->>>>>>> 35e192490456c6a4f39c3480527e6d78c1313a21
 
 			// Create depth stencil state
 			device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 			material->depthStencilState = DSState;
-
 
 			/// Raster settings
 			Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
