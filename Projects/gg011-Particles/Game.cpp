@@ -9,13 +9,12 @@
 #include <assimp/importer.hpp>      
 #include <assimp/scene.h>       
 #include <assimp/postProcess.h> 
-
-#include <iostream> 
+#include "DualQuaternion.h"
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
-const unsigned int controlParticleCount = 1024 * 64;
+const unsigned int defaultParticleCount = 1024;
+const unsigned int controlParticleCount = 1024;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
@@ -31,6 +30,7 @@ HRESULT Game::createResources()
 {
 	CreateCommon();
 	CreateParticles();
+	CreateControlMesh();
 	CreateControlParticles();
 	CreateBillboard();
 	CreatePrefixSum();
@@ -40,7 +40,6 @@ HRESULT Game::createResources()
 	CreateDebug();
 
 	//controlParams[5] = 1.0;
-	controlParams[7] = 0.0;
 
 	return S_OK;
 }
@@ -133,17 +132,17 @@ void Game::CreateControlParticles()
 {
 	using namespace Microsoft::WRL;
 
-	std::vector<ControlParticle> controlParticles(controlParticleCount);
+	std::vector<ControlParticle> controlParticles;
 
 	Assimp::Importer importer;
 	
 	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe.obj"), 0);
 
-	if (controlParticlePlacement == Vertex)
+	//if (controlParticlePlacement == Vertex)
 	{
 		// Create Particles
-		for (int i = 0; i < std::min (assScene->mMeshes[0]->mNumFaces / 3, controlParticleCount); i++)
+		for (int i = 0; i < controlParticleCount; i++)
 		{
 			ControlParticle cp;
 			cp.position.x = assScene->mMeshes[0]->mVertices[i].x;
@@ -157,134 +156,24 @@ void Game::CreateControlParticles()
 	//else 
 	if (controlParticlePlacement == Render)
 	{
-		fillCam = Egg::Cam::FirstPerson::create();
-		fillCam->setView(float3 (0.0, 0.5, -1.0), float3 (0,0,1));
+		//TODO: this is now done by CreateControlMesh, with the animated mesh
+		// merge here to use animated mesh for particle generation
+/*		Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[0]);
 
-		// First round
-		{
-			Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[0]);
+		ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsTrafo.cso");
+		Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsTrafo.cso", device, vertexShaderByteCode);
 
-			ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsTrafo.cso");
-			Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsTrafo.cso", device, vertexShaderByteCode);
+		ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
+		Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
 
-			//ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
-			//Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
+		Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+		material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+		material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 
-			ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psControlMeshA.cso");
-			Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psControlMeshA.cso", device, pixelShaderByteCode);
-
-			Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
-			material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
-			material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
-			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
-			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
-
-
-			// Depth settings
-			Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-			D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-			// Depth test parameters
-			dsDesc.DepthEnable = false;
-			dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-			dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-			// Stencil test parameters
-			dsDesc.StencilEnable = false;
-			dsDesc.StencilReadMask = 0xFF;
-			dsDesc.StencilWriteMask = 0xFF;
-
-			// Stencil operations if pixel is front-facing
-			dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-			dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-			// Stencil operations if pixel is back-facing
-			dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-			dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-			// Create depth stencil state
-			device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
-			material->depthStencilState = DSState;
-
-			/// Raster settings
-			Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
-
-			D3D11_RASTERIZER_DESC RasterizerDesc;
-			RasterizerDesc.CullMode = D3D11_CULL_NONE;
-			RasterizerDesc.FillMode = D3D11_FILL_SOLID;
-			RasterizerDesc.FrontCounterClockwise = FALSE;
-			RasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
-			RasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-			RasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-			RasterizerDesc.DepthClipEnable = TRUE;
-			RasterizerDesc.ScissorEnable = FALSE;
-			RasterizerDesc.MultisampleEnable = FALSE;
-			RasterizerDesc.AntialiasedLineEnable = FALSE;
-
-			device->CreateRasterizerState(&RasterizerDesc, RasterizerState.GetAddressOf());
-			material->rasterizerState = RasterizerState;
-
-
-			ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
-			controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
-		}
-
-
-		// Second round
-		{
-			// Shaders
-			Egg::Mesh::Geometry::P fullQuadGeometry = Egg::Mesh::Indexed::createQuad(device);
-
-			ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsControlMeshFill.cso");
-			Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsControlMeshFill.cso", device, vertexShaderByteCode);
-
-			ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psControlMeshFill.cso");
-			Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psControlMeshFill.cso", device, pixelShaderByteCode);
-
-			Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
-			material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
-			material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
-
-
-			/// Depth settings
-			Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-			D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-			// Depth test parameters
-			dsDesc.DepthEnable = false;
-			dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-			dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-			// Stencil test parameters
-			dsDesc.StencilEnable = false;
-			dsDesc.StencilReadMask = 0xFF;
-			dsDesc.StencilWriteMask = 0xFF;
-
-			// Stencil operations if pixel is front-facing
-			dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-			dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-			// Stencil operations if pixel is back-facing
-			dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-			dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-			dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-			// Create depth stencil state
-			device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
-			material->depthStencilState = DSState;
-			
-
-			ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, fullQuadGeometry);
-			controlMeshFill = Egg::Mesh::Shaded::create(fullQuadGeometry, material, inputLayout);
-		}
-
+		ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+		controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
+*/
 	}
 	
 
@@ -372,40 +261,6 @@ void Game::CreateBillboard() {
 	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
 	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
 	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
-
-
-	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
-
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
-
-	billboardMaterial->depthStencilState = DSState;
-
-
 
 	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
 	billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
@@ -585,23 +440,15 @@ void Game::CreateMetaball() {
 	ComPtr<ID3DBlob> metaballVertexShaderByteCode = loadShaderCode("vsMetaball.cso");
 	Egg::Mesh::Shader::P metaballVertexShader = Egg::Mesh::Shader::create("vsMetaball.cso", device, metaballVertexShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticPixelShaderByteCode = loadShaderCode("psMetaBallNormalRealistic.cso");
-	metaballRealisticPixelShader = Egg::Mesh::Shader::create("psMetaBallNormalRealistic.cso", device, metaballRealisticPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticPixelShaderByteCode = loadShaderCode("psMetaBallNormal.cso");
+	metaballRealisticPixelShader = Egg::Mesh::Shader::create("psMetaBallNormal.cso", device, metaballRealisticPixelShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticAPixelShaderByteCode = loadShaderCode("psMetaballABufferRealistic.cso");
-	metaballRealisticAPixelShader = Egg::Mesh::Shader::create("psMetaballABufferRealistic.cso", device, metaballRealisticAPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticAPixelShaderByteCode = loadShaderCode("psMetaBallABuffer.cso");
+	metaballRealisticAPixelShader = Egg::Mesh::Shader::create("psMetaBallABuffer.cso", device, metaballRealisticAPixelShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferRealistic.cso");
-	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferRealistic.cso", device, metaballRealisticSPixelShaderByteCode);
+	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBuffer.cso");
+	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBuffer.cso", device, metaballRealisticSPixelShaderByteCode);
 
-	ComPtr<ID3DBlob> metaballGradientPixelShaderByteCode = loadShaderCode("psMetaBallNormalGradient.cso");
-	metaballGradientPixelShader = Egg::Mesh::Shader::create("psMetaBallNormalGradient.cso", device, metaballGradientPixelShaderByteCode);
-
-	ComPtr<ID3DBlob> metaballGradientAPixelShaderByteCode = loadShaderCode("psMetaballABufferGradient.cso");
-	metaballGradientAPixelShader = Egg::Mesh::Shader::create("psMetaballABufferGradient.cso", device, metaballGradientAPixelShaderByteCode);
-
-	ComPtr<ID3DBlob> metaballGradientSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferGradient.cso");
-	metaballGradientSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferGradient.cso", device, metaballGradientSPixelShaderByteCode);
 
 	Egg::Mesh::Material::P metaballMaterial = Egg::Mesh::Material::create();
 	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, metaballVertexShader);
@@ -609,38 +456,6 @@ void Game::CreateMetaball() {
 	//metaballMaterial->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	//metaballMaterial->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	//metaballMaterial->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
-
-	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
-
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
-
-	metaballMaterial->depthStencilState = DSState;
-
 
 	ComPtr<ID3D11InputLayout>metaballInputLayout = inputBinder->getCompatibleInputLayout(metaballVertexShaderByteCode, fullQuadGeometry);
 	metaballs = Egg::Mesh::Shaded::create(fullQuadGeometry, metaballMaterial, metaballInputLayout);
@@ -653,7 +468,7 @@ void Game::CreateAnimation() {
 	fluidSimulationShader = Egg::Mesh::Shader::create("csFluidSimulation.cso", device, fluidSimulationShaderByteCode);
 
 	ComPtr<ID3DBlob> controlledFluidSimulationShaderByteCode = loadShaderCode("csControlledFluidSimulation.cso");
-	controlledFluidSimulationShader = Egg::Mesh::Shader::create("csControlledFluidSimulation.cso", device, controlledFluidSimulationShaderByteCode);	
+	controlledFluidSimulationShader = Egg::Mesh::Shader::create("csControlledFluidSimulation.cso", device, controlledFluidSimulationShaderByteCode);
 
 	ComPtr<ID3DBlob>simpleSortEvenShaderByteCode = loadShaderCode("csSimpleSortEven.cso");
 	simpleSortEvenShader = Egg::Mesh::Shader::create("csSimpleSortEven.cso", device, simpleSortEvenShaderByteCode);
@@ -680,6 +495,165 @@ void Game::CreateAnimation() {
 
 	Egg::ThrowOnFail("Failed to create debugTypeCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&controlParamsCBDesc, &initialControlParamsData, controlParamsCB.GetAddressOf());
+}
+
+void Game::CreateControlMesh() {
+
+	Assimp::Importer importer;
+
+	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("mrem.dae"), 0);
+
+	// if the import failed
+	if (!assScene || !assScene->HasMeshes() || assScene->mNumMeshes == 0)
+	{
+		return;
+	}
+
+	aiMesh* assMesh = assScene->mMeshes[1];
+	Egg::Mesh::Indexed::P indexedMesh = Egg::Mesh::Importer::fromAiMesh(device, assMesh);
+
+	nBones = assMesh->mNumBones;
+	rigging = new DualQuaternion[nBones];
+
+	for (int iBone = 0; iBone< assMesh->mNumBones; iBone++) {
+		aiBone* assBone = assMesh->mBones[iBone];
+		boneNames.push_back(assBone->mName.C_Str());
+		aiMatrix4x4& a = assBone->mOffsetMatrix;
+		float4x4 m(
+			a.a1, a.a2, a.a3, a.a4,
+			a.b1, a.b2, a.b3, a.b4,
+			a.c1, a.c2, a.c3, a.c4,
+			a.d1, a.d2, a.d3, a.d4
+			);
+		aiQuaternion q;
+		aiVector3D t;
+		a.DecomposeNoScaling(q, t);
+		rigging[
+			//riggingPoseBoneTransforms.size()
+			iBone].set(float4(q.x, q.y, q.z, q.w), float4(t.x, t.y, t.z, 1));
+			//		riggingPoseBoneTransforms.push_back(m);
+			boneTransformationChainNodeIndices.push_back(std::vector<unsigned char>());
+	}
+
+	Assimp::Importer importer2;
+	const aiScene* assAnimScene = importer2.ReadFile(App::getSystemEnvironment().resolveMediaPath("thriller_part_3.dae"), 0);
+	aiAnimation* assAnim = assAnimScene->mAnimations[0];
+	skeleton = new unsigned char[nBones * 16];
+	memset(skeleton, 0xff, nBones * 16);
+	struct NodeProcessor {
+		Game* game;
+		unsigned char* skeleton;
+		unsigned int iNode;
+		NodeProcessor(Game* game, unsigned char* skeleton) : game(game), skeleton(skeleton), iNode(0) {}
+		void process(aiNode* assNode) {
+			game->nodeNamesToNodeIndices[assNode->mName.C_Str()] = iNode;
+			iNode++;
+			//game->nodeOffsetTransforms.push_back( m );
+			//aiMatrix4x4& a = assNode->mTransformation;
+			for (int iBone = 0; iBone < game->boneNames.size(); iBone++) {
+				if (game->boneNames[iBone] == assNode->mName.C_Str()) {
+
+					aiNode* pNode = assNode;
+					while (pNode) {
+						std::map<std::string, unsigned char>::iterator iNodeIndex = game->nodeNamesToNodeIndices.find(pNode->mName.C_Str());
+						if (iNodeIndex != game->nodeNamesToNodeIndices.end()) {
+							skeleton[iBone * 16 + game->boneTransformationChainNodeIndices[iBone].size()] = iNodeIndex->second;
+							game->boneTransformationChainNodeIndices[iBone].push_back(iNodeIndex->second);
+						}
+						else
+						{
+							// never happens
+						}
+						pNode = pNode->mParent;
+					}
+					break;
+				}
+			}
+
+			for (int iChild = 0; iChild<assNode->mNumChildren; iChild++) {
+				process(assNode->mChildren[iChild]);
+			}
+		}
+	} np(this, skeleton);
+	np.process(assAnimScene->mRootNode);
+
+	nKeys = 768;
+	nNodes = np.iNode;//nodeOffsetTransforms.size();
+
+	keys = new DualQuaternion[
+		nNodes
+			* nKeys
+	];
+
+	std::map<std::string, unsigned char>::iterator iNodeIndex = nodeNamesToNodeIndices.begin();
+	std::map<std::string, unsigned char>::iterator eNodeIndex = nodeNamesToNodeIndices.end();
+	while (iNodeIndex != eNodeIndex) {
+		aiNode* assNode = assAnimScene->mRootNode->FindNode(iNodeIndex->first.c_str());
+		aiQuaternion q;
+		aiVector3D t;
+		assNode->mTransformation.DecomposeNoScaling(q, t);
+		DualQuaternion dq(
+			float4(q.x, q.y, q.z, q.w),
+			float4(t.x, t.y, t.z, 1));
+		for (int iKey = 0; iKey< nKeys; iKey++) {
+			keys[iNodeIndex->second * nKeys + iKey] = dq;
+		}
+		iNodeIndex++;
+	}
+
+	for (int iAnim = 0; iAnim<assAnimScene->mNumAnimations; iAnim++) {
+		aiAnimation* assAnim = assAnimScene->mAnimations[iAnim];
+		for (int iChannel = 0; iChannel< assAnim->mNumChannels; iChannel++) {
+			aiNodeAnim* assChannel = assAnim->mChannels[iChannel];
+			std::map<std::string, unsigned char>::iterator iNodeIndex = nodeNamesToNodeIndices.find(assChannel->mNodeName.C_Str());
+			if (iNodeIndex != nodeNamesToNodeIndices.end()) {
+				for (int iKey = 0; iKey< assChannel->mNumPositionKeys; iKey++) {
+					aiVector3D& p = assChannel->mPositionKeys[iKey].mValue;
+					aiQuaternion& q = assChannel->mRotationKeys[iKey].mValue;
+					keys[iNodeIndex->second * nKeys + iKey] = DualQuaternion(
+						float4(q.x, q.y, q.z, q.w),
+						float4(p.x, p.y, p.z, 1));
+				}
+			}
+			else
+			{
+				//never happens
+			}
+		}
+	}
+
+	CD3D11_BUFFER_DESC boneBufferDesc(
+		nBones *
+		2 *
+		sizeof(float4)
+		, D3D11_BIND_CONSTANT_BUFFER);
+	boneBufferDesc.CPUAccessFlags = 0;
+	boneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	boneBufferDesc.StructureByteStride = 0;
+	Egg::ThrowOnFail("Failed to create boneCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&boneBufferDesc, NULL, &boneBuffer);
+
+	using namespace Microsoft::WRL;
+
+	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[0]);
+
+	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSkinning.cso");
+	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSkinning.cso", device, vertexShaderByteCode);
+
+	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
+	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
+
+	Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+	material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+	material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	material->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
+
+	ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+	controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
+
+	currentKey = 0;
+
 }
 
 void Game::CreateDebug()
@@ -711,6 +685,9 @@ void Game::CreateDebug()
 
 HRESULT Game::releaseResources()
 {
+	boneBuffer->Release();
+	boneSrv->Release();
+
 	billboards.reset();
 	return Egg::App::releaseResources();
 }
@@ -723,19 +700,12 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
 }
 
-void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
-{
-	context->ClearState();
-
+void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	UINT pNumViewports = 1;
 	D3D11_VIEWPORT pViewports[1];
-	pViewports->Height = windowHeight;
-	pViewports->Width = windowWidth;
-	pViewports->TopLeftX = 0;
-	pViewports->TopLeftY = 0;
-	pViewports->MaxDepth = 1.0;
-	pViewports->MinDepth = 0.0;
-	context->RSSetViewports(1, pViewports);
-
+	context->RSGetViewports(&pNumViewports, pViewports);
+	context->ClearState();
+	context->RSSetViewports(pNumViewports, pViewports);
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 }
 
@@ -746,7 +716,7 @@ void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -771,7 +741,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -791,7 +761,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -812,7 +782,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -820,7 +790,6 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4 perFrameVectors[1];
 	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
@@ -835,26 +804,17 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	{
 		case Normal:
 		{
-			if (renderMode == Realistic)
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticPixelShader);
-			else 
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientPixelShader);
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticPixelShader);
 			break;
 		}
 		case ABuffer:
 		{
-			if (renderMode == Realistic)
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticAPixelShader);
-			else 
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientAPixelShader);
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticAPixelShader);
 			break;
 		}
 		case SBuffer:
 		{
-			if (renderMode == Realistic)
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
-			else
-				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientSPixelShader);
+			metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
 			break;
 		}
 		default:
@@ -866,7 +826,6 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
@@ -892,7 +851,6 @@ void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> contex
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
@@ -901,7 +859,7 @@ void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> contex
 void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[1] = float4x4::identity;
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
@@ -918,7 +876,6 @@ void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setCb("debugTypeCB", debugTypeCB, Egg::Mesh::ShaderStageFlag::Pixel);
 
@@ -1001,81 +958,35 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
-	static bool first = true;
 
-	if (first)
-	if (controlParticlePlacement == Render)
+//	if (controlParticlePlacement == Render)
 	{
-		{
-			// Round1
-			uint values[4] = { 0,0,0,0 };
-			context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+		float4x4 matrices[4];
+		matrices[0] = float4x4::identity;
+		matrices[1] = float4x4::identity;
+		matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+		matrices[3] = firstPersonCam->getViewDirMatrix();
+		context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-			float4x4 matrices[4];
-			matrices[0] = float4x4::identity;
-			//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
-			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-			matrices[2] = float4x4::scaling(float3(0.0004, 0.0004, 0.0004)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-			matrices[3] = fillCam->getViewDirMatrix();
-			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-			ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
-			ppUnorderedAccessViews[0] = offsetUAV.Get();
-			ppUnorderedAccessViews[1] = linkUAV.Get();
-			uint t[2] = { 0,0 };
-			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
-
-			D3D11_VIEWPORT pViewports[1];
-			pViewports->Height = fillWindowHeight;
-			pViewports->Width = fillWindowWidth;
-			pViewports->TopLeftX = 0;
-			pViewports->TopLeftY = 0;
-			pViewports->MaxDepth = 1.0;
-			pViewports->MinDepth = 0.0;
-			context->RSSetViewports(1, pViewports);
-
-			controlMesh->draw(context);
-			clearContext(context);
+		currentKey++;
+		DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+		for (int iBone = 0; iBone < nBones; iBone++) {
+			boneTrafos[iBone] = rigging[nBones];
+			for (int iChain = 0; iChain < 16; iChain++) {
+				boneTrafos[iBone] *= keys[
+					skeleton[iChain + iBone*16] * nKeys
+					+ currentKey];
+			}
 		}
-
-		{
-			// Round2
-			float4x4 matrices[4];
-			matrices[0] = float4x4::identity;
-			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-			matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-			matrices[3] = fillCam->getViewDirMatrix();
-			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-			controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
-			controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
-
-			context->PSSetShaderResources(0, 1, offsetSRV.GetAddressOf());
-			context->PSSetShaderResources(1, 1, linkSRV.GetAddressOf());
-
-			ID3D11UnorderedAccessView* ppUnorderedAccessViews[1];
-			ppUnorderedAccessViews[0] = controlParticleUAV.Get();
-			uint t[1] = { 0 };
-			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
-
-
-			D3D11_VIEWPORT pViewports[1];
-			pViewports->Height = fillWindowHeight;
-			pViewports->Width = fillWindowWidth;
-			pViewports->TopLeftX = 0;
-			pViewports->TopLeftY = 0;
-			pViewports->MaxDepth = 1.0;
-			pViewports->MinDepth = 0.0;
-			context->RSSetViewports(1, pViewports);
-
-			controlMeshFill->draw(context);
-			clearContext(context);
-		}
+		
+		context->UpdateSubresource(boneBuffer, 0, nullptr, boneTrafos, 0, 0);
+		delete [] boneTrafos;
+		controlMesh->draw(context);
+		clearContext(context);
 	}
-
-	first = false;
+	return;
 	
-	if (renderMode == Realistic || renderMode == Gradient)
+	if (renderMode == Realistic)
 	{
 
 		// Billboard
@@ -1124,6 +1035,12 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	// Sort
 	renderSort(context);
 	clearContext(context);
+	
+	if (controlParticlePlacement == Render)
+	{
+		controlMesh->draw(context);
+		clearContext(context);
+	}
 
 }
 
@@ -1141,16 +1058,9 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	if (uMsg == WM_KEYDOWN)
 	{
-		if (wParam == 'G')
-		{
-			renderMode = Gradient;
-		}
-		else if (wParam == 'R')
+		if (wParam == '0')
 		{
 			renderMode = Realistic;
-		}
-		else if (wParam == '0')
-		{
 			if (billboardsLoadAlgorithm == Normal)
 			{
 				billboardsLoadAlgorithm = ABuffer;
@@ -1232,13 +1142,11 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '8')
 		{
-			controlParams[7] -= 0.1;
-			std::cout << controlParams[7] << std::endl;
+			controlParams[7] += 0.1;
 		}
 		else if (wParam == '9')
 		{
-			controlParams[7] += 0.1;
-			std::cout << controlParams[7] << std::endl;
+			controlParams[7] -= 0.1;
 		}
 	}
 

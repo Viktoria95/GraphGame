@@ -48,6 +48,9 @@
     <ClCompile Include="DDSTextureLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DualQuaternion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h">
@@ -57,6 +60,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DDSTextureLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DualQuaternion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -88,6 +94,15 @@
     <FxCompile Include="Shaders\csScanBucketResult.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\psMetaballNormal.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballABuffer.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballSBuffer.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
     <FxCompile Include="Shaders\psBillboardA.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
@@ -109,38 +124,14 @@
     <FxCompile Include="Shaders\csMortonHash.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psControlMeshA.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psControlMeshFill.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\psIdle.hlsl">
       <Filter>Shaders\Common</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\vsTrafo.hlsl">
       <Filter>Shaders\Common</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\vsControlMeshFill.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballABufferGradient.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballABufferRealistic.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballNormalGradient.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballNormalRealistic.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballSBufferGradient.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballSBufferRealistic.hlsl">
-      <Filter>Shaders\Metaball</Filter>
+    <FxCompile Include="Shaders\vsSkinning.hlsl">
+      <Filter>Shaders\Common</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

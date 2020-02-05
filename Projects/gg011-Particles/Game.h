@@ -9,12 +9,12 @@
 
 #include <array>
 
+class DualQuaternion;
+
 GG_SUBCLASS(Game, Egg::App)
 public:	
 	static const unsigned int windowHeight = 720;
 	static const unsigned int windowWidth = 1280;
-	static const unsigned int fillWindowHeight = 200;
-	static const unsigned int fillWindowWidth = 200;
 
 private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer };
@@ -28,7 +28,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> eyePosCB;
 
 	Egg::Mesh::InputBinder::P inputBinder;
-
 	BillboardsAlgorithm billboardsLoadAlgorithm;
 	RenderMode renderMode;
 	FlowControl flowControl;
@@ -44,8 +43,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
 	Egg::Mesh::Shaded::P controlMesh;
-	Egg::Mesh::Shaded::P controlMeshFill;
-	Egg::Cam::FirstPerson::P fillCam;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
@@ -91,11 +88,8 @@ private:
 	// Metaball
 	Egg::Mesh::Shaded::P metaballs;
 	Egg::Mesh::Shader::P metaballRealisticPixelShader;
-	Egg::Mesh::Shader::P metaballGradientPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticAPixelShader;
-	Egg::Mesh::Shader::P metaballGradientAPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticSPixelShader;
-	Egg::Mesh::Shader::P metaballGradientSPixelShader;
 
 
 	// Animation
@@ -115,6 +109,24 @@ private:
 	uint debugType;
 	const uint maxDebugType = 7;
 
+	// Skeletal
+	int nBones;
+	int nInstances;
+	int nKeys;
+	int nNodes;
+
+	std::vector<std::string> boneNames;
+	//	std::vector<Egg::Math::float4x4> riggingPoseBoneTransforms;
+	std::vector<std::vector<unsigned char> > boneTransformationChainNodeIndices;
+	std::map<std::string, unsigned char> nodeNamesToNodeIndices;
+
+	unsigned char* skeleton;
+	DualQuaternion* keys;
+	DualQuaternion* rigging;
+	unsigned int currentKey;
+
+	ID3D11Buffer* boneBuffer;
+
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
 	~Game(void);
@@ -127,9 +139,9 @@ public:
 	bool processMessage(HWND hWnd,
 		UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-
 	void CreateCommon();
 	void CreateParticles();
+	void CreateControlMesh();
 	void CreateControlParticles();
 	void CreateBillboard();
 	void CreatePrefixSum();
