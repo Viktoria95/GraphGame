@@ -49,7 +49,7 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
-bool MetaBallTest_ABuffer(float3 p, float4 pos)
+bool MetaBallTest_ABuffer(float3 p, float2 pos)
 {
 
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
@@ -74,7 +74,7 @@ bool MetaBallTest_ABuffer(float3 p, float4 pos)
 	return false;
 }
 
-float3 Grad_ABuffer(float3 p, float4 pos)
+float3 Grad_ABuffer(float3 p, float2 pos)
 {
 	float3 grad;
 
@@ -98,6 +98,15 @@ float3 Grad_ABuffer(float3 p, float4 pos)
 	return grad;
 }
 
+float2 WorldToNDC(float3 wp)
+{
+	float4 worldPos = mul(float4(wp, 1.0), modelViewProjMatrix);
+	worldPos /= worldPos.w;
+	float2 screenPos = float2(0.0, 0.0);
+	screenPos.x = ((worldPos.x + 1.0)*windowWidth) / 2.0;
+	screenPos.y = ((worldPos.y - 1.0)*windowHeight) / -2.0;
+	return screenPos;
+}
 
 float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 {
@@ -115,7 +124,7 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 	firstElem.alfa = 1.0;
 	stack[0] = firstElem;
 
-	float4 screenPosition = input.pos;
+	float2 screenPosition = input.pos.xy;
 
 	float3 color = float3(0.0, 0.0, 0.0);
 	uint killer = 10;
@@ -159,9 +168,9 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 				{
 					marchHit = true;
 
-					//screenPosition = mul(float4(marchPos, 1), modelViewProjMatrixInverse);
+					screenPosition.xy = WorldToNDC(marchPos);
 
-					float3 normal = normalize(-Grad(marchPos/*, screenPosition*/));
+					float3 normal = normalize(-Grad_ABuffer(marchPos, screenPosition));
 					float refractiveIndex = 1.4;
 					if (dot(normal, marchDir) > 0) {
 						normal = -normal;
