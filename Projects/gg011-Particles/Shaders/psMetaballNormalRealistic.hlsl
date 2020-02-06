@@ -55,6 +55,29 @@ bool BallTest(float3 p)
 	return false;
 }
 
+float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
+{
+	float3 newStart = startPos;
+	float3 newEnd = endPos;
+
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		float3 mid = (startPos + endPos) / 2.0;
+		bool midInside = MetaBallTest(mid);
+		if (midInside == startInside)
+		{
+			newStart = mid;
+		}
+		if (midInside == endInside)
+		{
+			newEnd = mid;
+		}
+	}
+
+	return newEnd;
+}
+
 float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
@@ -104,6 +127,7 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 		if (intersect && marchRecursionDepth < 4)
 		{
 			bool startedInside = MetaBallTest(marchPos);
+			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
 
@@ -114,6 +138,8 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 				if (inside && !startedInside || !inside && startedInside)
 				{
 					marchHit = true;
+					marchPos = BinarySearch(startedInside, start, inside, marchPos);
+
 
 					float3 normal = normalize(-Grad(marchPos));
 					float refractiveIndex = 1.4;

@@ -40,6 +40,29 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
+float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
+{
+	float3 newStart = startPos;
+	float3 newEnd = endPos;
+
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		float3 mid = (startPos + endPos) / 2.0;
+		bool midInside = MetaBallTest(mid);
+		if (midInside == startInside)
+		{
+			newStart = mid;
+		}
+		if (midInside == endInside)
+		{
+			newEnd = mid;
+		}
+	}
+
+	return newEnd;
+}
+
 float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 {
 
@@ -73,6 +96,7 @@ float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 		{
 			if (MetaBallTest(p))
 			{
+				p = BinarySearch(false, p - step, true, p);
 				return float4 (normalize(Grad(p)), 1.0);
 			}
 
