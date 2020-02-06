@@ -825,14 +825,67 @@ void Game::CreateControlMesh() {
 	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSkinning.cso");
 	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSkinning.cso", device, vertexShaderByteCode);
 
-	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
-	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
+	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psControlMeshA.cso");
+	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psControlMeshA.cso", device, pixelShaderByteCode);
+
+	//ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
+	//Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
 
 	Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
 	material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
 	material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
 	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	material->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
+	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);	
+
+
+	// Depth settings
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	// Depth test parameters
+	dsDesc.DepthEnable = false;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	// Stencil test parameters
+	dsDesc.StencilEnable = false;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create depth stencil state
+	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+	material->depthStencilState = DSState;
+
+	/// Raster settings
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+
+	D3D11_RASTERIZER_DESC RasterizerDesc;
+	RasterizerDesc.CullMode = D3D11_CULL_NONE;
+	RasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	RasterizerDesc.FrontCounterClockwise = FALSE;
+	RasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+	RasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+	RasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+	RasterizerDesc.DepthClipEnable = TRUE;
+	RasterizerDesc.ScissorEnable = FALSE;
+	RasterizerDesc.MultisampleEnable = FALSE;
+	RasterizerDesc.AntialiasedLineEnable = FALSE;
+
+	device->CreateRasterizerState(&RasterizerDesc, RasterizerState.GetAddressOf());
+	material->rasterizerState = RasterizerState;
 
 	ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
 	animatedControlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
@@ -1163,6 +1216,120 @@ void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	resultBuffer.Reset();
 }
 
+void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
+	matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
+	matrices[2] = float4x4::scaling(float3(0.0004, 0.0004, 0.0004)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[3] = fillCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	ppUnorderedAccessViews[0] = offsetUAV.Get();
+	ppUnorderedAccessViews[1] = linkUAV.Get();
+	uint t[2] = { 0,0 };
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+
+	D3D11_VIEWPORT pViewports[1];
+	pViewports->Height = fillWindowHeight;
+	pViewports->Width = fillWindowWidth;
+	pViewports->TopLeftX = 0;
+	pViewports->TopLeftY = 0;
+	pViewports->MaxDepth = 1.0;
+	pViewports->MinDepth = 0.0;
+	context->RSSetViewports(1, pViewports);
+
+	controlMesh->draw(context);
+	
+}
+
+void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = float4x4::identity;
+	matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[3] = fillCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	currentKey = (currentKey + 1) % nKeys;
+	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+	for (int iBone = 0; iBone < nBones; iBone++) {
+		boneTrafos[iBone] = rigging[iBone];
+		for (int iChain = 0; iChain < 16; iChain++) {
+			auto iNode = skeleton[iChain + iBone * 16];
+			if (iNode == 255) break;
+			boneTrafos[iBone] = keys[
+				iNode * nKeys
+					+ currentKey] * boneTrafos[iBone];
+		}
+	}
+
+	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
+	delete[] boneTrafos;
+
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	ppUnorderedAccessViews[0] = offsetUAV.Get();
+	ppUnorderedAccessViews[1] = linkUAV.Get();
+	uint t[2] = { 0,0 };
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+
+	D3D11_VIEWPORT pViewports[1];
+	pViewports->Height = fillWindowHeight;
+	pViewports->Width = fillWindowWidth;
+	pViewports->TopLeftX = 0;
+	pViewports->TopLeftY = 0;
+	pViewports->MaxDepth = 1.0;
+	pViewports->MinDepth = 0.0;
+	context->RSSetViewports(1, pViewports);
+
+	animatedControlMesh->draw(context);
+}
+
+void Game::fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(controlParticleUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
+	matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[3] = fillCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	context->PSSetShaderResources(0, 1, offsetSRV.GetAddressOf());
+	context->PSSetShaderResources(1, 1, linkSRV.GetAddressOf());
+
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[1];
+	ppUnorderedAccessViews[0] = controlParticleUAV.Get();
+	uint t[1] = { 0 };
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
+
+
+	D3D11_VIEWPORT pViewports[1];
+	pViewports->Height = fillWindowHeight;
+	pViewports->Width = fillWindowWidth;
+	pViewports->TopLeftX = 0;
+	pViewports->TopLeftY = 0;
+	pViewports->MaxDepth = 1.0;
+	pViewports->MinDepth = 0.0;
+	context->RSSetViewports(1, pViewports);
+
+	controlMeshFill->draw(context);
+}
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
@@ -1171,76 +1338,21 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	static bool first = true;
 
-	if (first)
+	//if (first)
 	if (controlParticlePlacement == Render)
 	{
 		{
 			// Round1
-			uint values[4] = { 0,0,0,0 };
-			context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
-
-			float4x4 matrices[4];
-			matrices[0] = float4x4::identity;
-			//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
-			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-			matrices[2] = float4x4::scaling(float3(0.0004, 0.0004, 0.0004)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-			matrices[3] = fillCam->getViewDirMatrix();
-			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-			ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
-			ppUnorderedAccessViews[0] = offsetUAV.Get();
-			ppUnorderedAccessViews[1] = linkUAV.Get();
-			uint t[2] = { 0,0 };
-			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
-
-			D3D11_VIEWPORT pViewports[1];
-			pViewports->Height = fillWindowHeight;
-			pViewports->Width = fillWindowWidth;
-			pViewports->TopLeftX = 0;
-			pViewports->TopLeftY = 0;
-			pViewports->MaxDepth = 1.0;
-			pViewports->MinDepth = 0.0;
-			context->RSSetViewports(1, pViewports);
-
-			controlMesh->draw(context);
-			clearContext(context);
+			//renderControlMesh(context);
+			renderAnimatedControlMesh(context);
+			clearContext(context);			
 		}
-
 		{
 			// Round2
-			float4x4 matrices[4];
-			matrices[0] = float4x4::identity;
-			matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-			matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-			matrices[3] = fillCam->getViewDirMatrix();
-			context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-			controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
-			controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
-
-			context->PSSetShaderResources(0, 1, offsetSRV.GetAddressOf());
-			context->PSSetShaderResources(1, 1, linkSRV.GetAddressOf());
-
-			ID3D11UnorderedAccessView* ppUnorderedAccessViews[1];
-			ppUnorderedAccessViews[0] = controlParticleUAV.Get();
-			uint t[1] = { 0 };
-			context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
-
-
-			D3D11_VIEWPORT pViewports[1];
-			pViewports->Height = fillWindowHeight;
-			pViewports->Width = fillWindowWidth;
-			pViewports->TopLeftX = 0;
-			pViewports->TopLeftY = 0;
-			pViewports->MaxDepth = 1.0;
-			pViewports->MinDepth = 0.0;
-			context->RSSetViewports(1, pViewports);
-
-			controlMeshFill->draw(context);
+			fillControlParticles(context);
 			clearContext(context);
 		}
 	}
-
 	first = false;
 	
 	if (renderMode == Realistic || renderMode == Gradient)
@@ -1284,32 +1396,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		clearContext(context);
 	}
 
-	{
-		float4x4 matrices[4];
-		matrices[0] = float4x4::identity;
-		matrices[1] = float4x4::identity;
-		matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-		matrices[3] = firstPersonCam->getViewDirMatrix();
-		context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-		currentKey = (currentKey + 1) % nKeys;
-		DualQuaternion* boneTrafos = new DualQuaternion[nBones];
-		for (int iBone = 0; iBone < nBones; iBone++) {
-			boneTrafos[iBone] = rigging[iBone];
-			for (int iChain = 0; iChain < 16; iChain++) {
-				auto iNode = skeleton[iChain + iBone * 16];
-				if (iNode == 255) break;
-				boneTrafos[iBone] = keys[
-					iNode * nKeys
-						+ currentKey] * boneTrafos[iBone];
-			}
-		}
-
-		context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
-		delete[] boneTrafos;
-		animatedControlMesh->draw(context);
-		clearContext(context);
-	}
+	//renderAnimatedControlMesh(context);
 	
 	
 	// Animation

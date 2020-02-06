@@ -176,5 +176,8 @@ public:
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderEnvironment(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 GG_ENDCLASS

@@ -199,7 +199,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		{
 			for (int i = 0; i < controlParticleCount; i++)
 			{
-				if (i != tid)
+				if (i != tid && controlParticles[i].pressure == 1.0)
 				{
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 

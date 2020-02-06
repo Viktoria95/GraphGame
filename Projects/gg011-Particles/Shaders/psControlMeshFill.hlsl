@@ -35,7 +35,7 @@ void AddControlParticle (float3 pos)
 	uint newControlParticleIdx = controlParticles.IncrementCounter();
 
 	ControlParticle cp;
-	cp.pressure = 0.0; // Not used
+	cp.pressure = 1.0;
 	cp.position = pos;
 	controlParticles[newControlParticleIdx] = cp;
 }
