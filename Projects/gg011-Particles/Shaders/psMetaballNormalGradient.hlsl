@@ -1,5 +1,4 @@
 #include "metaball.hlsli"
-#include "particle.hlsli"
 #include "window.hlsli"
 
 SamplerState ss;
@@ -14,16 +13,12 @@ StructuredBuffer<Particle> particles;
 
 bool MetaBallTest(float3 p)
 {
-	const float minToHit = 0.9;
-	const float r = 1.0/0.005;
-
 	float acc = 0.0;
-
 	for (int i = 0; i < particleCount; i++) {
 		float3 diff = p - particles[i].position;
 
-		acc += 1.0 / (dot(diff, diff) * r * r);
-		if (acc > minToHit)
+		acc += 1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius);
+		if (acc > metaBallMinToHit)
 		{
 			return true;
 		}
@@ -34,11 +29,10 @@ bool MetaBallTest(float3 p)
 
 float3 Grad(float3 p) {
 	float3 grad;
-	const float r = 1.0/0.005;
 
 	for (int i = 0; i < particleCount; i++) {
 		float3 diff = p - particles[i].position;
-		float s2 = dot(diff, diff) * r * r;
+		float s2 = dot(diff, diff) * metaBallRadius * metaBallRadius;
 		float s4 = s2*s2;
 		grad += diff * -2.0 / s4;
 	}
@@ -46,31 +40,9 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
-void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
-{
-	float3 invDirection = rcp(rayDir);
-	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
-	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
-	float3 tMin = min(t0, t1);
-	float3 tMax = max(t0, t1);
-	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
-	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
-
-	const float floatMax = 1000.0;
-	intersect = (tMinMax <= tMaxMin) & (tMaxMin >= 0.0f) & (tMinMax <= floatMax);
-	if (tMinMax < 0.0)
-	{
-		tMinMax = 0.0;
-	}
-
-	tStart = tMinMax;
-	tEnd = tMaxMin;
-}
-
 float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 {
 
-	const int stepCount = 20;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
@@ -94,10 +66,10 @@ float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 
 	if (intersect)
 	{
-		float3 step = d * (tEnd - tStart) / float(stepCount);
+		float3 step = d * (tEnd - tStart) / float(marchCount);
 		p += d * tStart;
 
-		for (int i = 0; i<stepCount; i++)
+		for (int i = 0; i<marchCount; i++)
 		{
 			if (MetaBallTest(p))
 			{

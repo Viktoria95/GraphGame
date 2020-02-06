@@ -1,5 +1,4 @@
 #include "metaball.hlsli"
-#include "particle.hlsli"
 #include "window.hlsli"
 
 SamplerState ss;
@@ -25,20 +24,6 @@ bool BallTest(float3 p)
 	}
 
 	return false;
-}
-
-float3 Grad(float3 p) {
-	float3 grad;
-	const float r = 0.005;
-
-	for (int i = 0; i < controlParticleCount; i++) {
-		float weight = (pow((-2.0*r), 2.0) / pow(length(p - float3(controlParticles[i].position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(controlParticles[i].position))));
-		grad.x += (weight * (p.x - controlParticles[i].position.x));
-		grad.y += (weight * (p.y - controlParticles[i].position.y));
-		grad.z += (weight * (p.z - controlParticles[i].position.z));
-	}
-
-	return grad;
 }
 
 float3 RandColor(float3 p) {
@@ -77,27 +62,6 @@ float3 RandColor(float3 p) {
 	}
 
 	return float3 (0,0,0);
-}
-
-void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
-{
-	float3 invDirection = rcp(rayDir);
-	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
-	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
-	float3 tMin = min(t0, t1);
-	float3 tMax = max(t0, t1);
-	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
-	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
-
-	const float floatMax = 1000.0;
-	intersect = (tMinMax <= tMaxMin) & (tMaxMin >= 0.0f) & (tMinMax <= floatMax);
-	if (tMinMax < 0.0)
-	{
-		tMinMax = 0.0;
-	}
-
-	tStart = tMinMax;
-	tEnd = tMaxMin;
 }
 
 float4 psControlParticleBall(VsosQuad input) : SV_Target

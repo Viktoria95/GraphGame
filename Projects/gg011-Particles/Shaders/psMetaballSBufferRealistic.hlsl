@@ -1,5 +1,4 @@
 #include "metaball.hlsli"
-#include "particle.hlsli"
 #include "window.hlsli"
 
 SamplerState ss;
@@ -21,7 +20,37 @@ StructuredBuffer<Particle> particles;
 Buffer<uint> offsetBuffer;
 StructuredBuffer<uint> idBuffer;
 
+bool MetaBallTest(float3 p)
+{
+	float acc = 0.0;
+	for (int i = 0; i < particleCount; i++) {
+		float3 diff = p - particles[i].position;
+
+		acc += 1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius);
+		if (acc > metaBallMinToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+float3 Grad(float3 p) {
+	float3 grad;
+
+	for (int i = 0; i < particleCount; i++) {
+		float3 diff = p - particles[i].position;
+		float s2 = dot(diff, diff) * metaBallRadius * metaBallRadius;
+		float s4 = s2*s2;
+		grad += diff * -2.0 / s4;
+	}
+
+	return grad;
+}
+
 bool MetaBallTest_SBuffer(float3 p, float4 pos) {
+	return true;
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 
 	uint startIdx;
@@ -96,54 +125,8 @@ float3 Grad_SBuffer(float3 p, float4 pos) {
 	return grad;
 }
 
-struct RayMarchHit
-{
-	float3 position;
-	float3 direction;
-	uint recursionDepth;
-	float alfa;
-};
-
-
-float Fresnel(float3 inDir, float3 normal, float n)
-{
-	float cosa = abs(dot(-inDir, normal));	// 1
-	float sina = sqrt(1 - cosa * cosa);		// 0
-	float disc = 1 - sina * sina / (n*n);	// 1
-	if (disc < 0) return 1;
-	float cosd = sqrt(disc);				// 1
-	float Rs = (cosa - n * cosd) / (cosa + n * cosd); // -0.2/2.2
-	Rs *= Rs;
-	float Rp = (cosd - n * cosa) / (cosd + n * cosa);
-	Rp *= Rp;
-	float fresnel = (Rs + Rp) / 2.0f;
-	return saturate(fresnel);
-}
-
-void BoxIntersect(float3 rayOrigin, float3 rayDir, float3 minBox, float3 maxBox, out bool intersect, out float tStart, out float tEnd)
-{
-	float3 invDirection = rcp (rayDir);
-	float3 t0 = float3 (minBox - rayOrigin) * invDirection;
-	float3 t1 = float3 (maxBox - rayOrigin) * invDirection;
-	float3 tMin = min (t0, t1);
-	float3 tMax = max (t0, t1);
-	float tMinMax = max(max(tMin.x, tMin.y), tMin.z);
-	float tMaxMin = min(min(tMax.x, tMax.y), tMax.z);
-
-	const float floatMax = 1000.0;
-	intersect = (tMinMax <= tMaxMin) & (tMaxMin >= 0.0f) & (tMinMax <= floatMax);
-	if (tMinMax < 0.0)
-	{
-		tMinMax = 0.0;
-	}
-	
-	tStart = tMinMax;
-	tEnd = tMaxMin;
-}
-
 float4 psMetaballSBufferRealistic(VsosQuad input) : SV_Target
 {
-	const int stepCount = 20;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
@@ -190,11 +173,11 @@ float4 psMetaballSBufferRealistic(VsosQuad input) : SV_Target
 		if (intersect && marchRecursionDepth < 4)
 		{
 			bool startedInside = MetaBallTest_SBuffer(marchPos, screenPosition);
-			float3 marchStep = marchDir * (tEnd - tStart) / float(stepCount);
+			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
 
 			bool marchHit = false;
-			for (int i = 0; i<stepCount && !marchHit; i++)
+			for (int i = 0; i<marchCount && !marchHit; i++)
 			{
 				bool inside = MetaBallTest_SBuffer(marchPos, screenPosition);
 
