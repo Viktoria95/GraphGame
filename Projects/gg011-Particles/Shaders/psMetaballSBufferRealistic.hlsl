@@ -50,7 +50,6 @@ float3 Grad(float3 p) {
 }
 
 bool MetaBallTest_SBuffer(float3 p, float2 pos) {
-	return true;
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 
 	uint startIdx;
