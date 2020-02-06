@@ -151,7 +151,7 @@ float4 psMetaballSBufferRealistic(VsosQuad input) : SV_Target
 	firstElem.alfa = 1.0;
 	stack[0] = firstElem;
 
-	float4 screenPosition = input.pos.xy;
+	float2 screenPosition = input.pos.xy;
 
 	float3 color = float3(0.0, 0.0, 0.0);
 	uint killer = 10;
