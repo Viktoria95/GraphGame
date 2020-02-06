@@ -9,6 +9,8 @@
 
 #include <array>
 
+class DualQuaternion;
+
 GG_SUBCLASS(Game, Egg::App)
 public:	
 	static const unsigned int windowHeight = 720;
@@ -46,6 +48,7 @@ private:
 	Egg::Mesh::Shaded::P controlMesh;
 	Egg::Mesh::Shaded::P controlMeshFill;
 	Egg::Cam::FirstPerson::P fillCam;
+	Egg::Mesh::Shaded::P animatedControlMesh;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
@@ -115,6 +118,25 @@ private:
 	uint debugType;
 	const uint maxDebugType = 7;
 
+
+	// Skeletal
+	int nBones;
+	int nInstances;
+	int nKeys;
+	int nNodes;
+
+	std::vector<std::string> boneNames;
+	//	std::vector<Egg::Math::float4x4> riggingPoseBoneTransforms;
+	std::vector<std::vector<unsigned char> > boneTransformationChainNodeIndices;
+	std::map<std::string, unsigned char> nodeNamesToNodeIndices;
+
+	unsigned char* skeleton;
+	DualQuaternion* keys;
+	DualQuaternion* rigging;
+	unsigned int currentKey;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> boneBuffer;
+
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
 	~Game(void);
@@ -130,6 +152,7 @@ public:
 
 	void CreateCommon();
 	void CreateParticles();
+	void CreateControlMesh();
 	void CreateControlParticles();
 	void CreateBillboard();
 	void CreatePrefixSum();

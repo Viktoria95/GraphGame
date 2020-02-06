@@ -9,6 +9,7 @@
 #include <assimp/importer.hpp>      
 #include <assimp/scene.h>       
 #include <assimp/postProcess.h> 
+#include "DualQuaternion.h"
 
 #include <iostream> 
 
@@ -31,6 +32,7 @@ HRESULT Game::createResources()
 {
 	CreateCommon();
 	CreateParticles();
+	CreateControlMesh();
 	CreateControlParticles();
 	CreateBillboard();
 	CreatePrefixSum();
@@ -287,7 +289,6 @@ void Game::CreateControlParticles()
 
 	}
 	
-
 	// Data Buffer
 	D3D11_BUFFER_DESC particleBufferDesc;
 	particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -682,6 +683,164 @@ void Game::CreateAnimation() {
 		device->CreateBuffer(&controlParamsCBDesc, &initialControlParamsData, controlParamsCB.GetAddressOf());
 }
 
+void Game::CreateControlMesh() {
+	Assimp::Importer importer;
+
+	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("mrem.dae"), 0);
+
+	// if the import failed
+	if (!assScene || !assScene->HasMeshes() || assScene->mNumMeshes == 0)
+	{
+		return;
+	}
+
+	aiMesh* assMesh = assScene->mMeshes[1];
+	Egg::Mesh::Indexed::P indexedMesh = Egg::Mesh::Importer::fromAiMesh(device, assMesh);
+
+	nBones = assMesh->mNumBones;
+	rigging = new DualQuaternion[nBones];
+
+	for (int iBone = 0; iBone< assMesh->mNumBones; iBone++) {
+		aiBone* assBone = assMesh->mBones[iBone];
+		boneNames.push_back(assBone->mName.C_Str());
+		aiMatrix4x4& a = assBone->mOffsetMatrix;
+		float4x4 m(
+			a.a1, a.a2, a.a3, a.a4,
+			a.b1, a.b2, a.b3, a.b4,
+			a.c1, a.c2, a.c3, a.c4,
+			a.d1, a.d2, a.d3, a.d4
+			);
+		aiQuaternion q;
+		aiVector3D t;
+		a.DecomposeNoScaling(q, t);
+		rigging[
+			//riggingPoseBoneTransforms.size()
+			iBone].set(float4(q.x, q.y, q.z, q.w), float4(t.x, t.y, t.z, 1));
+			//		riggingPoseBoneTransforms.push_back(m);
+			boneTransformationChainNodeIndices.push_back(std::vector<unsigned char>());
+	}
+
+	Assimp::Importer importer2;
+	const aiScene* assAnimScene = importer2.ReadFile(App::getSystemEnvironment().resolveMediaPath("thriller_part_3.dae"), 0);
+	aiAnimation* assAnim = assAnimScene->mAnimations[0];
+	skeleton = new unsigned char[nBones * 16];
+	memset(skeleton, 0xff, nBones * 16);
+	struct NodeProcessor {
+		Game* game;
+		unsigned char* skeleton;
+		unsigned int iNode;
+		NodeProcessor(Game* game, unsigned char* skeleton) : game(game), skeleton(skeleton), iNode(0) {}
+		void process(aiNode* assNode) {
+			game->nodeNamesToNodeIndices[assNode->mName.C_Str()] = iNode;
+			iNode++;
+			//game->nodeOffsetTransforms.push_back( m );
+			//aiMatrix4x4& a = assNode->mTransformation;
+			for (int iBone = 0; iBone < game->boneNames.size(); iBone++) {
+				if (game->boneNames[iBone] == assNode->mName.C_Str()) {
+
+					aiNode* pNode = assNode;
+					while (pNode) {
+						std::map<std::string, unsigned char>::iterator iNodeIndex = game->nodeNamesToNodeIndices.find(pNode->mName.C_Str());
+						if (iNodeIndex != game->nodeNamesToNodeIndices.end()) {
+							skeleton[iBone * 16 + game->boneTransformationChainNodeIndices[iBone].size()] = iNodeIndex->second;
+							game->boneTransformationChainNodeIndices[iBone].push_back(iNodeIndex->second);
+						}
+						else
+						{
+							// never happens
+						}
+						pNode = pNode->mParent;
+					}
+					break;
+				}
+			}
+
+			for (int iChild = 0; iChild<assNode->mNumChildren; iChild++) {
+				process(assNode->mChildren[iChild]);
+			}
+		}
+	} np(this, skeleton);
+	np.process(assAnimScene->mRootNode);
+
+	nKeys = 768;
+	nNodes = np.iNode;//nodeOffsetTransforms.size();
+
+	keys = new DualQuaternion[
+		nNodes
+			* nKeys
+	];
+
+	std::map<std::string, unsigned char>::iterator iNodeIndex = nodeNamesToNodeIndices.begin();
+	std::map<std::string, unsigned char>::iterator eNodeIndex = nodeNamesToNodeIndices.end();
+	while (iNodeIndex != eNodeIndex) {
+		aiNode* assNode = assAnimScene->mRootNode->FindNode(iNodeIndex->first.c_str());
+		aiQuaternion q;
+		aiVector3D t;
+		assNode->mTransformation.DecomposeNoScaling(q, t);
+		DualQuaternion dq(
+			float4(q.x, q.y, q.z, q.w),
+			float4(t.x, t.y, t.z, 1));
+		for (int iKey = 0; iKey< nKeys; iKey++) {
+			keys[iNodeIndex->second * nKeys + iKey] = dq;
+		}
+		iNodeIndex++;
+	}
+
+	for (int iAnim = 0; iAnim<assAnimScene->mNumAnimations; iAnim++) {
+		aiAnimation* assAnim = assAnimScene->mAnimations[iAnim];
+		for (int iChannel = 0; iChannel< assAnim->mNumChannels; iChannel++) {
+			aiNodeAnim* assChannel = assAnim->mChannels[iChannel];
+			std::map<std::string, unsigned char>::iterator iNodeIndex = nodeNamesToNodeIndices.find(assChannel->mNodeName.C_Str());
+			if (iNodeIndex != nodeNamesToNodeIndices.end()) {
+				for (int iKey = 0; iKey< assChannel->mNumPositionKeys; iKey++) {
+					aiVector3D& p = assChannel->mPositionKeys[iKey].mValue;
+					aiQuaternion& q = assChannel->mRotationKeys[iKey].mValue;
+					keys[iNodeIndex->second * nKeys + iKey] = DualQuaternion(
+						float4(q.x, q.y, q.z, q.w),
+						float4(p.x, p.y, p.z, 1));
+				}
+			}
+			else
+			{
+				//never happens
+			}
+		}
+	}
+
+	CD3D11_BUFFER_DESC boneBufferDesc(
+		nBones *
+		2 *
+		sizeof(float4)
+		, D3D11_BIND_CONSTANT_BUFFER);
+	boneBufferDesc.CPUAccessFlags = 0;
+	boneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	boneBufferDesc.StructureByteStride = 0;
+	Egg::ThrowOnFail("Failed to create boneCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&boneBufferDesc, NULL, boneBuffer.GetAddressOf());
+
+	using namespace Microsoft::WRL;
+
+	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[1]);
+
+	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSkinning.cso");
+	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSkinning.cso", device, vertexShaderByteCode);
+
+	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psIdle.cso");
+	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psIdle.cso", device, pixelShaderByteCode);
+
+	Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+	material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+	material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	material->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
+
+	ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+	animatedControlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
+
+	currentKey = 0;
+
+}
+
 void Game::CreateDebug()
 {
 	using namespace Microsoft::WRL;
@@ -725,6 +884,14 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
+	// new code from skeleton branch 
+	/*UINT pNumViewports = 1;
+	D3D11_VIEWPORT pViewports[1];
+	context->RSGetViewports(&pNumViewports, pViewports);
+	context->ClearState();
+	context->RSSetViewports(pNumViewports, pViewports);
+	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());*/
+
 	context->ClearState();
 
 	D3D11_VIEWPORT pViewports[1];
@@ -737,6 +904,7 @@ void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	context->RSSetViewports(1, pViewports);
 
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+	
 }
 
 void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -1113,6 +1281,33 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	else if (renderMode == ControlParticles)
 	{
 		renderControlBalls(context);
+		clearContext(context);
+	}
+
+	{
+		float4x4 matrices[4];
+		matrices[0] = float4x4::identity;
+		matrices[1] = float4x4::identity;
+		matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+		matrices[3] = firstPersonCam->getViewDirMatrix();
+		context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+		currentKey = (currentKey + 1) % nKeys;
+		DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+		for (int iBone = 0; iBone < nBones; iBone++) {
+			boneTrafos[iBone] = rigging[iBone];
+			for (int iChain = 0; iChain < 16; iChain++) {
+				auto iNode = skeleton[iChain + iBone * 16];
+				if (iNode == 255) break;
+				boneTrafos[iBone] = keys[
+					iNode * nKeys
+						+ currentKey] * boneTrafos[iBone];
+			}
+		}
+
+		context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
+		delete[] boneTrafos;
+		animatedControlMesh->draw(context);
 		clearContext(context);
 	}
 	
