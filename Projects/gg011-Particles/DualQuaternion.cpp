@@ -1,8 +1,4 @@
-#include "DXUT.h"
 #include "DualQuaternion.h"
-extern "C" {
-#include "dq/dq.h"
-}
 
 DualQuaternion::DualQuaternion(const Egg::Math::float4& orientation, const Egg::Math::float4& translation)
 {
@@ -30,11 +26,10 @@ void DualQuaternion::set(const Egg::Math::float4& orientation, const Egg::Math::
 	bool k = true;*/
 }
 
-void DualQuaternion::operator*=(const DualQuaternion & other)
+DualQuaternion DualQuaternion::operator*(const DualQuaternion & other) const
 {
 	DualQuaternion dq;
 	dq.orientation = this->orientation.quatMul(other.orientation);
 	dq.translation = this->orientation.quatMul(other.translation) + this->translation.quatMul(other.orientation);
-	*this = dq;
-
+	return dq;
 }

@@ -5,7 +5,7 @@ struct DualQuat {
 };
 
 cbuffer boneCB {
-	DualQuat boneBuffer[256]; //TODO actual number
+	DualQuat boneBuffer[46]; //TODO actual number
 };
 
 cbuffer modelViewProjCB {

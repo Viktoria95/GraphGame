@@ -13,5 +13,5 @@ public:
 
 	void set(const Egg::Math::float4& orientation, const Egg::Math::float4& translation);
 
-	void operator*=(const DualQuaternion& other);
+	DualQuaternion operator*(const DualQuaternion& other) const;
 };

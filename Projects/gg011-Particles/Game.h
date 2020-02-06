@@ -125,7 +125,7 @@ private:
 	DualQuaternion* rigging;
 	unsigned int currentKey;
 
-	ID3D11Buffer* boneBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> boneBuffer;
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);

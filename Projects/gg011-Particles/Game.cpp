@@ -631,11 +631,11 @@ void Game::CreateControlMesh() {
 	boneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	boneBufferDesc.StructureByteStride = 0;
 	Egg::ThrowOnFail("Failed to create boneCB.", __FILE__, __LINE__) ^
-		device->CreateBuffer(&boneBufferDesc, NULL, &boneBuffer);
+		device->CreateBuffer(&boneBufferDesc, NULL, boneBuffer.GetAddressOf());
 
 	using namespace Microsoft::WRL;
 
-	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[0]);
+	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[1]);
 
 	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSkinning.cso");
 	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSkinning.cso", device, vertexShaderByteCode);
@@ -685,9 +685,6 @@ void Game::CreateDebug()
 
 HRESULT Game::releaseResources()
 {
-	boneBuffer->Release();
-	boneSrv->Release();
-
 	billboards.reset();
 	return Egg::App::releaseResources();
 }
@@ -968,18 +965,20 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		matrices[3] = firstPersonCam->getViewDirMatrix();
 		context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-		currentKey++;
+		currentKey = (currentKey + 1)%nKeys;
 		DualQuaternion* boneTrafos = new DualQuaternion[nBones];
 		for (int iBone = 0; iBone < nBones; iBone++) {
-			boneTrafos[iBone] = rigging[nBones];
+			boneTrafos[iBone] = rigging[iBone];
 			for (int iChain = 0; iChain < 16; iChain++) {
-				boneTrafos[iBone] *= keys[
-					skeleton[iChain + iBone*16] * nKeys
-					+ currentKey];
+				auto iNode = skeleton[iChain + iBone * 16];
+				if (iNode == 255) break;
+				boneTrafos[iBone] = keys[
+					iNode * nKeys
+					+ currentKey] * boneTrafos[iBone];
 			}
 		}
 		
-		context->UpdateSubresource(boneBuffer, 0, nullptr, boneTrafos, 0, 0);
+		context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
 		delete [] boneTrafos;
 		controlMesh->draw(context);
 		clearContext(context);

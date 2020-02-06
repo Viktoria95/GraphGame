@@ -94,15 +94,6 @@
     <FxCompile Include="Shaders\csScanBucketResult.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psMetaballNormal.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballABuffer.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\psMetaballSBuffer.hlsl">
-      <Filter>Shaders\Metaball</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\psBillboardA.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
