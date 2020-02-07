@@ -108,6 +108,29 @@ float2 WorldToNDC(float3 wp)
 	return screenPos;
 }
 
+float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float2 inputPos)
+{
+	float3 newStart = startPos;
+	float3 newEnd = endPos;
+
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		float3 mid = (startPos + endPos) / 2.0;
+		bool midInside = MetaBallTest_ABuffer(mid, inputPos);
+		if (midInside == startInside)
+		{
+			newStart = mid;
+		}
+		if (midInside == endInside)
+		{
+			newEnd = mid;
+		}
+	}
+
+	return newEnd;
+}
+
 float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
@@ -156,6 +179,7 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 		if (intersect && marchRecursionDepth < 4)
 		{
 			bool startedInside = MetaBallTest_ABuffer(marchPos, screenPosition);
+			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
 
@@ -167,6 +191,7 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 				if (inside && !startedInside || !inside && startedInside)
 				{
 					marchHit = true;
+					marchPos = BinarySearch(startedInside, start, inside, marchPos, screenPosition);
 
 					screenPosition.xy = WorldToNDC(marchPos);
 

@@ -98,6 +98,29 @@ float3 Grad_ABuffer(float3 p, float4 pos)
 	return grad;
 }
 
+float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 inputPos)
+{
+	float3 newStart = startPos;
+	float3 newEnd = endPos;
+
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		float3 mid = (startPos + endPos) / 2.0;
+		bool midInside = MetaBallTest_ABuffer(mid, inputPos);
+		if (midInside == startInside)
+		{
+			newStart = mid;
+		}
+		if (midInside == endInside)
+		{
+			newEnd = mid;
+		}
+	}
+
+	return newEnd;
+}
+
 
 float4 psMetaballABufferGradient(VsosQuad input) : SV_Target
 {
@@ -131,7 +154,8 @@ float4 psMetaballABufferGradient(VsosQuad input) : SV_Target
 		{
 			if (MetaBallTest_ABuffer(p, input.pos))
 			{
-				return float4 (normalize(Grad(p/*, input.pos*/)), 1.0);
+				p = BinarySearch(false, p - step, true, p, input.pos);
+				return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
 			}
 
 			p += step;
