@@ -27,6 +27,39 @@ bool MetaBallTest(float3 p)
 	return false;
 }
 
+float a(float r, float R) {
+	if (R > r)
+		return 0.0;
+	return 1.0;
+}
+
+//Wyvill
+bool MetaBallTest_W(float3 p)
+{
+	float acc = 0.0;
+	float r = 0.0;
+	float a = 1.1;
+	float b = 0.015;
+
+	for (int i = 0; i < particleCount; i++) {
+		float3 diff = p - particles[i].position;
+		r = sqrt(dot(diff, diff));
+
+		float res = 1 - (4 * pow(r, 6) / (9 * pow(b, 6))) + (17 * pow(r, 4) / (9 * pow(b, 4))) - (22 * pow(r, 2) / 9 * pow(b, 2));
+
+		if (r < b) {
+			acc += a*res;
+		}
+
+		if (acc > metaBallMinToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 float3 Grad(float3 p) {
 	float3 grad;
 
@@ -64,7 +97,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	for (i = 0; i < 3; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest(mid);
+		bool midInside = MetaBallTest_W(mid);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -126,7 +159,7 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 
 		if (intersect && marchRecursionDepth < 4)
 		{
-			bool startedInside = MetaBallTest(marchPos);
+			bool startedInside = MetaBallTest_W(marchPos);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
@@ -134,12 +167,11 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 			bool marchHit = false;
 			for (int i = 0; i<marchCount && !marchHit; i++)
 			{
-				bool inside = MetaBallTest(marchPos);
+				bool inside = MetaBallTest_W(marchPos);
 				if (inside && !startedInside || !inside && startedInside)
 				{
 					marchHit = true;
 					marchPos = BinarySearch(startedInside, start, inside, marchPos);
-
 
 					float3 normal = normalize(-Grad(marchPos));
 					float refractiveIndex = 1.4;

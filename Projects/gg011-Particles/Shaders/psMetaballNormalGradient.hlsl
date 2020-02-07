@@ -11,6 +11,33 @@ cbuffer metaballPSEyePosCB
 
 StructuredBuffer<Particle> particles;
 
+//Wyvill
+bool MetaBallTest_W(float3 p)
+{
+	float acc = 0.0;
+	float r = 0.0;
+	float a = 1.1;
+	float b = 0.015;
+
+	for (int i = 0; i < particleCount; i++) {
+		float3 diff = p - particles[i].position;
+		r = sqrt(dot(diff, diff));
+
+		float res = 1 - (4 * pow(r, 6) / (9 * pow(b, 6))) + (17 * pow(r, 4) / (9 * pow(b, 4))) - (22 * pow(r, 2) / 9 * pow(b, 2));
+
+		if (r < b) {
+			acc += a*res;
+		}
+
+		if (acc > metaBallMinToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool MetaBallTest(float3 p)
 {
 	float acc = 0.0;
@@ -49,7 +76,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	for (i = 0; i < 3; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest(mid);
+		bool midInside = MetaBallTest_W(mid);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -94,7 +121,7 @@ float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 
 		for (int i = 0; i<marchCount; i++)
 		{
-			if (MetaBallTest(p))
+			if (MetaBallTest_W(p))
 			{
 				p = BinarySearch(false, p - step, true, p);
 				return float4 (normalize(Grad(p)), 1.0);
