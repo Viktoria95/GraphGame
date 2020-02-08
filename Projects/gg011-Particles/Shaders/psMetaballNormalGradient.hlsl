@@ -76,7 +76,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	for (i = 0; i < 3; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest_W(mid);
+		bool midInside = MetaBallTest(mid);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -121,7 +121,7 @@ float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 
 		for (int i = 0; i<marchCount; i++)
 		{
-			if (MetaBallTest_W(p))
+			if (MetaBallTest(p))
 			{
 				p = BinarySearch(false, p - step, true, p);
 				return float4 (normalize(Grad(p)), 1.0);

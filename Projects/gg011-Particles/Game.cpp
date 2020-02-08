@@ -15,8 +15,8 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
-const unsigned int controlParticleCount = 1024 * 64;
+const unsigned int defaultParticleCount = 1024;
+const unsigned int controlParticleCount = 1024 * 4;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
