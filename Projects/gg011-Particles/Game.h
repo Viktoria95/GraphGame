@@ -23,6 +23,7 @@ private:
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
 	enum ControlParticlePlacement { Vertex, Render };
+	bool drawFlatControlMesh;
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -46,6 +47,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
 	Egg::Mesh::Shaded::P controlMesh;
+	Egg::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg::Mesh::Shaded::P controlMeshFill;
 	Egg::Cam::FirstPerson::P fillCam;
 	Egg::Mesh::Shaded::P animatedControlMesh;
@@ -178,6 +180,7 @@ public:
 	void renderEnvironment(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 GG_ENDCLASS

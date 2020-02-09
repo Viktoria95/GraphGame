@@ -46,7 +46,7 @@ float3 Grad(float3 p) {
 	return grad;
 }
 
-bool BallTest(float3 p)
+bool BallTest(float3 p, out float3 grad)
 {
 	const float r = 0.005;
 
@@ -54,6 +54,7 @@ bool BallTest(float3 p)
 	{
 		if (length(p - float3(particles[i].position)) < r)
 		{
+			grad = normalize(p - float3(particles[i].position));
 			return true;
 		}
 	}
@@ -212,7 +213,7 @@ float3 RandColor(float3 p) {
 
 float4 psParticleBall(VsosQuad input) : SV_Target
 {
-	const int stepCount = 40;
+	const int stepCount = 50;
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
@@ -241,11 +242,13 @@ float4 psParticleBall(VsosQuad input) : SV_Target
 
 		for (int i = 0; i<stepCount; i++)
 		{
-			if (BallTest(p))
+			float3 grad;
+			if (BallTest(p, grad))
 			{
 				if (debugType == 0)
 				{
 					return float4 ((RandColor(p)), 1.0);
+					//return float4 ((grad), 1.0);
 				}
 				if (debugType == 1)
 				{

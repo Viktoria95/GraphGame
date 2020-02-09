@@ -1,10 +1,11 @@
 
 #include "particle.hlsli"
 
+//#define metaBallRadius 1.0 / 0.005
 #define metaBallRadius 1.0 / 0.005
 #define metaBallMinToHit 0.9
-#define marchCount 15
-#define binaryStepCount 2
+#define marchCount 25
+#define binaryStepCount 5
 
 
 struct IaosQuad

@@ -9,7 +9,6 @@ cbuffer modelViewProjCB {
 struct IaosTrafo
 {
 	float4 pos : POSITION;
-
 };
 
 struct VsosTrafo

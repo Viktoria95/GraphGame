@@ -192,7 +192,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		}
 
 		// IV.d Gravitational force
-		float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0);
+		float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0) * 0.1;
 
 		// V. Control force
 		float3 controlForce = float3(0.0, 0.0, 0.0);
@@ -203,19 +203,23 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				{
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
-					controlForce += ((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + 1.0)
-						* massPerParticle * pressureSmoothingKernelGradient(deltaPos, supportRadius);
+					controlForce += 0.1 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 1.2);
 				}
 			}
 		}
 
 		float controlAmplitude = length(controlForce);
-		if (controlAmplitude > 0.001)
+		//if (controlAmplitude > 0.001)
 		{
-			controlForce *= 100000.0 / length(controlForce);
+			//controlForce *=  1.0 / length(controlForce);
 		}
 
-		
+		if (controlAmplitude > 50000.0)
+		{
+			controlForce *= 50000.0 / controlAmplitude;
+			particles[tid].velocity *= 0.9;
+		}
+
 		//float3 controlForce = float3 (0.0f, 0.0f, 0.0f);
 		//controlForce = float3 (0.0f, 0.0f, 0.0f);
 		/*
@@ -255,7 +259,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		}
 		if (controlParams[0].w > 0.5)
 		{
-			sumForce += surfaceTensionForce;
+			//sumForce += surfaceTensionForce;
 		}
 		//if (controlParams[1].x > 0.5)
 		{
@@ -268,6 +272,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 	if (length (sumForce) > 0.001) // TODO: Why?
 	{
 		particles[tid].velocity += dt * sumForce / particles[tid].massDensity;
+		//particles[tid].velocity *= 0.9;
 		particles[tid].position += dt * particles[tid].velocity;		
 	}
 
@@ -276,7 +281,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 	//const float boundary = 0.07;
 
 	const float boundaryEps = 0.0001;
-	const float boundaryVelDec = 0.98;
+	const float boundaryVelDec = 0.3;
 
 	if (particles[tid].position.y < boundaryBottom)
 	{

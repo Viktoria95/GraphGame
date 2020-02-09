@@ -1,9 +1,9 @@
 
-#define particleCount 1024 * 1
+#define particleCount 1024 * 2
 
 //#define controlParticleCount 1024 * 4
 
-#define controlParticleCount 1024 * 4
+#define controlParticleCount 1024 * 3
 
 //#define controlParticleCount 512
 

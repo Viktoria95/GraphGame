@@ -19,6 +19,7 @@ Cam::FirstPerson::FirstPerson()
 	nearPlane = 0.1f;
 	farPlane = 10.0f;
 	setAspect(1.33f);
+	//setAspect(1.0f);
 
 	viewMatrix = float4x4::view(position, ahead, float3::yUnit);
 	viewDirMatrix = (float4x4::view(float3::zero, ahead, float3::yUnit) * projMatrix).invert();

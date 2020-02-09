@@ -62,7 +62,7 @@ float3 NDCToWorld(float2 screenPos, float depth)
 void psControlMeshFill(VsosQuad input)
 {
 	
-	const float placementDistance = 0.01;
+	const float placementDistance = 0.02;
 
 	uint uIndex = (uint)input.pos.y * (uint)fillWindowWidth + (uint)input.pos.x;
 	uint offset = offsetBuffer[uIndex];
@@ -78,13 +78,15 @@ void psControlMeshFill(VsosQuad input)
 		float3 step = endWorldPos - startWorldPos;
 		float dist = length(step);
 		step *= (placementDistance / dist);
-
+		
 		//AddControlParticle(startWorldPos);
 		//return;
 
 		if (dist < placementDistance)
 		{
+			AddControlParticle(startWorldPos.xyz);
 			AddControlParticle((startWorldPos.xyz + endWorldPos.xyz) / 2.0);
+			AddControlParticle(endWorldPos.xyz);
 		}
 		else
 		{

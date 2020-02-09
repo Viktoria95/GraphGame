@@ -155,7 +155,7 @@ float4 psMetaballABufferGradient(VsosQuad input) : SV_Target
 			if (MetaBallTest_ABuffer(p, input.pos))
 			{
 				p = BinarySearch(false, p - step, true, p, input.pos);
-				return float4 (normalize(Grad_ABuffer(p, input.pos)), 1.0);
+				return float4 (normalize(Grad_ABuffer(p, input.pos)) + float3(0.1, 0.1, 0.1), 1.0);
 			}
 
 			p += step;

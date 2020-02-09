@@ -15,8 +15,8 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024;
-const unsigned int controlParticleCount = 1024 * 4;
+const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
@@ -40,6 +40,7 @@ HRESULT Game::createResources()
 	CreateMetaball();
 	CreateAnimation();
 	CreateDebug();
+	
 
 	//controlParams[5] = 1.0;
 	controlParams[7] = 0.0;
@@ -57,6 +58,7 @@ void Game::CreateCommon()
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = Render;
+	drawFlatControlMesh = false;
 
 	debugType = 0;
 
@@ -141,6 +143,7 @@ void Game::CreateControlParticles()
 	
 	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe.obj"), 0);
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("lion.obj"), 0);
 
 	if (controlParticlePlacement == Vertex)
 	{
@@ -233,6 +236,25 @@ void Game::CreateControlParticles()
 
 			ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
 			controlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
+
+			//Debug
+			{
+				ComPtr<ID3DBlob> vertexShaderByteCodeDebug = loadShaderCode("vsTrafoNorm.cso");
+				Egg::Mesh::Shader::P vertexShaderDebug = Egg::Mesh::Shader::create("vsTrafoNorm.cso", device, vertexShaderByteCodeDebug);
+
+				ComPtr<ID3DBlob> pixelShaderByteCodeDebug = loadShaderCode("psFlat.cso");
+				Egg::Mesh::Shader::P pixelShaderDebug = Egg::Mesh::Shader::create("psFlat.cso", device, pixelShaderByteCodeDebug);
+
+				Egg::Mesh::Material::P materialDebug = Egg::Mesh::Material::create();
+				materialDebug->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShaderDebug);
+				materialDebug->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShaderDebug);
+				materialDebug->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+				materialDebug->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+				ComPtr<ID3D11InputLayout> inputLayoutDebug = inputBinder->getCompatibleInputLayout(vertexShaderByteCodeDebug, geometry);
+				controlMeshFlat = Egg::Mesh::Shaded::create(geometry, materialDebug, inputLayoutDebug);
+			}
+
 		}
 
 
@@ -1226,7 +1248,8 @@ void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	matrices[0] = float4x4::identity;
 	//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
 	matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-	matrices[2] = float4x4::scaling(float3(0.0004, 0.0004, 0.0004)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[2] = float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	//matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
 	matrices[3] = fillCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
@@ -1295,6 +1318,24 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 	animatedControlMesh->draw(context);
 }
 
+void Game::renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
+	matrices[2] = (float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
+	//matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[3] = fillCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+
+	controlMeshFlat->draw(context);
+
+}
+
 void Game::fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	uint values[4] = { 0,0,0,0 };
@@ -1339,13 +1380,13 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	static bool first = true;
 
-	//if (first)
+	if (first)
 	if (controlParticlePlacement == Render)
 	{
 		{
 			// Round1
-			//renderControlMesh(context);
-			renderAnimatedControlMesh(context);
+			renderControlMesh(context);
+			//renderAnimatedControlMesh(context);
 			clearContext(context);			
 		}
 		{
@@ -1395,18 +1436,20 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	{
 		renderControlBalls(context);
 		clearContext(context);
-	}
-
-	//renderAnimatedControlMesh(context);
-	
+	}	
 	
 	// Animation
 	renderAnimation(context);
-	clearContext(context);
-
+	clearContext(context);	
+	
 	// Sort
-	renderSort(context);
-	clearContext(context);
+	//renderSort(context);
+	//clearContext(context);
+
+	if (drawFlatControlMesh)
+	{
+		renderFlatControlMesh(context);
+	}
 
 }
 
@@ -1520,8 +1563,16 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '9')
 		{
-			controlParams[7] += 0.1;
-			std::cout << controlParams[7] << std::endl;
+			//controlParams[7] += 0.1;
+			//std::cout << controlParams[7] << std::endl;
+			if (drawFlatControlMesh)
+			{
+				drawFlatControlMesh = false;
+			}
+			else
+			{
+				drawFlatControlMesh = true;
+			}
 		}
 	}
 
