@@ -63,16 +63,59 @@ bool MetaBallTest_SBuffer(float3 p, float2 pos) {
 
 	uint endIdx = offsetBuffer[uIndex];
 	
-	const float minToHit = 1.0;
-	const float r = 0.005;
+	const float minToHit = metaBallMinToHit;
+	const float r = metaBallRadius;
 
 	float acc = 0.0;
 
 	for (uint i = startIdx; i < endIdx; i++) {
 		uint j = idBuffer[i];
+		float3 diff = p - particles[j].position;
 
-		acc += pow((length(p - float3(particles[j].position)) / r), -2.0);
+		acc += 1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius);
 		if (acc > minToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//Wyvill
+bool MetaBallTest_SBuffer_W(float3 p, float2 pos)
+{
+	float acc = 0.0;
+	float r = 0.0;
+	float a = 1.1;
+	float b = 0.015;
+
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+
+	uint startIdx;
+	if (uIndex > 0) {
+		startIdx = offsetBuffer[uIndex - 1];
+	}
+	else
+	{
+		startIdx = 0;
+	}
+
+	uint endIdx = offsetBuffer[uIndex];
+
+	for (uint i = startIdx; i < endIdx; i++) {
+		uint j = idBuffer[i];
+
+		float3 diff = p - particles[j].position;
+		r = sqrt(dot(diff, diff));
+
+		float res = 1 - (4 * pow(r, 6) / (9 * pow(b, 6))) + (17 * pow(r, 4) / (9 * pow(b, 4))) - (22 * pow(r, 2) / 9 * pow(b, 2));
+
+		if (r < b) {
+			acc += a*res;
+		}
+
+		if (acc > metaBallMinToHit)
 		{
 			return true;
 		}
@@ -111,7 +154,7 @@ float3 Grad_SBuffer(float3 p, float2 pos) {
 	uint endIdx = offsetBuffer[uIndex];
 
 	float3 grad;
-	const float r = 0.005;
+	const float r = metaBallRadius;
 
 	for (int i = startIdx; i < endIdx; i++) {
 		uint j = idBuffer[i];
@@ -140,10 +183,10 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	float3 newEnd = endPos;
 
 	int i;
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < binaryStepCount; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest_SBuffer(mid, inputPos);
+		bool midInside = MetaBallTest_SBuffer_W(mid, inputPos);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -204,7 +247,7 @@ float4 psMetaballSBufferRealistic(VsosQuad input) : SV_Target
 
 		if (intersect && marchRecursionDepth < 4)
 		{
-			bool startedInside = MetaBallTest_SBuffer(marchPos, screenPosition);
+			bool startedInside = MetaBallTest_SBuffer_W(marchPos, screenPosition);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
@@ -212,7 +255,7 @@ float4 psMetaballSBufferRealistic(VsosQuad input) : SV_Target
 			bool marchHit = false;
 			for (int i = 0; i<marchCount && !marchHit; i++)
 			{
-				bool inside = MetaBallTest_SBuffer(marchPos, screenPosition);
+				bool inside = MetaBallTest_SBuffer_W(marchPos, screenPosition);
 
 				if (inside && !startedInside || !inside && startedInside)
 				{

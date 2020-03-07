@@ -97,7 +97,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	for (i = 0; i < binaryStepCount; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest(mid);
+		bool midInside = MetaBallTest_W(mid);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -159,7 +159,7 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 
 		if (intersect && marchRecursionDepth < 4)
 		{
-			bool startedInside = MetaBallTest(marchPos);
+			bool startedInside = MetaBallTest_W(marchPos);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
@@ -167,7 +167,7 @@ float4 psMetaballNormalRealistic(VsosQuad input) : SV_Target
 			bool marchHit = false;
 			for (int i = 0; i<marchCount && !marchHit; i++)
 			{
-				bool inside = MetaBallTest(marchPos);
+				bool inside = MetaBallTest_W(marchPos);
 				if (inside && !startedInside || !inside && startedInside)
 				{
 					marchHit = true;

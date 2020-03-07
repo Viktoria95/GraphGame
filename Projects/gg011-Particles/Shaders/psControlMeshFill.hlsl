@@ -27,12 +27,15 @@ struct LinkData
 };
 
 RWStructuredBuffer<ControlParticle> controlParticles;
+RWByteAddressBuffer controlParticleCounter;
+
 Buffer<uint> offsetBuffer;
 StructuredBuffer<LinkData> linkBuffer;
 
 void AddControlParticle (float3 pos)
 {
-	uint newControlParticleIdx = controlParticles.IncrementCounter();
+	uint newControlParticleIdx;
+	controlParticleCounter.InterlockedAdd(0, 1, newControlParticleIdx);
 
 	ControlParticle cp;
 	cp.pressure = 1.0;
@@ -42,7 +45,8 @@ void AddControlParticle (float3 pos)
 
 void AddControlParticle(float3 pos, float pressure)
 {
-	uint newControlParticleIdx = controlParticles.IncrementCounter();
+	uint newControlParticleIdx;
+	controlParticleCounter.InterlockedAdd(0, 1, newControlParticleIdx);
 
 	ControlParticle cp;
 	cp.pressure = pressure;

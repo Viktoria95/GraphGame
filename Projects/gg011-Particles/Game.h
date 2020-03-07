@@ -46,6 +46,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleCounterDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleCounterSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleCounterUAV;
 	Egg::Mesh::Shaded::P controlMesh;
 	Egg::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg::Mesh::Shaded::P controlMeshFill;

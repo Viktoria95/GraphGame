@@ -74,6 +74,42 @@ bool MetaBallTest_ABuffer(float3 p, float2 pos)
 	return false;
 }
 
+//Wyvill
+bool MetaBallTest_ABuffer_W(float3 p, float2 pos)
+{
+	float acc = 0.0;
+	float r = 0.0;
+	float a = 1.1;
+	float b = 0.015;
+
+	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
+	uint offset = offsetBuffer[uIndex];
+
+	while (offset != 0)
+	{
+		uint2 element = linkBuffer[offset];
+		offset = element.x;
+		int i = element.y;
+
+		float3 diff = p - particles[i].position;
+		r = sqrt(dot(diff, diff));
+
+		float res = 1 - (4 * pow(r, 6) / (9 * pow(b, 6))) + (17 * pow(r, 4) / (9 * pow(b, 4))) - (22 * pow(r, 2) / 9 * pow(b, 2));
+
+		if (r < b) {
+			acc += a*res;
+		}
+
+		if (acc > metaBallMinToHit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 float3 Grad_ABuffer(float3 p, float2 pos)
 {
 	float3 grad;
@@ -114,10 +150,10 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	float3 newEnd = endPos;
 
 	int i;
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < binaryStepCount; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = MetaBallTest_ABuffer(mid, inputPos);
+		bool midInside = MetaBallTest_ABuffer_W(mid, inputPos);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -178,7 +214,7 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 
 		if (intersect && marchRecursionDepth < 4)
 		{
-			bool startedInside = MetaBallTest_ABuffer(marchPos, screenPosition);
+			bool startedInside = MetaBallTest_ABuffer_W(marchPos, screenPosition);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
@@ -186,7 +222,7 @@ float4 psMetaballABufferRealistic(VsosQuad input) : SV_Target
 			bool marchHit = false;
 			for (int i = 0; i<marchCount && !marchHit; i++)
 			{
-				bool inside = MetaBallTest_ABuffer(marchPos, screenPosition);
+				bool inside = MetaBallTest_ABuffer_W(marchPos, screenPosition);
 				
 				if (inside && !startedInside || !inside && startedInside)
 				{

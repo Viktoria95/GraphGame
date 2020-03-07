@@ -10,12 +10,13 @@ cbuffer metaballPSEyePosCB
 };
 
 StructuredBuffer<ControlParticle> controlParticles;
+Buffer<uint> controlParticleCounter;
 
 bool BallTest(float3 p)
 {
 	const float r = 0.005;
 
-	for (int i = 0; i < controlParticleCount; i++)
+	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
 		if (length(p - float3(controlParticles[i].position)) < r)
 		{
@@ -29,7 +30,7 @@ bool BallTest(float3 p)
 float3 RandColor(float3 p) {
 	const float r = 0.005;
 
-	for (int i = 0; i < controlParticleCount; i++)
+	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
 		if (length(p - float3(controlParticles[i].position)) < r)
 		{

@@ -5,7 +5,7 @@
 #define metaBallRadius 1.0 / 0.005
 #define metaBallMinToHit 0.9
 #define marchCount 25
-#define binaryStepCount 5
+#define binaryStepCount 3
 
 
 struct IaosQuad

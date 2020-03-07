@@ -3,7 +3,8 @@
 #include "particle.hlsli"
 
 RWStructuredBuffer<Particle> particles;
-RWStructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<ControlParticle> controlParticles;
+Buffer<uint> controlParticleCounter;
 
 cbuffer controlParamsCB
 {
@@ -197,7 +198,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		// V. Control force
 		float3 controlForce = float3(0.0, 0.0, 0.0);
 		{
-			for (int i = 0; i < controlParticleCount; i++)
+			for (int i = 0; i < controlParticleCounter[0]; i++)
 			{
 				if (i != tid && controlParticles[i].pressure == 1.0)
 				{
