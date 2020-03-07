@@ -56,6 +56,8 @@ namespace Egg { namespace Cam {
 		/// Returns projection matrix to be used in shaders.
 		const Egg::Math::float4x4& getProjMatrix();
 
+		Egg::Math::float4x4 getOrthoProjMatrix(float worldWidth, float wolrdHeight);
+
 		/// Moves camera. To be implemented if the camera has its own animation mechanism.
 		virtual void animate(double dt);
 

@@ -163,7 +163,7 @@ void Game::CreateControlParticles()
 	if (controlParticlePlacement == Render)
 	{
 		fillCam = Egg::Cam::FirstPerson::create();
-		fillCam->setView(float3 (0.0, 0.5, -1.0), float3 (0,0,1));
+		fillCam->setView(float3 (0.0, 0.5, -0.5), float3 (0,0,1));
 
 		// First round
 		{
@@ -1290,11 +1290,9 @@ void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	//matrices[1] = (float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
-	matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-	matrices[2] = float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-	//matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-	matrices[3] = fillCam->getViewDirMatrix();
+	matrices[1] = float4x4::identity;
+	matrices[2] = float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * fillCam->getViewMatrix()/* * fillCam->getProjMatrix()*/;
+	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
@@ -1388,9 +1386,9 @@ void Game::fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> cont
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = ((fillCam->getViewMatrix() * fillCam->getProjMatrix())).invert();
-	matrices[2] = float4x4::scaling(float3(0.0002, 0.0002, 0.0002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-	matrices[3] = fillCam->getViewDirMatrix();
+	matrices[1] = ((fillCam->getViewMatrix())/* * fillCam->getProjMatrix()*/).invert();
+	matrices[2] = float4x4::identity;
+	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	controlMeshFill->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);

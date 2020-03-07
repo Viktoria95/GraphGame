@@ -85,6 +85,15 @@ const float4x4& Cam::FirstPerson::getProjMatrix()
 	return projMatrix;
 }
 
+Egg::Math::float4x4 Cam::FirstPerson::getOrthoProjMatrix(float worldWidth, float wolrdHeight)
+{
+	return float4x4(
+		2.0/worldWidth, 0.0f, 0.0f, 0.0f,
+		0.0f, 2.0/wolrdHeight, 0.0f, 0.0f,
+		0.0f, 0.0f, -2/(farPlane - nearPlane), 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+}
+
 void Cam::FirstPerson::updateView()
 {
 	viewMatrix = float4x4::view(position, ahead, float3::yUnit);
