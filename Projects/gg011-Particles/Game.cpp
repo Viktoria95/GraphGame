@@ -54,7 +54,7 @@ void Game::CreateCommon()
 
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
-	billboardsLoadAlgorithm = Normal;
+	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = Render;
@@ -1322,11 +1322,17 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
 	matrices[1] = float4x4::identity;
-	matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-	matrices[3] = fillCam->getViewDirMatrix();
+	matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (fillCam->getViewMatrix() /** fillCam->getProjMatrix()*/);
+	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-	currentKey = (currentKey + 1) % nKeys;
+	static int slowingCounter = 0;
+	slowingCounter++;
+	if (slowingCounter % 5 == 0)
+	{
+		slowingCounter = 0;
+		currentKey = (currentKey + 1) % nKeys;	}
+	
 	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
 	for (int iBone = 0; iBone < nBones; iBone++) {
 		boneTrafos[iBone] = rigging[iBone];
@@ -1428,8 +1434,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	{
 		{
 			// Round1
-			renderControlMesh(context);
-			//renderAnimatedControlMesh(context);
+			//renderControlMesh(context);
+			renderAnimatedControlMesh(context);
 			clearContext(context);			
 		}
 		{
@@ -1439,7 +1445,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		}
 	}
 	first = false;
-	
+
 	if (renderMode == Realistic || renderMode == Gradient)
 	{
 
@@ -1470,6 +1476,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		clearContext(context);
 
 	}
+
 	else if (renderMode == Particles)
 	{
 		renderBalls(context);
@@ -1493,7 +1500,6 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	{
 		renderFlatControlMesh(context);
 	}
-
 }
 
 void Game::animate(double dt, double t)
