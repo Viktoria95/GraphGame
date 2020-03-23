@@ -193,7 +193,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		}
 
 		// IV.d Gravitational force
-		float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0) * 0.6;
+		float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0) * 0.3;
 
 		// V. Control force
 		float3 controlForce = float3(0.0, 0.0, 0.0);
@@ -204,14 +204,15 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				{
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
-					controlForce += 0.3 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 1.0);
+					controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
 				}
 			}
 		}
 
 		float controlAmplitude = length(controlForce);
-		//if (controlAmplitude > 0.001)
+		if (controlAmplitude > 0.001)
 		{
+			gravitationalForce = float3(0.0, 0.0, 0.0);
 			//controlForce *=  1.0 / length(controlForce);
 		}
 

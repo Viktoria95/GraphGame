@@ -13,8 +13,12 @@ class DualQuaternion;
 
 GG_SUBCLASS(Game, Egg::App)
 public:	
-	static const unsigned int windowHeight = 720;
-	static const unsigned int windowWidth = 1280;
+	//static const unsigned int windowHeight = 720;
+	//static const unsigned int windowWidth = 1280;
+
+	static const unsigned int windowHeight = 512;
+	static const unsigned int windowWidth = 512;
+
 	static const unsigned int fillWindowHeight = 200;
 	static const unsigned int fillWindowWidth = 200;
 
@@ -52,8 +56,11 @@ private:
 	Egg::Mesh::Shaded::P controlMesh;
 	Egg::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg::Mesh::Shaded::P controlMeshFill;
+	float controlMeshScale;
 	Egg::Cam::FirstPerson::P fillCam;
 	Egg::Mesh::Shaded::P animatedControlMesh;
+	Egg::Mesh::Shaded::P animatedControlMeshFlat;
+	float animatedControlMeshScale;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
@@ -125,6 +132,8 @@ private:
 
 
 	// Skeletal
+	int meshIdxInFile;
+	float animatedMeshScale;
 	int nBones;
 	int nInstances;
 	int nKeys;
@@ -184,6 +193,7 @@ public:
 	void renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 GG_ENDCLASS

@@ -5,7 +5,7 @@
 struct VsosTrafo
 {
 	float4 pos	: SV_POSITION;
-	float3 norm	: TEXCOORD0;
+	float3 norm	: NORMAL;
 };
 
 float4 psFlat(VsosTrafo input, out float outDepth : SV_Depth) : SV_Target

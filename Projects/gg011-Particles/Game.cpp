@@ -54,6 +54,9 @@ void Game::CreateCommon()
 
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
+	firstPersonCam->setAspect(windowWidth/windowHeight);
+
+
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
@@ -141,7 +144,28 @@ void Game::CreateControlParticles()
 
 	Assimp::Importer importer;
 	
-	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("deer.obj"), 0);
+	//controlMeshScale = 0.0003;
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("DetailedDeer2.obj"), 0);
+	//controlMeshScale = 0.0035;
+
+	
+
+	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe3.obj"), 0);
+	controlMeshScale = 0.5;	
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("castle_guard_03.dae"), 0);
+	//controlMeshScale =animatedControlMeshScale;
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("kachujin.dae"), 0);
+	//controlMeshScale = 0.0036;
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("xbot.dae"), 0);
+	//controlMeshScale =animatedControlMeshScale;
+
+	
+
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe.obj"), 0);
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("lion.obj"), 0);
 
@@ -751,7 +775,21 @@ void Game::CreateAnimation() {
 void Game::CreateControlMesh() {
 	Assimp::Importer importer;
 
-	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("mrem.dae"), 0);
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("mrem.dae"), 0);
+	//meshIdxInFile = 1;
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("aj.dae"), 0);
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("castle_guard_02.dae"), 0);
+
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("Samba Dancing2.dae"), 0);
+	//animatedControlMeshScale = 0.003;
+
+	const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("Jazz Dancing.dae"), 0);
+	animatedControlMeshScale = 0.003;
+
+	meshIdxInFile = 0;
+
 
 	// if the import failed
 	if (!assScene || !assScene->HasMeshes() || assScene->mNumMeshes == 0)
@@ -759,7 +797,8 @@ void Game::CreateControlMesh() {
 		return;
 	}
 
-	aiMesh* assMesh = assScene->mMeshes[1];
+	//aiMesh* assMesh = assScene->mMeshes[1];
+	aiMesh* assMesh = assScene->mMeshes[meshIdxInFile];
 	Egg::Mesh::Indexed::P indexedMesh = Egg::Mesh::Importer::fromAiMesh(device, assMesh);
 
 	nBones = assMesh->mNumBones;
@@ -786,7 +825,8 @@ void Game::CreateControlMesh() {
 	}
 
 	Assimp::Importer importer2;
-	const aiScene* assAnimScene = importer2.ReadFile(App::getSystemEnvironment().resolveMediaPath("thriller_part_3.dae"), 0);
+	//const aiScene* assAnimScene = importer2.ReadFile(App::getSystemEnvironment().resolveMediaPath("thriller_part_3.dae"), 0);	
+	const aiScene* assAnimScene = importer2.ReadFile(App::getSystemEnvironment().resolveMediaPath("Jazz Dancing.dae"), 0);
 	aiAnimation* assAnim = assAnimScene->mAnimations[0];
 	skeleton = new unsigned char[nBones * 16];
 	memset(skeleton, 0xff, nBones * 16);
@@ -827,7 +867,8 @@ void Game::CreateControlMesh() {
 	} np(this, skeleton);
 	np.process(assAnimScene->mRootNode);
 
-	nKeys = 768;
+	//nKeys = 768;
+	nKeys = 61;
 	nNodes = np.iNode;//nodeOffsetTransforms.size();
 
 	keys = new DualQuaternion[
@@ -885,7 +926,7 @@ void Game::CreateControlMesh() {
 
 	using namespace Microsoft::WRL;
 
-	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[1]);
+	Egg::Mesh::Geometry::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[meshIdxInFile]);
 
 	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSkinning.cso");
 	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSkinning.cso", device, vertexShaderByteCode);
@@ -956,6 +997,23 @@ void Game::CreateControlMesh() {
 	animatedControlMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
 
 	currentKey = 0;
+
+
+	//Debug
+	{
+		ComPtr<ID3DBlob> pixelShaderByteCodeDebug = loadShaderCode("psFlat.cso");
+		Egg::Mesh::Shader::P pixelShaderDebug = Egg::Mesh::Shader::create("psFlat.cso", device, pixelShaderByteCodeDebug);
+
+		Egg::Mesh::Material::P materialDebug = Egg::Mesh::Material::create();
+		materialDebug->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+		materialDebug->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShaderDebug);
+		materialDebug->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+		materialDebug->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
+		//materialDebug->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+		ComPtr<ID3D11InputLayout> inputLayoutDebug = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+		animatedControlMeshFlat = Egg::Mesh::Shaded::create(geometry, materialDebug, inputLayoutDebug);
+	}
 
 }
 
@@ -1291,7 +1349,7 @@ void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
 	matrices[1] = float4x4::identity;
-	matrices[2] = float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * fillCam->getViewMatrix()/* * fillCam->getProjMatrix()*/;
+	matrices[2] = float4x4::scaling(float3(controlMeshScale, controlMeshScale, controlMeshScale)) * fillCam->getViewMatrix()/* * fillCam->getProjMatrix()*/;
 	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
@@ -1322,7 +1380,7 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
 	matrices[1] = float4x4::identity;
-	matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (fillCam->getViewMatrix() /** fillCam->getProjMatrix()*/);
+	matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (fillCam->getViewMatrix() /** fillCam->getProjMatrix()*/);
 	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
@@ -1331,7 +1389,8 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 	if (slowingCounter % 5 == 0)
 	{
 		slowingCounter = 0;
-		currentKey = (currentKey + 1) % nKeys;	}
+		currentKey = (currentKey + 1) % nKeys;
+	}
 	
 	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
 	for (int iBone = 0; iBone < nBones; iBone++) {
@@ -1373,14 +1432,53 @@ void Game::renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> con
 
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
-	matrices[1] = (float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
-	matrices[2] = (float4x4::scaling(float3(0.0003, 0.0003, 0.0003)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
-	//matrices[2] = float4x4::scaling(float3(0.002, 0.002, 0.002)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[1] = (float4x4::scaling(float3(controlMeshScale, controlMeshScale, controlMeshScale)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert ();
+	matrices[2] = (float4x4::scaling(float3(controlMeshScale, controlMeshScale, controlMeshScale)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
+	//matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
 	matrices[3] = fillCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 
 	controlMeshFlat->draw(context);
+
+}
+
+void Game::renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = float4x4::identity;
+	matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = float4x4::identity;
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	static int slowingCounter = 0;
+	slowingCounter++;
+	if (slowingCounter % 5 == 0)
+	{
+		slowingCounter = 0;
+		currentKey = (currentKey + 1) % nKeys;
+	}
+
+	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+	for (int iBone = 0; iBone < nBones; iBone++) {
+		boneTrafos[iBone] = rigging[iBone];
+		for (int iChain = 0; iChain < 16; iChain++) {
+			auto iNode = skeleton[iChain + iBone * 16];
+			if (iNode == 255) break;
+			boneTrafos[iBone] = keys[
+				iNode * nKeys
+					+ currentKey] * boneTrafos[iBone];
+		}
+	}
+
+	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
+	delete[] boneTrafos;
+
+	animatedControlMeshFlat->draw(context);
 
 }
 
@@ -1493,13 +1591,19 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	clearContext(context);	
 	
 	// Sort
-	//renderSort(context);
+	renderSort(context);
+	clearContext(context);
+
+	//renderAnimatedControlMesh(context);
 	//clearContext(context);
 
+	
 	if (drawFlatControlMesh)
 	{
-		renderFlatControlMesh(context);
+		renderFlatAnimatedControlMesh(context);
+		//renderFlatControlMesh(context);
 	}
+	
 }
 
 void Game::animate(double dt, double t)
@@ -1607,8 +1711,10 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '8')
 		{
-			controlParams[7] -= 0.1;
-			std::cout << controlParams[7] << std::endl;
+			//controlParams[7] -= 0.1;
+			//std::cout << controlParams[7] << std::endl;
+
+			currentKey = 0;
 		}
 		else if (wParam == '9')
 		{

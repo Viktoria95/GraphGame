@@ -15,7 +15,7 @@ struct IaosTrafo
 struct VsosTrafo
 {
 	float4 pos : SV_POSITION;
-	float3 norm: TEXCOORD0;
+	float3 norm: NORMAL;
 };
 
 VsosTrafo vsTrafoNorm(IaosTrafo input)

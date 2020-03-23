@@ -14,7 +14,7 @@ Buffer<uint> controlParticleCounter;
 
 bool BallTest(float3 p)
 {
-	const float r = 0.005;
+	const float r = 0.01;
 
 	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
@@ -28,7 +28,7 @@ bool BallTest(float3 p)
 }
 
 float3 RandColor(float3 p) {
-	const float r = 0.005;
+	const float r = 0.01;
 
 	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
