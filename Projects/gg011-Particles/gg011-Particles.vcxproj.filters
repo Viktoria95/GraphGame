@@ -171,5 +171,11 @@
     <None Include="Shaders\window.hlsli">
       <Filter>Shaders\Common</Filter>
     </None>
+    <None Include="Shaders\metaballSBuffer.hlsli">
+      <Filter>Shaders\Metaball</Filter>
+    </None>
+    <None Include="Shaders\metaballABuffer.hlsli">
+      <Filter>Shaders\Metaball</Filter>
+    </None>
   </ItemGroup>
 </Project>

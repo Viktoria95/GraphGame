@@ -1,13 +1,8 @@
 #include "metaball.hlsli"
 #include "window.hlsli"
 
-SamplerState ss;
-TextureCube envTexture;
-
-cbuffer metaballPSEyePosCB
-{
-	float4 eyePos;
-};
+//SamplerState ss;
+//TextureCube envTexture;
 
 StructuredBuffer<ControlParticle> controlParticles;
 Buffer<uint> controlParticleCounter;

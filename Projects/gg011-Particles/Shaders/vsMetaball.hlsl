@@ -1,12 +1,5 @@
 #include "metaball.hlsli"
 
-cbuffer metaballVSTransCB {
-	row_major float4x4 modelMatrix;
-	row_major float4x4 modelViewProjMatrixInverse;
-	row_major float4x4 modelViewProjMatrix;
-	row_major float4x4 rayDirMatrix;
-};
-
 VsosQuad vsMetaball(IaosQuad input) {
 	VsosQuad output = (VsosQuad)0;
 	output.pos = input.pos;

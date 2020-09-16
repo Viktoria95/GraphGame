@@ -15,8 +15,8 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
-const unsigned int controlParticleCount = 1024 * 8;
+const unsigned int defaultParticleCount = 1024;
+const unsigned int controlParticleCount = 1024;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
@@ -55,7 +55,6 @@ void Game::CreateCommon()
 	firstPersonCam = Egg::Cam::FirstPerson::create();
 
 	firstPersonCam->setAspect(windowWidth/windowHeight);
-
 
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Realistic;
@@ -1168,13 +1167,11 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
-	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer)
-		context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
+	context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
 		context->PSSetShaderResources(3, 1, linkSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == SBuffer)
 		context->PSSetShaderResources(3, 1, idSRV.GetAddressOf());
-
 	switch (billboardsLoadAlgorithm)
 	{
 		case Normal:

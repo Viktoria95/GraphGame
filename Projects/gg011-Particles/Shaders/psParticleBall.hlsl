@@ -1,50 +1,11 @@
 #include "metaball.hlsli"
 #include "window.hlsli"
 
-SamplerState ss;
-TextureCube envTexture;
-
-cbuffer metaballPSEyePosCB
-{
-	float4 eyePos;
-};
-
 cbuffer debugTypeCB
 {
 	uint debugType;
 	uint3 temp;
 };
-
-StructuredBuffer<Particle> particles;
-
-bool MetaBallTest(float3 p)
-{
-	float acc = 0.0;
-	for (int i = 0; i < particleCount; i++) {
-		float3 diff = p - particles[i].position;
-
-		acc += 1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius);
-		if (acc > metaBallMinToHit)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-float3 Grad(float3 p) {
-	float3 grad;
-
-	for (int i = 0; i < particleCount; i++) {
-		float3 diff = p - particles[i].position;
-		float s2 = dot(diff, diff) * metaBallRadius * metaBallRadius;
-		float s4 = s2*s2;
-		grad += diff * -2.0 / s4;
-	}
-
-	return grad;
-}
 
 bool BallTest(float3 p, out float3 grad)
 {

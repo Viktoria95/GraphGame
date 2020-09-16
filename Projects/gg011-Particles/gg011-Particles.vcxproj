@@ -608,6 +608,8 @@
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli" />
     <None Include="Shaders\metaball.hlsli" />
+    <None Include="Shaders\metaballABuffer.hlsli" />
+    <None Include="Shaders\metaballSBuffer.hlsli" />
     <None Include="Shaders\particle.hlsli" />
     <None Include="Shaders\window.hlsli" />
   </ItemGroup>
