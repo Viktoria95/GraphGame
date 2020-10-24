@@ -50,6 +50,7 @@ interface IMetaballVisualizer
 {
 	bool callMetaballTestFunction(float3 p, float4 pos);
 	float3 callGradientCalculator(float3 p, float4 pos);
+	float3 getDiffuseColor(float3 p, float4 pos, float ambientIntensity, float3 lightDir, float3 surfaceColor, float3 lightColor);
 	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos);
 };
 
@@ -132,6 +133,14 @@ float Fresnel(float3 inDir, float3 normal, float n)
 	Rp *= Rp;
 	float fresnel = (Rs + Rp) / 2.0f;
 	return saturate(fresnel);
+}
+
+float3 FresnelForMetals(float3 inDir, float3 normal, float3 n, float3 k)
+{
+	float cosTheta = abs(dot(-inDir, normal));
+	float3 one = float3(1.0, 1.0, 1.0);
+
+	return ((n-one*n-one) + 4.0*n*pow(1.0 - cosTheta, 5.0) + k*k) / ((n+one)*(n+one) + k*k);
 }
 
 float2 WorldToNDC(float3 wp)
@@ -223,6 +232,12 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 		return Grad(p);
 	}
 
+	float3 getDiffuseColor(float3 p, float4 pos, float ambientIntensity, float3 lightDir, float3 surfaceColor, float3 lightColor)
+	{
+		float3 normal = normalize(Grad(p));
+		return surfaceColor * (ambientIntensity * lightColor + max(dot(normal, lightDir), 0.0) * lightColor);
+	}
+
 	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
 	{
 		NormalMetaballVisualizer normalMetaballVisualizer;
@@ -233,6 +248,20 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 
 float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
 {
+	float ambientIntensity = 0.7;
+	float3 lightDir = float3(1.0, 0.0, 0.0);
+	float3 surfaceColor = float3(0.22745,  0.20000,  0.20000);
+	float3 lightColor = float3(1.0, 1.0, 1.0);
+
+	float3 goldEta = float3(0.17, 0.38, 1.5);
+	float3 goldKappa = float3(3.7, 2.45, 1.85);
+
+	float3 copperEta = float3(0.11, 0.8, 1.07);
+	float3 copperKappa = float3(3.9, 2.72, 2.5);
+
+	float3 aluminiumEta = float3(1.49, 1.02, 0.558);
+	float3 aluminiumKappa = float3(7.82, 6.85, 5.2);
+
 	float tStart, tEnd;
 	float3 p = eyePos;
 	float3 d = normalize(rayDir);
@@ -263,7 +292,14 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 			if (metaballVisualizer.callMetaballTestFunction(p, pos))
 			{
 				p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
-				return float4 (normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
+				float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
+				float3 ref = reflect(normalize(rayDir), normal);
+				
+				float3 fresnel = FresnelForMetals(normalize(rayDir), normal, goldEta, goldKappa);
+				float3 envColor = envTexture.SampleLevel(ss, ref, 0);
+				//return float4(metaballVisualizer.getDiffuseColor(p, pos, ambientIntensity, lightDir, surfaceColor, lightColor), 1.0);
+				//return float4(fresnel * envColor, 1.0);
+				return float4(normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
 			}
 
 			p += step;
@@ -332,6 +368,11 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 					marchHit = true;
 					marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, pos);
 
+					float distance = length(marchPos - stack[stackSize].position);
+					float i0 = startedInside ? exp(-distance * 0.0000000001) : 0.0;
+					i0 = 0.0f;
+					//i0 = 0.0;
+
 					float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, pos));
 					float refractiveIndex = 1.4;
 					if (dot(normal, marchDir) > 0) {
@@ -339,8 +380,8 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 						refractiveIndex = 1.0 / refractiveIndex;
 					}
 					float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
-					float reflectAlfa = fresnelAlfa * marchAlfa;
-					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
+					float reflectAlfa = fresnelAlfa * marchAlfa * (1.0-i0);
+					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (1.0 - i0);
 
 					float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
 

@@ -57,7 +57,7 @@ void Game::CreateCommon()
 	firstPersonCam->setAspect(windowWidth/windowHeight);
 
 	billboardsLoadAlgorithm = SBuffer;
-	renderMode = Realistic;
+	renderMode = Gradient;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = Render;
 	drawFlatControlMesh = false;

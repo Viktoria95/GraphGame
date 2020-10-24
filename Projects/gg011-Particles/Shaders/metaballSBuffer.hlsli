@@ -71,6 +71,12 @@ class SBufferMetaballVisualizer : IMetaballVisualizer
 		return Grad_SBuffer(p, pos);
 	}
 
+	float3 getDiffuseColor(float3 p, float4 pos, float ambientIntensity, float3 lightDir, float3 surfaceColor, float3 lightColor)
+	{
+		float3 normal = normalize(Grad_SBuffer(p, pos));
+		return surfaceColor * (ambientIntensity * lightColor + max(dot(normal, lightDir), 0.0) * lightColor);
+	}
+
 	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
 	{
 		SBufferMetaballVisualizer sBufferMetaballVisualizer;
