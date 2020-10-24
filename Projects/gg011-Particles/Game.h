@@ -22,8 +22,10 @@ public:
 	static const unsigned int fillWindowHeight = 200;
 	static const unsigned int fillWindowWidth = 200;
 
+	static const unsigned int counterSize = 3;
+
 private:
-	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer };
+	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2 };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
 	enum ControlParticlePlacement { Vertex, Render };
@@ -70,6 +72,7 @@ private:
 	Egg::Mesh::Shader::P billboardsPixelShaderA;
 	Egg::Mesh::Shader::P billboardsPixelShaderS1;
 	Egg::Mesh::Shader::P billboardsPixelShaderS2;
+	Egg::Mesh::Shader::P billboardsPixelShaderSV21;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> offsetSRV;
@@ -86,6 +89,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> countBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> countUAV;
 
+	Microsoft::WRL::ComPtr<ID3D11Buffer> counterBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> counterSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> counterUAV;
+
 
 	// Prefix sum
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scanBucketSizeCB;
@@ -96,6 +103,8 @@ private:
 	Egg::Mesh::Shader::P prefixSumComputeShader;
 	Egg::Mesh::Shader::P prefixSumScanBucketResultShader;
 	Egg::Mesh::Shader::P prefixSumScanAddBucketResultShader;
+
+	Egg::Mesh::Shader::P prefixSumV2ComputeShader;
 
 
 	// Environment
@@ -182,6 +191,7 @@ public:
 	void renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBillboardSV21(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
@@ -189,6 +199,7 @@ public:
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderEnvironment(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

@@ -1,6 +1,8 @@
 
 #include "window.hlsli"
 
+#define counterSize 3
+
 struct IaosBillboard {
 	float3 pos : POSITION;
 	uint id : VID;

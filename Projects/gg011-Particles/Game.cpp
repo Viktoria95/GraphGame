@@ -15,8 +15,8 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024;
-const unsigned int controlParticleCount = 1024;
+const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 256;
 
@@ -206,7 +206,6 @@ void Game::CreateControlParticles()
 			material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
 			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 			material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
-
 
 			// Depth settings
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
@@ -453,6 +452,8 @@ void Game::CreateBillboard() {
 	ComPtr<ID3DBlob> billboardsPixelShaderS2ByteCode = loadShaderCode("psBillboardS2.cso");
 	billboardsPixelShaderS2 = Egg::Mesh::Shader::create("psBillboardS2.cso", device, billboardsPixelShaderS2ByteCode);
 
+	ComPtr<ID3DBlob> billboardPixelShaderSV21ByteCode = loadShaderCode("psBillboardSV21.cso");
+	billboardsPixelShaderSV21 = Egg::Mesh::Shader::create("psBillboardSV21.cso", device, billboardPixelShaderSV21ByteCode);
 
 	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
 	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
@@ -597,6 +598,33 @@ void Game::CreateBillboard() {
 	countUAVDesc.Buffer.NumElements = windowHeight * windowWidth;
 	countUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(countBuffer.Get(), &countUAVDesc, &countUAV);
+
+	// Create Counter Buffer
+	D3D11_BUFFER_DESC counterBufferDesc;
+	ZeroMemory(&counterBufferDesc, sizeof(D3D11_BUFFER_DESC));
+	counterBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	counterBufferDesc.StructureByteStride = sizeof(unsigned int);
+	counterBufferDesc.ByteWidth = counterSize * counterBufferDesc.StructureByteStride;
+	counterBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+	device->CreateBuffer(&counterBufferDesc, NULL, &counterBuffer);
+
+	// Create Counter Buffer Shader Resource Views
+	D3D11_SHADER_RESOURCE_VIEW_DESC counterSRVDesc;
+	counterSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	counterSRVDesc.Buffer.FirstElement = 0;
+	counterSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+	counterSRVDesc.Buffer.NumElements = counterSize;
+	device->CreateShaderResourceView(counterBuffer.Get(), &counterSRVDesc, &counterSRV);
+
+	// Create Counter Buffer Unordered Access Views
+	D3D11_UNORDERED_ACCESS_VIEW_DESC counterUAVDesc;
+	counterUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	counterUAVDesc.Buffer.FirstElement = 0;
+	counterUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	counterUAVDesc.Buffer.NumElements = counterSize;
+	counterUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+	device->CreateUnorderedAccessView(counterBuffer.Get(), &counterUAVDesc, &counterUAV);
+
 }
 
 void Game::CreatePrefixSum() {
@@ -647,6 +675,9 @@ void Game::CreatePrefixSum() {
 
 	ComPtr<ID3DBlob> computeShaderByteCode3 = loadShaderCode("csScanAddBucketResult.cso");
 	prefixSumScanAddBucketResultShader = Egg::Mesh::Shader::create("csScanAddBucketResult.cso", device, computeShaderByteCode3);
+
+	ComPtr<ID3DBlob> computeShaderByteCode4 = loadShaderCode("csPrefixSumV2.cso");
+	prefixSumV2ComputeShader = Egg::Mesh::Shader::create("csPrefixSumV2.cso", device, computeShaderByteCode4);
 }
 
 void Game::CreateEnviroment ()
@@ -1130,6 +1161,31 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	billboards->draw(context);
 }
 
+void Game::renderBillboardSV21(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+	context->ClearUnorderedAccessViewUint(counterUAV.Get(), values);
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	ppUnorderedAccessViews[0] = offsetUAV.Get();
+	ppUnorderedAccessViews[1] = counterUAV.Get();
+	uint t[2] = { 0, 0 };
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+
+	billboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderSV21);
+
+	billboards->draw(context);
+}
+
 void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	float4x4 matrices[4];
@@ -1167,7 +1223,8 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
-	context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
+	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer)
+		context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
 		context->PSSetShaderResources(3, 1, linkSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == SBuffer)
@@ -1336,6 +1393,15 @@ void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	context->Dispatch((int)ceil((windowHeight * windowWidth / 512.0)), 1, 1);
 
 	resultBuffer.Reset();
+}
+
+void Game::renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint zeros[1] = { 0 };
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumV2ComputeShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
+	context->Dispatch(counterSize, 1, 1);
 }
 
 void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -1563,6 +1629,14 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 			context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
 
 			renderBillboardS2(context);
+			clearContext(context);
+		}
+		else if (billboardsLoadAlgorithm == SBufferV2)
+		{
+			renderBillboardSV21(context);
+			clearContext(context);
+
+			renderPrefixSumV2(context);
 			clearContext(context);
 		}
 

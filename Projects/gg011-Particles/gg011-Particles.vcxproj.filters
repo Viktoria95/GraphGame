@@ -157,6 +157,12 @@
     <FxCompile Include="Shaders\vsTrafoNorm.hlsl">
       <Filter>Shaders\Common</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\psBillboardSV21.hlsl">
+      <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPrefixSumV2.hlsl">
+      <Filter>Shaders\PrefixSum</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">
