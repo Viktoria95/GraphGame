@@ -47,7 +47,8 @@ float defaultSmoothingKernelLaplace (float3 deltaPos, float supportRadius)
 	}
 	else
 	{
-		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
+		//return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
+		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
 	}
 }
 
@@ -204,7 +205,8 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				{
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
-					controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
+					//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
+					controlForce += 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);				
 				}
 			}
 		}

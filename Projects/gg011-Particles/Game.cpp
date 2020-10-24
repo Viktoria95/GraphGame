@@ -165,6 +165,9 @@ void Game::CreateControlParticles()
 
 	
 
+	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("Dragon2.obj"), 0);
+	//controlMeshScale = 0.005;
+
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("giraffe.obj"), 0);
 	//const aiScene* assScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("lion.obj"), 0);
 
