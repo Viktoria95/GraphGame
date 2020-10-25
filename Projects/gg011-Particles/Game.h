@@ -82,6 +82,7 @@ private:
 	Egg::Mesh::Shader::P billboardsPixelShaderS1;
 	Egg::Mesh::Shader::P billboardsPixelShaderS2;
 	Egg::Mesh::Shader::P billboardsPixelShaderSV21;
+	Egg::Mesh::Shader::P billboardsPixelShaderSV22;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> offsetBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> offsetSRV;
@@ -129,6 +130,8 @@ private:
 	Egg::Mesh::Shader::P metaballGradientAPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticSPixelShader;
 	Egg::Mesh::Shader::P metaballGradientSPixelShader;
+	Egg::Mesh::Shader::P metaballRealisticS2PixelShader;
+	Egg::Mesh::Shader::P metaballGradientS2PixelShader;
 
 	// Animation
 	Egg::Mesh::Shader::P fluidSimulationShader;
@@ -200,6 +203,7 @@ public:
 	void renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardSV21(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBillboardSV22(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

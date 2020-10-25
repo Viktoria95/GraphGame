@@ -470,8 +470,8 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 					marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, pos);
 
 					float distance = length(marchPos - stack[stackSize].position);
-					float i0 = startedInside ? exp(-distance * 0.0000000001) : 0.0;
-					i0 = 0.0f;
+					float i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
+					//i0 = 1.0f;
 					//i0 = 0.0;
 
 					float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, pos));
@@ -481,8 +481,8 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 						refractiveIndex = 1.0 / refractiveIndex;
 					}
 					float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
-					float reflectAlfa = fresnelAlfa * marchAlfa * (1.0-i0);
-					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (1.0 - i0);
+					float reflectAlfa = fresnelAlfa * marchAlfa * (i0);
+					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (i0);
 
 					float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
 

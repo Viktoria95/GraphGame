@@ -60,6 +60,9 @@ void Game::CreateCommon()
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = Render;
+	metalShading = Gold;
+	shading = PhongShading;
+	metaballFunction = Simple;
 	drawFlatControlMesh = false;
 
 	debugType = 0;
@@ -85,6 +88,39 @@ void Game::CreateCommon()
 	eyePosCBDesc.Usage = D3D11_USAGE_DEFAULT;
 	Egg::ThrowOnFail("Failed to create metaballPerFrameConstantBuffer.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&eyePosCBDesc, nullptr, eyePosCB.GetAddressOf());
+
+	// shadingCB
+	D3D11_BUFFER_DESC shadingCBDesc;
+	shadingCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	shadingCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 6;
+	shadingCBDesc.CPUAccessFlags = 0;
+	shadingCBDesc.MiscFlags = 0;
+	shadingCBDesc.StructureByteStride = 0;
+	shadingCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create shadingCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&shadingCBDesc, nullptr, shadingCB.GetAddressOf());
+
+	// shadingTypeCB
+	D3D11_BUFFER_DESC shadingTypeCBDesc;
+	shadingTypeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	shadingTypeCBDesc.ByteWidth = sizeof(float) * 4;
+	shadingTypeCBDesc.CPUAccessFlags = 0;
+	shadingTypeCBDesc.MiscFlags = 0;
+	shadingTypeCBDesc.StructureByteStride = 0;
+	shadingTypeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create shadingTypeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&shadingTypeCBDesc, nullptr, shadingTypeCB.GetAddressOf());
+
+	// metaballFunctionCB
+	D3D11_BUFFER_DESC metaballFunctionCBDesc;
+	metaballFunctionCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	metaballFunctionCBDesc.ByteWidth = sizeof(float) * 4;
+	metaballFunctionCBDesc.CPUAccessFlags = 0;
+	metaballFunctionCBDesc.MiscFlags = 0;
+	metaballFunctionCBDesc.StructureByteStride = 0;
+	metaballFunctionCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create metaballFunctionCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&metaballFunctionCBDesc, nullptr, metaballFunctionCB.GetAddressOf());
 }
 
 void Game::CreateParticles()
@@ -458,6 +494,9 @@ void Game::CreateBillboard() {
 	ComPtr<ID3DBlob> billboardPixelShaderSV21ByteCode = loadShaderCode("psBillboardSV21.cso");
 	billboardsPixelShaderSV21 = Egg::Mesh::Shader::create("psBillboardSV21.cso", device, billboardPixelShaderSV21ByteCode);
 
+	ComPtr<ID3DBlob> billboardsPixelShaderSV22ByteCode = loadShaderCode("psBillboardSV22.cso");
+	billboardsPixelShaderSV22 = Egg::Mesh::Shader::create("psBillboardSV22.cso", device, billboardsPixelShaderSV22ByteCode);
+
 	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
 	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
 	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
@@ -716,6 +755,9 @@ void Game::CreateMetaball() {
 	ComPtr<ID3DBlob> metaballRealisticSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferRealistic.cso");
 	metaballRealisticSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferRealistic.cso", device, metaballRealisticSPixelShaderByteCode);
 
+	ComPtr<ID3DBlob> metaballRealisticS2PixelShaderByteCode = loadShaderCode("psMetaBallS2BufferRealistic.cso");
+	metaballRealisticS2PixelShader = Egg::Mesh::Shader::create("psMetaBallS2BufferRealistic.cso", device, metaballRealisticS2PixelShaderByteCode);
+
 	ComPtr<ID3DBlob> metaballGradientPixelShaderByteCode = loadShaderCode("psMetaBallNormalGradient.cso");
 	metaballGradientPixelShader = Egg::Mesh::Shader::create("psMetaBallNormalGradient.cso", device, metaballGradientPixelShaderByteCode);
 
@@ -725,12 +767,15 @@ void Game::CreateMetaball() {
 	ComPtr<ID3DBlob> metaballGradientSPixelShaderByteCode = loadShaderCode("psMetaBallSBufferGradient.cso");
 	metaballGradientSPixelShader = Egg::Mesh::Shader::create("psMetaBallSBufferGradient.cso", device, metaballGradientSPixelShaderByteCode);
 
+	ComPtr<ID3DBlob> metaballGradientS2PixelShaderByteCode = loadShaderCode("psMetaBallS2BufferGradient.cso");
+	metaballGradientS2PixelShader = Egg::Mesh::Shader::create("psMetaBallS2BufferGradient.cso", device, metaballGradientS2PixelShaderByteCode);
+
 	Egg::Mesh::Material::P metaballMaterial = Egg::Mesh::Material::create();
 	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, metaballVertexShader);
 	//metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, backgroundPixelShader);
 	metaballMaterial->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
-	metaballMaterial->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
-	metaballMaterial->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	//metaballMaterial->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	//metaballMaterial->setCb("shadingCB", shadingCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	//metaballMaterial->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	// Depth settings
@@ -1211,6 +1256,28 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	billboards->draw(context);
 }
 
+void Game::renderBillboardSV22(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];
+	ppUnorderedAccessViews[0] = offsetUAV.Get();
+	ppUnorderedAccessViews[1] = countUAV.Get();
+	ppUnorderedAccessViews[2] = idUAV.Get();
+	uint t[3] = { 0,0,0 };
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 3, ppUnorderedAccessViews, t);
+
+	billboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderSV22);
+
+	billboards->draw(context);
+}
+
 void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
@@ -1224,13 +1291,56 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
+	float4 shadingAttributes[6];
+	shadingAttributes[0] = float4(0.4, 0.0, 0.0, 1.0); //ambientIntensity
+	shadingAttributes[1] = float4(1.0, 0.0, 0.0, 1.0); //lightDir
+	shadingAttributes[2] = float4(0.250, 0.129, 0.027, 1.0); // surfaceColor
+	shadingAttributes[3] = float4(1.0, 1.0, 1.0, 1.0); // lightColor
+
+	if (metalShading == Gold)
+	{
+		shadingAttributes[4] = float4(0.17, 0.38, 1.5, 0.0); //eta
+		shadingAttributes[5] = float4(3.7, 2.45, 1.85, 0.0); //kappa
+	}
+	if (metalShading == Copper)
+	{
+		shadingAttributes[4] = float4(0.11, 0.8, 1.07, 0.0); //eta
+		shadingAttributes[5] = float4(3.9, 2.72, 2.5, 0.0); //kappa
+	}
+	if (metalShading == Aluminium)
+	{
+		shadingAttributes[4] = float4(1.49, 1.02, 0.558, 0.0); //eta
+		shadingAttributes[5] = float4(7.82, 6.85, 5.2, 0.0); //kappa
+	}
+	context->UpdateSubresource(shadingCB.Get(), 0, nullptr, shadingAttributes, 0, 0);
+
+	int type[1];
+	if (shading == PhongShading)
+		type[0] = 1;
+	if (shading == MetalShading)
+		type[0] = 2;
+
+	context->UpdateSubresource(shadingTypeCB.Get(), 0, nullptr, type, 0, 0);
+
+	int mfunctionType[1];
+	if (metaballFunction == Simple)
+		mfunctionType[0] = 1;
+	if (metaballFunction == Wyvill)
+		mfunctionType[0] = 2;
+	if (metaballFunction == Nishimura)
+		mfunctionType[0] = 3;
+	if (metaballFunction == Murakami)
+		mfunctionType[0] = 4;
+
+	context->UpdateSubresource(metaballFunctionCB.Get(), 0, nullptr, mfunctionType, 0, 0);
+
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
-	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer)
+	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer || billboardsLoadAlgorithm == SBufferV2)
 		context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
 		context->PSSetShaderResources(3, 1, linkSRV.GetAddressOf());
-	if (billboardsLoadAlgorithm == SBuffer)
+	if (billboardsLoadAlgorithm == SBuffer || billboardsLoadAlgorithm == SBufferV2)
 		context->PSSetShaderResources(3, 1, idSRV.GetAddressOf());
 	switch (billboardsLoadAlgorithm)
 	{
@@ -1250,12 +1360,20 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientAPixelShader);
 			break;
 		}
-		case SBuffer:
+		case SBuffer:		
 		{
 			if (renderMode == Realistic)
 				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticSPixelShader);
 			else
 				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientSPixelShader);
+			break;
+		}
+		case SBufferV2:
+		{
+			if (renderMode == Realistic)
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballRealisticS2PixelShader);
+			else
+				metaballs->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, metaballGradientS2PixelShader);
 			break;
 		}
 		default:
@@ -1268,6 +1386,9 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	metaballs->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("shadingCB", shadingCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("shadingTypeCB", shadingTypeCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	metaballs->getMaterial()->setCb("metaballFunctionCB", metaballFunctionCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
@@ -1402,8 +1523,13 @@ void Game::renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 {
 	uint zeros[1] = { 0 };
 
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumComputeShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, counterUAV.GetAddressOf(), zeros);
+	context->Dispatch(1, 1, 1);
+	
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumV2ComputeShader->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, offsetUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, counterUAV.GetAddressOf(), zeros);
 	context->Dispatch(counterSize, 1, 1);
 }
 
@@ -1641,6 +1767,13 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 			renderPrefixSumV2(context);
 			clearContext(context);
+
+			// Clear count buffer
+			const UINT zeros[4] = { 0,0,0,0 };
+			context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
+
+			renderBillboardS2(context);
+			clearContext(context);
 		}
 
 		// Metaball
@@ -1701,6 +1834,32 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		else if (wParam == 'R')
 		{
 			renderMode = Realistic;
+		}
+		else if (wParam == 'M')
+		{
+			if (shading == PhongShading)
+				shading = MetalShading;
+			else if (metalShading == Gold)
+				metalShading = Copper;
+			else if (metalShading == Copper)
+				metalShading = Aluminium;
+			else if (metalShading == Aluminium)
+				metalShading = Gold;
+		}
+		else if (wParam == 'P')
+		{
+			shading = PhongShading;
+		}
+		else if (wParam == 'F')
+		{
+			if (metaballFunction == Simple)
+				metaballFunction = Wyvill;
+			else if (metaballFunction == Wyvill)
+				metaballFunction = Nishimura;
+			else if (metaballFunction == Nishimura)
+				metaballFunction = Murakami;
+			else if (metaballFunction == Murakami)
+				metaballFunction = Simple;
 		}
 		else if (wParam == '0')
 		{

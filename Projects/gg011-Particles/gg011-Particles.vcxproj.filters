@@ -163,6 +163,15 @@
     <FxCompile Include="Shaders\csPrefixSumV2.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\psBillboardSV22.hlsl">
+      <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballS2BufferGradient.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballS2BufferRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">
