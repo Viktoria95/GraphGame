@@ -29,12 +29,18 @@ private:
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
 	enum ControlParticlePlacement { Vertex, Render };
+	enum Metal { Aluminium, Copper, Gold };
+	enum Shading { MetalShading, PhongShading };
+	enum MetaballFunction {Simple, Wyvill, Nishimura, Murakami};
 	bool drawFlatControlMesh;
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> modelViewProjCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> eyePosCB;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingCB;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingTypeCB;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballFunctionCB;
 
 	Egg::Mesh::InputBinder::P inputBinder;
 
@@ -42,6 +48,9 @@ private:
 	RenderMode renderMode;
 	FlowControl flowControl;
 	ControlParticlePlacement controlParticlePlacement;
+	Metal metalShading;
+	Shading shading;
+	MetaballFunction metaballFunction;
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
@@ -120,7 +129,6 @@ private:
 	Egg::Mesh::Shader::P metaballGradientAPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticSPixelShader;
 	Egg::Mesh::Shader::P metaballGradientSPixelShader;
-
 
 	// Animation
 	Egg::Mesh::Shader::P fluidSimulationShader;
