@@ -3,6 +3,7 @@
 #include "window.hlsli"
 
 RWByteAddressBuffer offsetBuffer;
+RWByteAddressBuffer counterBuffer;
 
 #define groupDim_x 1
 #define groupthreads 512
@@ -81,7 +82,13 @@ void CSScan(uint3 DTid, uint GI, uint x, uint3 Gid)
 		uint o = offsetBuffer.Load((Gid.x + counterSize + GI * counterSize) * 4);
 		if (o != 0)
 		{
-			offsetBuffer.InterlockedExchange((Gid.x + counterSize + GI * counterSize) * 4, bucket[GI].y + x, temp);
+			uint fullCount = 0;
+			if (Gid.x > 0) 
+			{
+				fullCount = counterBuffer.Load((Gid.x-1)*4);
+			}
+
+			offsetBuffer.InterlockedExchange((Gid.x + counterSize + GI * counterSize) * 4, bucket[GI].y + x + fullCount, temp);
 		}
 	}
 }

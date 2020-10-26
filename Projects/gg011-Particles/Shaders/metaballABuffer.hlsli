@@ -47,9 +47,23 @@ class ABufferMetaballVisualizer : IMetaballVisualizer
 {
 	bool callMetaballTestFunction(float3 p, float4 pos)
 	{
-		WyvillMetaballTester wyvillMetaballTester;
-
-		return MetaBallTest_ABuffer(p, pos, wyvillMetaballTester);
+		if (functionType == 2)
+		{
+			WyvillMetaballTester wyvillMetaballTester;
+			return MetaBallTest_ABuffer(p, pos, wyvillMetaballTester);
+		}
+		if (functionType == 3)
+		{
+			NishimuraMetaballTester nishimuraMetaballTester;
+			return MetaBallTest_ABuffer(p, pos, nishimuraMetaballTester);
+		}
+		if (functionType == 4)
+		{
+			MurakamiMetaballTester murakamiMetaballTester;
+			return MetaBallTest_ABuffer(p, pos, murakamiMetaballTester);
+		}
+		SimpleMetaballTester simpleMetaballTester;
+		return MetaBallTest_ABuffer(p, pos, simpleMetaballTester);
 	}
 
 	float3 callGradientCalculator(float3 p, float4 pos)

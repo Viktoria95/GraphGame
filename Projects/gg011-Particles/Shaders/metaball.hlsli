@@ -22,6 +22,23 @@ cbuffer metaballVSTransCB {
 	row_major float4x4 rayDirMatrix;
 };
 
+cbuffer shadingCB {
+	float4 ambientIntensity;
+	float4 lightDir;
+	float4 surfaceColor;
+	float4 lightColor;
+	float4 eta;
+	float4 kappa;
+};
+
+cbuffer shadingTypeCB {
+	int type;
+};
+
+cbuffer metaballFunctionCB {
+	int functionType;
+};
+
 StructuredBuffer<Particle> particles;
 Buffer<uint> offsetBuffer;
 
@@ -63,7 +80,9 @@ class SimpleMetaballTester : IMetaballTester
 	bool testFunction(float3 p, float3 position, float acc, out float accOut)
 	{
 		float3 diff = p - position;
-		accOut = acc + (1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius));
+		float res = (1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius));
+		if (sqrt(dot(diff, diff) < 0.04))
+			accOut = acc + 1.1*res;
 		if (accOut > metaBallMinToHit)
 		{
 			return true;
@@ -77,13 +96,77 @@ class WyvillMetaballTester : IMetaballTester
 	bool testFunction(float3 p, float3 position, float acc, out float accOut)
 	{
 		float r = 0.0;
+		float b = 0.04;
 		float a = 1.1;
-		float b = 0.015;
 
 		float3 diff = p - position;
 		r = sqrt(dot(diff, diff));
+		r*1.5;
 
-		float res = 1 - (4 * pow(r, 6) / (9 * pow(b, 6))) + (17 * pow(r, 4) / (9 * pow(b, 4))) - (22 * pow(r, 2) / 9 * pow(b, 2));
+		float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0)*pow(r / b, 4) - (22.0 / 9.0)*pow(r / b, 2) + 1;
+
+		if (r < b) {
+			accOut = acc + a*res;
+		}
+
+		if (acc > metaBallMinToHit)
+		{
+			return true;
+		}
+
+		return false;
+	}
+};
+
+class NishimuraMetaballTester : IMetaballTester
+{
+	bool testFunction(float3 p, float3 position, float acc, out float accOut)
+	{
+		float r = 0.0;
+		float b = 0.04;
+		float a = 1.1;
+
+		float3 diff = p - position;
+		r = sqrt(dot(diff, diff));
+		r*1.5;
+
+		float res = 0.0;
+		
+		if (r <= b / 3.0 && r >= 0.0)
+		{
+			res = 1.0 - (3.0 * pow(r / b, 2));
+		}
+		if (r >= b / 3.0 && r <= b)
+		{
+			res = 1.5 * pow(1.0 - (r / b), 2);
+		}
+
+		if (r < b) {
+			accOut = acc + a*res;
+		}
+
+		if (accOut > metaBallMinToHit)
+		{
+			return true;
+		}
+
+		return false;
+	}
+};
+
+class MurakamiMetaballTester : IMetaballTester
+{
+	bool testFunction(float3 p, float3 position, float acc, out float accOut)
+	{
+		float r = 0.0;
+		float b = 0.04;
+		float a = 1.1;
+
+		float3 diff = p - position;
+		r = sqrt(dot(diff, diff));
+		r*1.5;
+
+		float res = pow(1.0 - pow(r / b, 2), 2);
 
 		if (r < b) {
 			accOut = acc + a*res;
@@ -132,6 +215,14 @@ float Fresnel(float3 inDir, float3 normal, float n)
 	Rp *= Rp;
 	float fresnel = (Rs + Rp) / 2.0f;
 	return saturate(fresnel);
+}
+
+float3 FresnelForMetals(float3 inDir, float3 normal, float3 n, float3 k)
+{
+	float cosTheta = abs(dot(-inDir, normal));
+	float3 one = float3(1.0, 1.0, 1.0);
+
+	return ((n-one*n-one) + 4.0*n*pow(1.0 - cosTheta, 5.0) + k*k) / ((n+one)*(n+one) + k*k);
 }
 
 float2 WorldToNDC(float3 wp)
@@ -213,14 +304,37 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 {
 	bool callMetaballTestFunction(float3 p, float4 pos)
 	{
-		WyvillMetaballTester wyvillMetaballTester;
-
-		return MetaBallTest(p, wyvillMetaballTester);
+		if (functionType == 2)
+		{
+			WyvillMetaballTester wyvillMetaballTester;
+			return MetaBallTest(p, wyvillMetaballTester);
+		}
+		if (functionType == 3)
+		{
+			NishimuraMetaballTester nishimuraMetaballTester;
+			return MetaBallTest(p, nishimuraMetaballTester);
+		}
+		if (functionType == 4)
+		{
+			MurakamiMetaballTester murakamiMetaballTester;
+			return MetaBallTest(p, murakamiMetaballTester);
+		}
+		SimpleMetaballTester simpleMetaballTester;
+		return MetaBallTest(p, simpleMetaballTester);
 	}
 
 	float3 callGradientCalculator(float3 p, float4 pos)
 	{
 		return Grad(p);
+	}
+
+	float3 phongShading(float3 p, float4 pos, float ambientIntensity, float specularIntensity, float3 lightDir, float3 viewDir, float3 reflectDir, float3 surfaceColor, float3 lightColor, int shininess)
+	{
+		float3 normal = normalize(Grad(p));
+		float3 ambient = ambientIntensity * lightColor;
+		float3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
+		float3 specular = specularIntensity * pow(max(dot(viewDir, reflectDir), 0.0), shininess) * lightColor;
+		return ( ambient + diffuse + specular) * surfaceColor;
 	}
 
 	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
@@ -233,6 +347,11 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 
 float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
 {
+	float ambientIntensity2 = 0.7;
+	float3 lightDir2 = float3(1.0, 0.0, 0.0);
+	float3 surfaceColor2 = float3(0.22745,  0.20000,  0.20000);
+	float3 lightColor2 = float3(1.0, 1.0, 1.0);
+
 	float tStart, tEnd;
 	float3 p = eyePos;
 	float3 d = normalize(rayDir);
@@ -263,14 +382,32 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 			if (metaballVisualizer.callMetaballTestFunction(p, pos))
 			{
 				p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
-				return float4 (normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
+				float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
+				float3 ref = reflect(normalize(rayDir), normal);
+
+				if ((int)type == 1)
+				{
+					float specularIntensity = 0.9;
+					int shininess = 1;
+					float3 ambient = ambientIntensity * lightColor;
+					float3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
+					float3 specular = specularIntensity * pow(max(dot(normalize(rayDir), ref), 0.0), shininess) * lightColor;
+					return float4((ambient + diffuse + specular) * surfaceColor, 1.0);
+				}
+				if ((int)type == 2)
+				{
+					float3 fresnel = FresnelForMetals(normalize(rayDir), normal, eta.xyz, kappa.xyz);
+					float3 envColor = envTexture.SampleLevel(ss, ref, 0);
+					return float4(fresnel * envColor, 1.0);
+				}
+				return float4(normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
 			}
 
 			p += step;
 		}
 	}
 
-	return envTexture.Sample(ss, d);
+	return float4(0.0, 0.0, 0.0, 1.0);// envTexture.Sample(ss, d);
 }
 
 float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
@@ -332,6 +469,11 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 					marchHit = true;
 					marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, pos);
 
+					float distance = length(marchPos - stack[stackSize].position);
+					float i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
+					//i0 = 1.0f;
+					//i0 = 0.0;
+
 					float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, pos));
 					float refractiveIndex = 1.4;
 					if (dot(normal, marchDir) > 0) {
@@ -339,8 +481,8 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 						refractiveIndex = 1.0 / refractiveIndex;
 					}
 					float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
-					float reflectAlfa = fresnelAlfa * marchAlfa;
-					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa;
+					float reflectAlfa = fresnelAlfa * marchAlfa * (i0);
+					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (i0);
 
 					float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
 
