@@ -1921,8 +1921,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	stepAnimationKey(context);
 
 	static bool first = true;
-	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
-	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
+	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
+	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
 	{
 		//if (controlParticlePlacement == Render)
 		{

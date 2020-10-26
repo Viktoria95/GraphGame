@@ -24,8 +24,8 @@ void csRigControlParticles(uint3 DTid : SV_GroupID)
 	float3 pos = controlParticles[tid].position;
 
 	uint idxOfMinDist = 0;
-	float minDist = length(pos - boneBuffer[0].xyz);
-	for (int i = 1; i < 53; i++)
+	float minDist = 100.0;
+	for (int i = 0; i < 53; i++)
 	{	
 		float currentDist = length(pos - boneBuffer[i].xyz);
 		if (currentDist < minDist)
@@ -35,9 +35,54 @@ void csRigControlParticles(uint3 DTid : SV_GroupID)
 		}
 	}
 
+	uint idxOfMinDist2 = 0;
+	float minDist2 = 100.0;
+	for (int i = 0; i < 53; i++)
+	{
+		float currentDist = length(pos - boneBuffer[i].xyz);
+		if (currentDist < minDist2 && idxOfMinDist2 != idxOfMinDist)
+		{
+			minDist2 = currentDist;
+			idxOfMinDist2 = i;
+		}
+	}
+
+	uint idxOfMinDist3 = 0;
+	float minDist3 = 100.0;
+	for (int i = 0; i < 53; i++)
+	{
+		float currentDist = length(pos - boneBuffer[i].xyz);
+		if (currentDist < minDist3 && idxOfMinDist3 != idxOfMinDist && idxOfMinDist3 != idxOfMinDist2)
+		{
+			minDist3 = currentDist;
+			idxOfMinDist3 = i;
+		}
+	}
+
+	uint idxOfMinDist4 = 0;
+	float minDist4 = 100.0;
+	for (int i = 0; i < 53; i++)
+	{
+		float currentDist = length(pos - boneBuffer[i].xyz);
+		if (currentDist < minDist4 && idxOfMinDist4 != idxOfMinDist && idxOfMinDist4 != idxOfMinDist2)
+		{
+			minDist4 = currentDist;
+			idxOfMinDist4 = i;
+		}
+	}
+
 	controlParticles[tid].nonAnimatedPos = controlParticles[tid].position;
-	controlParticles[tid].blendWeights = float4(1.0, 0.0, 0.0, 0.0);
-	controlParticles[tid].blendIndices = uint4(idxOfMinDist, 1, 1, 1);
+
+	float sum = minDist + minDist2;
+	controlParticles[tid].blendWeights = float4(minDist / sum, minDist2 / sum, 0.0, 0.0);
+
+	//float sum = minDist + minDist2 + minDist3 + minDist4;
+	//controlParticles[tid].blendWeights = float4(minDist / sum, minDist2 / sum, minDist3 / sum, minDist4 / sum);
+
+	//float sum = (1.0 / minDist) + (1.0 / minDist2) + (1.0 / minDist3) + (1.0 / minDist4);
+	//controlParticles[tid].blendWeights = float4( (1.0/ minDist) / (sum), (1.0 / minDist2) / (sum), (1.0 / minDist3) / (sum), (1.0 / minDist4) / (sum));
+
+	controlParticles[tid].blendIndices = uint4(idxOfMinDist, idxOfMinDist2, idxOfMinDist3, idxOfMinDist4);
 	controlParticles[tid].temp = minDist;
 	//controlParticles[tid].blendIndices = uint4(tid%40, 1, 1, 1);
 	
