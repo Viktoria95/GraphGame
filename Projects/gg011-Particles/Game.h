@@ -32,6 +32,7 @@ private:
 	enum Metal { Aluminium, Copper, Gold };
 	enum Shading { MetalShading, PhongShading };
 	enum MetaballFunction {Simple, Wyvill, Nishimura, Murakami};
+	enum WaterShading { SimpleWater, DeepWater };
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -50,6 +51,7 @@ private:
 	Metal metalShading;
 	Shading shading;
 	MetaballFunction metaballFunction;
+	WaterShading waterShading;
 	bool drawFlatControlMesh;
 	bool animtedIsActive;
 	bool adapticeControlPressureIsActive;

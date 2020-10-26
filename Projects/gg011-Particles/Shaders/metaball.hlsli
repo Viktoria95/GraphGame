@@ -33,6 +33,7 @@ cbuffer shadingCB {
 
 cbuffer shadingTypeCB {
 	int type;
+	int deepWater;
 };
 
 cbuffer metaballFunctionCB {
@@ -406,13 +407,15 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 			p += step;
 		}
 	}
-
-	return float4(0.0, 0.0, 0.0, 1.0);// envTexture.Sample(ss, d);
+	if ((int)type == 1) 
+	{
+		return float4(1.0, 1.0, 1.0, 1.0);
+	}
+	return envTexture.Sample(ss, d);
 }
 
 float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
 {
-
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
@@ -470,9 +473,11 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 					marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, pos);
 
 					float distance = length(marchPos - stack[stackSize].position);
-					float i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
-					//i0 = 1.0f;
-					//i0 = 0.0;
+					float i0 = 1.0f;
+					if ((int)deepWater == 1)
+					{
+						i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
+					}
 
 					float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, pos));
 					float refractiveIndex = 1.4;
