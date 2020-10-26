@@ -29,6 +29,7 @@ cbuffer shadingCB {
 	float4 lightColor;
 	float4 eta;
 	float4 kappa;
+	float radius;
 };
 
 cbuffer shadingTypeCB {
@@ -81,8 +82,9 @@ class SimpleMetaballTester : IMetaballTester
 	bool testFunction(float3 p, float3 position, float acc, out float accOut)
 	{
 		float3 diff = p - position;
-		float res = (1.0 / (dot(diff, diff) * metaBallRadius * metaBallRadius));
-		if (sqrt(dot(diff, diff) < 0.04))
+		float r = sqrt(dot(diff, diff)) * radius;
+		float res = (1.0 / (r*r * metaBallRadius * metaBallRadius));
+		if (r < 0.04)
 			accOut = acc + 1.1*res;
 		if (accOut > metaBallMinToHit)
 		{
@@ -101,8 +103,7 @@ class WyvillMetaballTester : IMetaballTester
 		float a = 1.1;
 
 		float3 diff = p - position;
-		r = sqrt(dot(diff, diff));
-		r*1.5;
+		r = sqrt(dot(diff, diff)) * radius;
 
 		float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0)*pow(r / b, 4) - (22.0 / 9.0)*pow(r / b, 2) + 1;
 
@@ -110,7 +111,7 @@ class WyvillMetaballTester : IMetaballTester
 			accOut = acc + a*res;
 		}
 
-		if (acc > metaBallMinToHit)
+		if (accOut > metaBallMinToHit)
 		{
 			return true;
 		}
@@ -128,8 +129,7 @@ class NishimuraMetaballTester : IMetaballTester
 		float a = 1.1;
 
 		float3 diff = p - position;
-		r = sqrt(dot(diff, diff));
-		r*1.5;
+		r = sqrt(dot(diff, diff)) * radius;
 
 		float res = 0.0;
 		
@@ -164,8 +164,7 @@ class MurakamiMetaballTester : IMetaballTester
 		float a = 1.1;
 
 		float3 diff = p - position;
-		r = sqrt(dot(diff, diff));
-		r*1.5;
+		r = sqrt(dot(diff, diff)) * radius;
 
 		float res = pow(1.0 - pow(r / b, 2), 2);
 

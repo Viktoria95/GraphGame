@@ -130,6 +130,7 @@ private:
 
 
 	// Metaball
+	float radius;
 	Egg::Mesh::Shaded::P metaballs;
 	Egg::Mesh::Shader::P metaballRealisticPixelShader;
 	Egg::Mesh::Shader::P metaballGradientPixelShader;

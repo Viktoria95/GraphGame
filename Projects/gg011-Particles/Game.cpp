@@ -70,6 +70,8 @@ void Game::CreateCommon()
 	adapticeControlPressureIsActive = true;
 	controlParticleAnimtaionIsActive = false;
 
+	radius = 1.0;
+
 	debugType = 0;
 
 	// modelViewProjCB
@@ -97,7 +99,7 @@ void Game::CreateCommon()
 	// shadingCB
 	D3D11_BUFFER_DESC shadingCBDesc;
 	shadingCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	shadingCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 6;
+	shadingCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 8;
 	shadingCBDesc.CPUAccessFlags = 0;
 	shadingCBDesc.MiscFlags = 0;
 	shadingCBDesc.StructureByteStride = 0;
@@ -1364,7 +1366,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-	float4 shadingAttributes[6];
+	float4 shadingAttributes[7];
 	shadingAttributes[0] = float4(0.4, 0.0, 0.0, 1.0); //ambientIntensity
 	shadingAttributes[1] = float4(1.0, 0.0, 0.0, 1.0); //lightDir
 	shadingAttributes[2] = float4(0.250, 0.129, 0.027, 1.0); // surfaceColor
@@ -1385,6 +1387,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		shadingAttributes[4] = float4(1.49, 1.02, 0.558, 0.0); //eta
 		shadingAttributes[5] = float4(7.82, 6.85, 5.2, 0.0); //kappa
 	}
+	shadingAttributes[6] = radius;
 	context->UpdateSubresource(shadingCB.Get(), 0, nullptr, shadingAttributes, 0, 0);
 
 	int type[2];
@@ -1926,6 +1929,10 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	stepAnimationKey(context);
 
+	Egg::Math::float4 billboardSize((1.0/radius) *0.04, (1.0 / radius) *0.0, 0, 0);
+
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, &billboardSize, 0, 0);
+	
 	static bool first = true;
 	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
 	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
@@ -2119,6 +2126,14 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				waterShading = DeepWater;
 			else if (waterShading == DeepWater)
 				waterShading = SimpleWater;
+		}
+		else if (wParam == 'X' && radius <= 2.0)
+		{
+			radius += 0.1;
+		}
+		else if (wParam == 'Y' && radius > 0.0)
+		{
+			radius -= 0.1;
 		}
 		else if (wParam == '0')
 		{

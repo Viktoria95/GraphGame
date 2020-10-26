@@ -17,7 +17,7 @@ Cam::FirstPerson::FirstPerson()
 
 	fov = 1.57f;
 	nearPlane = 0.1f;
-	farPlane = 10.0f;
+	farPlane = 50.0f;
 	setAspect(1.33f);
 	//setAspect(1.0f);
 
