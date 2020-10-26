@@ -63,6 +63,8 @@ void Game::CreateCommon()
 	metalShading = Gold;
 	shading = PhongShading;
 	metaballFunction = Simple;
+	waterShading = SimpleWater;
+
 	drawFlatControlMesh = false;
 	animtedIsActive = true;
 	adapticeControlPressureIsActive = true;
@@ -1385,11 +1387,15 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	}
 	context->UpdateSubresource(shadingCB.Get(), 0, nullptr, shadingAttributes, 0, 0);
 
-	int type[1];
+	int type[2];
 	if (shading == PhongShading)
 		type[0] = 1;
 	if (shading == MetalShading)
 		type[0] = 2;
+	if (waterShading == DeepWater)
+		type[1] = 1;
+	if (waterShading == SimpleWater)
+		type[1] = 0;
 
 	context->UpdateSubresource(shadingTypeCB.Get(), 0, nullptr, type, 0, 0);
 
@@ -2106,6 +2112,13 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				metaballFunction = Murakami;
 			else if (metaballFunction == Murakami)
 				metaballFunction = Simple;
+		}
+		else if (wParam == 'V')
+		{
+			if (waterShading == SimpleWater)
+				waterShading = DeepWater;
+			else if (waterShading == DeepWater)
+				waterShading = SimpleWater;
 		}
 		else if (wParam == '0')
 		{
