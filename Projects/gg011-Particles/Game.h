@@ -131,6 +131,7 @@ private:
 
 	// Metaball
 	float radius;
+	float metaBallMinToHit;
 	Egg::Mesh::Shaded::P metaballs;
 	Egg::Mesh::Shader::P metaballRealisticPixelShader;
 	Egg::Mesh::Shader::P metaballGradientPixelShader;

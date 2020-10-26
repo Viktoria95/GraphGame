@@ -71,6 +71,7 @@ void Game::CreateCommon()
 	controlParticleAnimtaionIsActive = false;
 
 	radius = 1.0;
+	metaBallMinToHit = 0.9;
 
 	debugType = 0;
 
@@ -1366,7 +1367,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-	float4 shadingAttributes[7];
+	float4 shadingAttributes[8];
 	shadingAttributes[0] = float4(0.4, 0.0, 0.0, 1.0); //ambientIntensity
 	shadingAttributes[1] = float4(1.0, 0.0, 0.0, 1.0); //lightDir
 	shadingAttributes[2] = float4(0.250, 0.129, 0.027, 1.0); // surfaceColor
@@ -1387,7 +1388,8 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		shadingAttributes[4] = float4(1.49, 1.02, 0.558, 0.0); //eta
 		shadingAttributes[5] = float4(7.82, 6.85, 5.2, 0.0); //kappa
 	}
-	shadingAttributes[6] = radius;
+	shadingAttributes[6] = float4(metaBallMinToHit, 0.0, 0.0, 0.0);
+	shadingAttributes[7] = radius;
 	context->UpdateSubresource(shadingCB.Get(), 0, nullptr, shadingAttributes, 0, 0);
 
 	int type[2];
@@ -2134,6 +2136,14 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		else if (wParam == 'Y' && radius > 0.0)
 		{
 			radius -= 0.1;
+		}
+		else if (wParam == 'O' && metaBallMinToHit < 10.0)
+		{
+			metaBallMinToHit += 0.1;
+		}
+		else if (wParam == 'I' && metaBallMinToHit > 0.1)
+		{
+			metaBallMinToHit -= 0.1;
 		}
 		else if (wParam == '0')
 		{

@@ -3,7 +3,6 @@
 
 //#define metaBallRadius 1.0 / 0.005
 #define metaBallRadius 1.0 / 0.005
-#define metaBallMinToHit 0.9
 #define marchCount 25
 #define binaryStepCount 3
 
@@ -29,6 +28,7 @@ cbuffer shadingCB {
 	float4 lightColor;
 	float4 eta;
 	float4 kappa;
+	float4 metaBallMinToHit;
 	float radius;
 };
 
@@ -86,7 +86,7 @@ class SimpleMetaballTester : IMetaballTester
 		float res = (1.0 / (r*r * metaBallRadius * metaBallRadius));
 		if (r < 0.04)
 			accOut = acc + 1.1*res;
-		if (accOut > metaBallMinToHit)
+		if (accOut > metaBallMinToHit.x)
 		{
 			return true;
 		}
@@ -111,7 +111,7 @@ class WyvillMetaballTester : IMetaballTester
 			accOut = acc + a*res;
 		}
 
-		if (accOut > metaBallMinToHit)
+		if (accOut > metaBallMinToHit.x)
 		{
 			return true;
 		}
@@ -146,7 +146,7 @@ class NishimuraMetaballTester : IMetaballTester
 			accOut = acc + a*res;
 		}
 
-		if (accOut > metaBallMinToHit)
+		if (accOut > metaBallMinToHit.x)
 		{
 			return true;
 		}
@@ -172,7 +172,7 @@ class MurakamiMetaballTester : IMetaballTester
 			accOut = acc + a*res;
 		}
 
-		if (accOut > metaBallMinToHit)
+		if (accOut > metaBallMinToHit.x)
 		{
 			return true;
 		}
