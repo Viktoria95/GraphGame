@@ -163,6 +163,18 @@
     <FxCompile Include="Shaders\csPrefixSumV2.hlsl">
       <Filter>Shaders\PrefixSum</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csAdaptiveControlPressure.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csSetBufferForIndirectDispatch.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csAnimateControlParticles.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csRigControlParticles.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">

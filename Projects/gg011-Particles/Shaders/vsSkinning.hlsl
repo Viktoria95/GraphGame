@@ -61,6 +61,7 @@ VsosTrafo vsSkinning(IaosSkinning input) {
 	blendedPos += trans;
 	//blendedPos = input.pos.xyz; ///// TEST
 	output.pos = mul(float4(blendedPos, 1), modelViewProjMatrix);
+	//output.pos = mul(float4(input.pos.xyz, 1), modelViewProjMatrix);
 	output.normal = normalize(input.normal.xyz + 2.0*cross(qe[0].xyz, cross(qe[0].xyz, input.normal.xyz) + qe[0].w*input.normal.xyz));
 	output.worldPos = float4(blendedPos, 1);
 	output.tex = input.tex.xy;

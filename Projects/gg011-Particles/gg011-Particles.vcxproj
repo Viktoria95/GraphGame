@@ -177,6 +177,20 @@
     <ClInclude Include="Particle.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\csAdaptiveControlPressure.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\csAnimateControlParticles.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
     <FxCompile Include="Shaders\csControlledFluidSimulation.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
@@ -233,6 +247,17 @@
     </FxCompile>
     <FxCompile Include="Shaders\csPrefixSumV2.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="Shaders\csRigControlParticles.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\csScanAddBucketResult.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
@@ -259,6 +284,14 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</EntryPointName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="Shaders\csSetBufferForIndirectDispatch.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="Shaders\csSimpleSortEven.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
@@ -347,6 +380,10 @@
     </FxCompile>
     <FxCompile Include="Shaders\psBillboardSV21.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)%(RelativeDir)%(Filename).cso</ObjectFileOutput>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\psControlMeshA.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</EntryPointName>

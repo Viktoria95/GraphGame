@@ -38,8 +38,12 @@ void AddControlParticle (float3 pos)
 	controlParticleCounter.InterlockedAdd(0, 1, newControlParticleIdx);
 
 	ControlParticle cp;
-	cp.pressure = 1.0;
+	cp.controlPressureRatio = 1.0;
 	cp.position = pos;
+	cp.nonAnimatedPos = pos;
+	cp.temp = 0.0;
+	cp.blendWeights = float4 (0.0, 0.0, 0.0, 0.0);
+	cp.blendIndices = uint4 (0, 0, 0, 0);
 	controlParticles[newControlParticleIdx] = cp;
 }
 
@@ -49,7 +53,7 @@ void AddControlParticle(float3 pos, float pressure)
 	controlParticleCounter.InterlockedAdd(0, 1, newControlParticleIdx);
 
 	ControlParticle cp;
-	cp.pressure = pressure;
+	cp.controlPressureRatio = pressure;
 	cp.position = pos;
 	controlParticles[newControlParticleIdx] = cp;
 }

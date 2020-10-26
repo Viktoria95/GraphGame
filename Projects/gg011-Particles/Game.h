@@ -28,8 +28,7 @@ private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2 };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
-	enum ControlParticlePlacement { Vertex, Render };
-	bool drawFlatControlMesh;
+	enum ControlParticlePlacement { Vertex, Render, Animated };	
 
 	// Common
 	Egg::Cam::FirstPerson::P firstPersonCam;
@@ -42,6 +41,10 @@ private:
 	RenderMode renderMode;
 	FlowControl flowControl;
 	ControlParticlePlacement controlParticlePlacement;
+	bool drawFlatControlMesh;
+	bool animtedIsActive;
+	bool adapticeControlPressureIsActive;
+	bool controlParticleAnimtaionIsActive;
 
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
@@ -55,6 +58,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleCounterDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleCounterSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleCounterUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleIndirectDisptachDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleIndirectDisptachUAV;
 	Egg::Mesh::Shaded::P controlMesh;
 	Egg::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg::Mesh::Shaded::P controlMeshFill;
@@ -128,6 +133,10 @@ private:
 	Egg::Mesh::Shader::P simpleSortEvenShader;
 	Egg::Mesh::Shader::P simpleSortOddShader;
 	Egg::Mesh::Shader::P mortonHashShader;
+	Egg::Mesh::Shader::P setIndirectDispatchBufferShader;
+	Egg::Mesh::Shader::P adaptiveControlPressureShader;
+	Egg::Mesh::Shader::P rigControlParticlesShader;
+	Egg::Mesh::Shader::P animateControlParticlesShader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParamsCB;
 	std::array<float, 8> controlParams;
 
@@ -159,6 +168,8 @@ private:
 	unsigned int currentKey;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> boneBuffer;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> bonePositionsBufferCB;
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
@@ -203,8 +214,14 @@ public:
 	void renderEnvironment(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderAnimatedControlMeshInTPose(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void setBufferForIndirectDispatch(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void setAdaptiveControlPressure(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void rigControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void animateControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 GG_ENDCLASS

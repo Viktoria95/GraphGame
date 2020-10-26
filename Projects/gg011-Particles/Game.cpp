@@ -59,8 +59,11 @@ void Game::CreateCommon()
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Realistic;
 	flowControl = RealisticFlow;
-	controlParticlePlacement = Render;
+	controlParticlePlacement = Animated;
 	drawFlatControlMesh = false;
+	animtedIsActive = true;
+	adapticeControlPressureIsActive = true;
+	controlParticleAnimtaionIsActive = false;
 
 	debugType = 0;
 
@@ -186,7 +189,7 @@ void Game::CreateControlParticles()
 		}
 	}
 	//else 
-	if (controlParticlePlacement == Render)
+	if (controlParticlePlacement == Render || controlParticlePlacement == Animated)
 	{
 		fillCam = Egg::Cam::FirstPerson::create();
 		fillCam->setView(float3 (0.0, 0.5, -0.5), float3 (0,0,1));
@@ -414,6 +417,34 @@ void Game::CreateControlParticles()
 
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
 			device->CreateUnorderedAccessView(controlParticleCounterDataBuffer.Get(), &particleCounterUAVDesc, &controlParticleCounterUAV);
+	}
+
+	{
+		// ControlParticleIndirectDisptach
+
+		// Data Buffer
+		D3D11_BUFFER_DESC particleIndirectDisptachBufferDesc;
+		particleIndirectDisptachBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		particleIndirectDisptachBufferDesc.CPUAccessFlags = 0;
+		particleIndirectDisptachBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		particleIndirectDisptachBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+		particleIndirectDisptachBufferDesc.StructureByteStride = sizeof(uint);
+		particleIndirectDisptachBufferDesc.ByteWidth = 3 * sizeof(uint);
+
+		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleIndirectDisptachBufferDesc, NULL, controlParticleIndirectDisptachDataBuffer.GetAddressOf());
+
+
+		// Unordered Access View
+		D3D11_UNORDERED_ACCESS_VIEW_DESC particleIndirectDisptachUAVDesc;
+		particleIndirectDisptachUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		particleIndirectDisptachUAVDesc.Format = DXGI_FORMAT_R32_UINT;
+		particleIndirectDisptachUAVDesc.Buffer.FirstElement = 0;
+		particleIndirectDisptachUAVDesc.Buffer.NumElements = 3;
+		particleIndirectDisptachUAVDesc.Buffer.Flags = 0;
+
+		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(controlParticleIndirectDisptachDataBuffer.Get(), &particleIndirectDisptachUAVDesc, &controlParticleIndirectDisptachUAV);
 	}
 }
 
@@ -787,6 +818,18 @@ void Game::CreateAnimation() {
 	ComPtr<ID3DBlob>mortonHashShaderByteCode = loadShaderCode("csMortonHash.cso");
 	mortonHashShader = Egg::Mesh::Shader::create("csMortonHash.cso", device, mortonHashShaderByteCode);
 
+	ComPtr<ID3DBlob>setIndirectDispatchBufferShaderByteCode = loadShaderCode("csSetBufferForIndirectDispatch.cso");
+	setIndirectDispatchBufferShader = Egg::Mesh::Shader::create("csSetBufferForIndirectDispatch.cso", device, setIndirectDispatchBufferShaderByteCode);
+
+	ComPtr<ID3DBlob>adaptiveControlPressureShaderByteCode = loadShaderCode("csAdaptiveControlPressure.cso");
+	adaptiveControlPressureShader = Egg::Mesh::Shader::create("csAdaptiveControlPressure.cso", device, adaptiveControlPressureShaderByteCode);
+
+	ComPtr<ID3DBlob> rigControlParticlesShaderByteCode = loadShaderCode("csRigControlParticles.cso");
+	rigControlParticlesShader = Egg::Mesh::Shader::create("csRigControlParticles.cso", device, rigControlParticlesShaderByteCode);
+
+	ComPtr<ID3DBlob>animateControlParticlesShaderByteCode = loadShaderCode("csAnimateControlParticles.cso");
+	animateControlParticlesShader = Egg::Mesh::Shader::create("csAnimateControlParticles.cso", device, animateControlParticlesShaderByteCode);
+
 	controlParams = { 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// debugTypeCB
@@ -837,6 +880,8 @@ void Game::CreateControlMesh() {
 	nBones = assMesh->mNumBones;
 	rigging = new DualQuaternion[nBones];
 
+	std::vector<Egg::Math::float4> bonePositions(nBones);
+
 	for (int iBone = 0; iBone< assMesh->mNumBones; iBone++) {
 		aiBone* assBone = assMesh->mBones[iBone];
 		boneNames.push_back(assBone->mName.C_Str());
@@ -852,7 +897,9 @@ void Game::CreateControlMesh() {
 		a.DecomposeNoScaling(q, t);
 		rigging[
 			//riggingPoseBoneTransforms.size()
-			iBone].set(float4(q.x, q.y, q.z, q.w), float4(t.x, t.y, t.z, 1));
+			iBone].set(float4(q.x, q.y, q.z, q.w), float4(t.x, t.y, t.z, 1.0));
+
+			bonePositions[iBone] = float4(-t.x, -t.y, -t.z, 1.0);
 			//		riggingPoseBoneTransforms.push_back(m);
 			boneTransformationChainNodeIndices.push_back(std::vector<unsigned char>());
 	}
@@ -924,7 +971,7 @@ void Game::CreateControlMesh() {
 		}
 		iNodeIndex++;
 	}
-
+	
 	for (int iAnim = 0; iAnim<assAnimScene->mNumAnimations; iAnim++) {
 		aiAnimation* assAnim = assAnimScene->mAnimations[iAnim];
 		for (int iChannel = 0; iChannel< assAnim->mNumChannels; iChannel++) {
@@ -945,6 +992,7 @@ void Game::CreateControlMesh() {
 			}
 		}
 	}
+	
 
 	CD3D11_BUFFER_DESC boneBufferDesc(
 		nBones *
@@ -1047,6 +1095,29 @@ void Game::CreateControlMesh() {
 		ComPtr<ID3D11InputLayout> inputLayoutDebug = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
 		animatedControlMeshFlat = Egg::Mesh::Shaded::create(geometry, materialDebug, inputLayoutDebug);
 	}
+
+
+	
+	for (int i = 0; i < nBones; i++)
+	{
+		bonePositions[i] = bonePositions[i] * (float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale)));
+		//bonePositions[i].w = 1.0;
+	}
+
+	D3D11_BUFFER_DESC bonePositionsDesc;
+	bonePositionsDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bonePositionsDesc.CPUAccessFlags = 0;
+	bonePositionsDesc.MiscFlags = 0;
+	bonePositionsDesc.StructureByteStride = 0;
+	bonePositionsDesc.Usage = D3D11_USAGE_DEFAULT;
+	bonePositionsDesc.ByteWidth = sizeof(float) * 4 * nBones;
+
+	D3D11_SUBRESOURCE_DATA initialBonePositionData;
+	initialBonePositionData.pSysMem = &bonePositions[0];
+
+	Egg::ThrowOnFail("Failed to create bonePositionseCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&bonePositionsDesc, &initialBonePositionData, bonePositionsBufferCB.GetAddressOf());
+
 
 }
 
@@ -1457,21 +1528,6 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 		slowingCounter = 0;
 		currentKey = (currentKey + 1) % nKeys;
 	}
-	
-	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
-	for (int iBone = 0; iBone < nBones; iBone++) {
-		boneTrafos[iBone] = rigging[iBone];
-		for (int iChain = 0; iChain < 16; iChain++) {
-			auto iNode = skeleton[iChain + iBone * 16];
-			if (iNode == 255) break;
-			boneTrafos[iBone] = keys[
-				iNode * nKeys
-					+ currentKey] * boneTrafos[iBone];
-		}
-	}
-
-	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
-	delete[] boneTrafos;
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
@@ -1489,6 +1545,72 @@ void Game::renderAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext>
 	context->RSSetViewports(1, pViewports);
 
 	animatedControlMesh->draw(context);
+}
+
+void  Game::renderAnimatedControlMeshInTPose(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	//
+	//uint values[4] = { 0,0,0,0 };
+	//context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+
+	//float4x4 matrices[4];
+	//matrices[0] = float4x4::identity;
+	//matrices[1] = float4x4::identity;
+	//matrices[2] = float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (fillCam->getViewMatrix() /** fillCam->getProjMatrix()*/);
+	//matrices[3] = float4x4::identity;
+	//context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	//ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	//ppUnorderedAccessViews[0] = offsetUAV.Get();
+	//ppUnorderedAccessViews[1] = linkUAV.Get();
+	//uint t[2] = { 0,0 };
+	//context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+
+	//D3D11_VIEWPORT pViewports[1];
+	//pViewports->Height = fillWindowHeight;
+	//pViewports->Width = fillWindowWidth;
+	//pViewports->TopLeftX = 0;
+	//pViewports->TopLeftY = 0;
+	//pViewports->MaxDepth = 1.0;
+	//pViewports->MinDepth = 0.0;
+	//context->RSSetViewports(1, pViewports);
+
+	//animatedControlMesh->draw(context);
+
+	static int slowingCounter = 0;
+	slowingCounter++;
+	if (slowingCounter % 5 == 0)
+	{
+		slowingCounter = 0;
+		currentKey = (currentKey + 1) % nKeys;
+	}
+
+	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+	for (int iBone = 0; iBone < nBones; iBone++) {
+		boneTrafos[iBone].orientation = Egg::Math::float4(0.0, 1.0, 0.0, 0.0);
+		boneTrafos[iBone].translation = Egg::Math::float4(0.0, 0.0, 0.0, 1.0);
+		/*
+		boneTrafos[iBone] = rigging[iBone];
+		
+		for (int iChain = 0; iChain < 16; iChain++) {
+			auto iNode = skeleton[iChain + iBone * 16];
+			if (iNode == 255) break;
+			boneTrafos[iBone] = keys[
+				iNode * nKeys
+					+ currentKey] * boneTrafos[iBone];
+		}
+		*/
+		
+	}
+
+	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
+	delete[] boneTrafos;
+
+
+	renderAnimatedControlMesh(context);
+
+	stepAnimationKey(context);
+	
 }
 
 void Game::renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -1520,29 +1642,6 @@ void Game::renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceCont
 	matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-	static int slowingCounter = 0;
-	slowingCounter++;
-	if (slowingCounter % 5 == 0)
-	{
-		slowingCounter = 0;
-		currentKey = (currentKey + 1) % nKeys;
-	}
-
-	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
-	for (int iBone = 0; iBone < nBones; iBone++) {
-		boneTrafos[iBone] = rigging[iBone];
-		for (int iChain = 0; iChain < 16; iChain++) {
-			auto iNode = skeleton[iChain + iBone * 16];
-			if (iNode == 255) break;
-			boneTrafos[iBone] = keys[
-				iNode * nKeys
-					+ currentKey] * boneTrafos[iBone];
-		}
-	}
-
-	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
-	delete[] boneTrafos;
 
 	animatedControlMeshFlat->draw(context);
 
@@ -1585,30 +1684,171 @@ void Game::fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> cont
 	controlMeshFill->draw(context);
 }
 
+void Game::setBufferForIndirectDispatch (Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint zeros[1] = { 0 };
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(setIndirectDispatchBufferShader->getShader().Get()), nullptr, 0);
+
+	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleIndirectDisptachUAV.GetAddressOf(), zeros);
+
+	context->Dispatch(1, 1, 1);
+}
+
+void Game::setAdaptiveControlPressure(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	/*
+		uint zeros[1] = { 0};
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(controlledFluidSimulationShader->getShader().Get()), nullptr, 0);
+		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+		ID3D11ShaderResourceView* ppShaderResourceViews[2] = { controlParticleSRV.Get(), controlParticleCounterSRV.Get() };
+		context->CSSetShaderResources(0, 2, ppShaderResourceViews);
+		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
+		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
+		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
+		context->Dispatch(defaultParticleCount, 1, 1);
+	*/
+
+	uint zeros[1] = { 0 };
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(adaptiveControlPressureShader->getShader().Get()), nullptr, 0);
+
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
+	context->CSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	context->DispatchIndirect(controlParticleIndirectDisptachDataBuffer.Get(), 0);
+	//context->Dispatch(2500, 1, 1);
+}
+
+void  Game::rigControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint zeros[1] = { 0 };
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(rigControlParticlesShader->getShader().Get()), nullptr, 0);
+
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
+
+	//uint cbindex = rigControlParticlesShader->getResourceIndex("bonePositionsCB");
+	context->CSSetConstantBuffers(0, 1, bonePositionsBufferCB.GetAddressOf());
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0))).invert();
+	matrices[2] = float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0));
+	matrices[3] = float4x4::identity;
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->CSSetConstantBuffers(1, 1, modelViewProjCB.GetAddressOf());
+
+	context->DispatchIndirect(controlParticleIndirectDisptachDataBuffer.Get(), 0);
+}
+
+void Game::animateControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint zeros[1] = { 0 };
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(animateControlParticlesShader->getShader().Get()), nullptr, 0);
+
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
+	context->CSSetConstantBuffers(0, 1, boneBuffer.GetAddressOf());
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0))).invert ();
+	matrices[2] = float4x4::scaling(float3(animatedControlMeshScale, animatedControlMeshScale, animatedControlMeshScale))* float4x4::translation(float3(0.0, 0.0, 0.0));
+	matrices[3] = float4x4::identity;
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+	context->CSSetConstantBuffers(1, 1, modelViewProjCB.GetAddressOf());
+
+
+	context->DispatchIndirect(controlParticleIndirectDisptachDataBuffer.Get(), 0);
+}
+
+void Game::stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	static int slowingCounter = 0;
+	slowingCounter++;
+	if (slowingCounter % 5 == 0)
+	{
+		slowingCounter = 0;
+		currentKey = (currentKey + 1) % nKeys;
+	}
+
+	DualQuaternion* boneTrafos = new DualQuaternion[nBones];
+	for (int iBone = 0; iBone < nBones; iBone++) {
+		boneTrafos[iBone] = rigging[iBone];
+		for (int iChain = 0; iChain < 16; iChain++) {
+			auto iNode = skeleton[iChain + iBone * 16];
+			if (iNode == 255) break;
+			boneTrafos[iBone] = keys[
+				iNode * nKeys
+					+ currentKey] * boneTrafos[iBone];
+		}
+	}
+
+	context->UpdateSubresource(boneBuffer.Get(), 0, nullptr, boneTrafos, 0, 0);
+	delete[] boneTrafos;
+}
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
 
 	clearRenderTarget(context);
 
-	static bool first = true;
+	stepAnimationKey(context);
 
-	//if (first)
-	if (controlParticlePlacement == Render)
+	static bool first = true;
+	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
+	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
 	{
+		//if (controlParticlePlacement == Render)
 		{
-			// Round1
-			//renderControlMesh(context);
-			renderAnimatedControlMesh(context);
-			clearContext(context);			
-		}
-		{
-			// Round2
-			fillControlParticles(context);
-			clearContext(context);
+			{
+				// Round1
+				if (animtedIsActive)
+				{
+					if (controlParticlePlacement == Render)
+					{
+						renderAnimatedControlMesh(context);
+					}
+					if (controlParticlePlacement == Animated)
+					{
+						renderAnimatedControlMeshInTPose(context);
+					}					
+				}
+				else
+				{
+					renderControlMesh(context);
+				}				
+				
+				clearContext(context);
+			}
+			{
+				// Round2
+				fillControlParticles(context);
+				clearContext(context);
+
+				setBufferForIndirectDispatch(context);
+				clearContext(context);
+
+				if (controlParticlePlacement == Animated)
+				{
+					rigControlParticles(context);
+					clearContext(context);
+				}
+			}
 		}
 	}
 	first = false;
+
+	if (controlParticlePlacement == Animated)
+	{
+		animateControlParticles(context);
+		clearContext(context);
+	}
+
+	if (adapticeControlPressureIsActive)
+	{
+		setAdaptiveControlPressure(context);
+		clearContext(context);
+	}
 
 	if (renderMode == Realistic || renderMode == Gradient)
 	{
@@ -1674,8 +1914,14 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	
 	if (drawFlatControlMesh)
 	{
-		renderFlatAnimatedControlMesh(context);
-		//renderFlatControlMesh(context);
+		if (animtedIsActive)
+		{
+			renderFlatAnimatedControlMesh(context);
+		}
+		else
+		{
+			renderFlatControlMesh(context);
+		}
 	}
 	
 }

@@ -38,5 +38,9 @@ class ControlParticle
 {
 	friend class Game;
 	Egg::Math::float3 position;
-	float temp;
+	float controlPressureRatio;
+	Egg::Math::float3	nonAnimatedPos;
+	float	temp;
+	Egg::Math::float4	blendWeights;
+	Egg::Math::float4	blendIndices; // uint4
 };

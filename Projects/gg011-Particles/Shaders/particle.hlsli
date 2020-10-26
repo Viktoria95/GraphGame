@@ -28,6 +28,10 @@ struct Particle
 struct ControlParticle
 {
 	float3	position;
-	float	pressure;
+	float	controlPressureRatio;
+	float3	nonAnimatedPos;
+	float	temp;
+	float4	blendWeights;
+	uint4	blendIndices;
 };
 
