@@ -3,8 +3,8 @@
 
 //#define metaBallRadius 1.0 / 0.005
 #define metaBallRadius 1.0 / 0.005
-#define marchCount 25
-#define binaryStepCount 3
+//#define marchCount 25
+//#define binaryStepCount 3
 
 SamplerState ss;
 TextureCube envTexture;
@@ -35,6 +35,9 @@ cbuffer shadingCB {
 cbuffer shadingTypeCB {
 	int type;
 	int deepWater;
+	int binaryStepCount;
+	int maxRecursion;
+	int marchCount;
 };
 
 cbuffer metaballFunctionCB {
@@ -84,7 +87,7 @@ class SimpleMetaballTester : IMetaballTester
 		float3 diff = p - position;
 		float r = sqrt(dot(diff, diff)) * radius;
 		float res = (1.0 / (r*r * metaBallRadius * metaBallRadius));
-		if (r < 0.04)
+		if (r < 0.16)
 			accOut = acc + 1.1*res;
 		if (accOut > metaBallMinToHit.x)
 		{
@@ -406,10 +409,10 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 			p += step;
 		}
 	}
-	if ((int)type == 1) 
-	{
-		return float4(1.0, 1.0, 1.0, 1.0);
-	}
+	//if ((int)type == 1) 
+	//{
+	//	return float4(1.0, 1.0, 1.0, 1.0);
+	//}
 	return envTexture.Sample(ss, d);
 }
 
@@ -455,7 +458,7 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 			tEnd
 		);
 
-		if (intersect && marchRecursionDepth < 4)
+		if (intersect && marchRecursionDepth < maxRecursion)
 		{
 			bool startedInside = metaballVisualizer.callMetaballTestFunction(marchPos, pos);
 			float3 start = marchPos;

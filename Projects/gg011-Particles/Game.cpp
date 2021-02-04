@@ -15,10 +15,10 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int defaultParticleCount = 1024*2;
 const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
-const unsigned int sbufferSizePerPixel = 256;
+const unsigned int sbufferSizePerPixel = 512;
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
 {
@@ -59,10 +59,10 @@ void Game::CreateCommon()
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
-	controlParticlePlacement = Animated;
+	controlParticlePlacement = Render;
 	metalShading = Gold;
 	shading = PhongShading;
-	metaballFunction = Simple;
+	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
 
 	drawFlatControlMesh = false;
@@ -72,8 +72,13 @@ void Game::CreateCommon()
 
 	radius = 1.0;
 	metaBallMinToHit = 0.9;
+	binaryStepCount = 2;
+	maxRecursion = 2;
+	marchCount = 25;
 
 	debugType = 0;
+	testCount = 0;
+	testCount2 = 0;
 
 	// modelViewProjCB
 	D3D11_BUFFER_DESC modelViewProjCBDesc;
@@ -111,7 +116,7 @@ void Game::CreateCommon()
 	// shadingTypeCB
 	D3D11_BUFFER_DESC shadingTypeCBDesc;
 	shadingTypeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	shadingTypeCBDesc.ByteWidth = sizeof(float) * 4;
+	shadingTypeCBDesc.ByteWidth = sizeof(float) * 8;
 	shadingTypeCBDesc.CPUAccessFlags = 0;
 	shadingTypeCBDesc.MiscFlags = 0;
 	shadingTypeCBDesc.StructureByteStride = 0;
@@ -458,6 +463,21 @@ void Game::CreateControlParticles()
 
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
 			device->CreateUnorderedAccessView(controlParticleCounterDataBuffer.Get(), &particleCounterUAVDesc, &controlParticleCounterUAV);
+	}
+
+	{
+		// Only Debug
+
+		D3D11_BUFFER_DESC particleCounterBufferDesc;
+		particleCounterBufferDesc.BindFlags = 0;
+		particleCounterBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		particleCounterBufferDesc.Usage = D3D11_USAGE_STAGING;
+		particleCounterBufferDesc.MiscFlags = 0;
+		particleCounterBufferDesc.StructureByteStride = sizeof(uint);
+		particleCounterBufferDesc.ByteWidth = sizeof(uint);
+
+		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleCounterBufferDesc, NULL, uavCounterReadback.GetAddressOf());
 	}
 
 	{
@@ -1392,7 +1412,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	shadingAttributes[7] = radius;
 	context->UpdateSubresource(shadingCB.Get(), 0, nullptr, shadingAttributes, 0, 0);
 
-	int type[2];
+	int type[5];
 	if (shading == PhongShading)
 		type[0] = 1;
 	if (shading == MetalShading)
@@ -1401,6 +1421,9 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		type[1] = 1;
 	if (waterShading == SimpleWater)
 		type[1] = 0;
+	type[2] = binaryStepCount;
+	type[3] = maxRecursion;
+	type[4] = marchCount;
 
 	context->UpdateSubresource(shadingTypeCB.Get(), 0, nullptr, type, 0, 0);
 
@@ -1929,13 +1952,18 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
-	stepAnimationKey(context);
+	//stepAnimationKey(context);
 
-	Egg::Math::float4 billboardSize((1.0/radius) *0.04, (1.0 / radius) *0.0, 0, 0);
+	Egg::Math::float4 billboardSize((1.0/radius) *0.04, (1.0 / radius) *0.04, 0, 0);
+	//Egg::Math::float4 billboardSize(0.001, 0.001, 0, 0);
 
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, &billboardSize, 0, 0);
+	context->UpdateSubresource(billboardSizeCB.Get(), 0, nullptr, &billboardSize, 0, 0);
 	
 	static bool first = true;
+
+	currentKey = 45;
+	if (first) stepAnimationKey(context);
+
 	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
 	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
 	{
@@ -2071,7 +2099,13 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 			renderFlatControlMesh(context);
 		}
 	}
+
+	context->CopyStructureCount(uavCounterReadback.Get(),0, linkUAV.Get());
+
 	
+	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
+	//context->Unmap(uavCounterReadback.Get(), 0);
+	//auto b = 1;
 }
 
 void Game::animate(double dt, double t)
@@ -2144,6 +2178,61 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		else if (wParam == 'I' && metaBallMinToHit > 0.1)
 		{
 			metaBallMinToHit -= 0.1;
+		}
+		else if (wParam == 'T')
+		{
+			if (testCount == 0) {
+				radius = 0.8;
+				testCount++;
+			}
+			else if (testCount == 1)
+			{
+				radius = 1.0;
+				testCount++;
+			}
+			else if (testCount == 2)
+			{
+				radius = 1.3;
+				testCount=0;
+			}
+		}
+		else if (wParam == 'U')
+		{
+			if (testCount2 == 0) {
+				metaBallMinToHit = 0.2;
+				testCount2++;
+			}
+			else if (testCount2 == 1)
+			{
+				metaBallMinToHit = 0.9;
+				testCount2++;
+			}
+			else if (testCount2 == 2)
+			{
+				metaBallMinToHit = 1.5;
+				testCount2=0;
+			}
+		}
+		else if (wParam == 'H')
+		{
+			if (binaryStepCount == 4)
+				binaryStepCount = 0;
+			else
+				binaryStepCount += 2;
+		}
+		else if (wParam == 'J')
+		{
+			if (maxRecursion == 3)
+				maxRecursion = 1;
+			else
+				maxRecursion+=1;
+		}
+		else if (wParam == 'K')
+		{
+			if (marchCount == 40)
+				marchCount = 25;
+			else 
+				marchCount = 40;
 		}
 		else if (wParam == '0')
 		{

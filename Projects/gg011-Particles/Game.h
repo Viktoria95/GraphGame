@@ -16,8 +16,8 @@ public:
 	//static const unsigned int windowHeight = 720;
 	//static const unsigned int windowWidth = 1280;
 
-	static const unsigned int windowHeight = 512;
-	static const unsigned int windowWidth = 512;
+	static const unsigned int windowHeight = 1024;
+	static const unsigned int windowWidth = 1024;
 
 	static const unsigned int fillWindowHeight = 200;
 	static const unsigned int fillWindowWidth = 200;
@@ -130,8 +130,13 @@ private:
 
 
 	// Metaball
+	int testCount;
+	int testCount2;
 	float radius;
 	float metaBallMinToHit;
+	int binaryStepCount;
+	int maxRecursion;
+	int marchCount;
 	Egg::Mesh::Shaded::P metaballs;
 	Egg::Mesh::Shader::P metaballRealisticPixelShader;
 	Egg::Mesh::Shader::P metaballGradientPixelShader;
@@ -163,6 +168,7 @@ private:
 	uint debugType;
 	const uint maxDebugType = 7;
 
+	Microsoft::WRL::ComPtr<ID3D11Buffer> uavCounterReadback;
 
 	// Skeletal
 	int meshIdxInFile;
