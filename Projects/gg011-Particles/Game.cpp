@@ -35,12 +35,12 @@ HRESULT Game::createResources()
 	CreateControlMesh();
 	CreateControlParticles();
 	CreateBillboard();
+	CreateBillboardForControlParticles();
 	CreatePrefixSum();
 	CreateEnviroment();
 	CreateMetaball();
 	CreateAnimation();
 	CreateDebug();
-	
 
 	//controlParams[5] = 1.0;
 	controlParams[7] = 0.0;
@@ -538,6 +538,9 @@ void Game::CreateBillboard() {
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
 
+	ComPtr<ID3DBlob> billboardPixelShaderByteCode = loadShaderCode("psBillboard.cso");
+	billboardsPixelShader = Egg::Mesh::Shader::create("psBillboard.cso", device, billboardPixelShaderByteCode);
+
 	ComPtr<ID3DBlob> billboardPixelShaderAByteCode = loadShaderCode("psBillboardA.cso");
 	billboardsPixelShaderA = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderAByteCode);
 
@@ -722,6 +725,80 @@ void Game::CreateBillboard() {
 	counterUAVDesc.Buffer.NumElements = counterSize;
 	counterUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(counterBuffer.Get(), &counterUAVDesc, &counterUAV);
+
+}
+
+void Game::CreateBillboardForControlParticles() {
+	using namespace Microsoft::WRL;
+
+	// Vertex Input
+	cpBillboardNothing = Egg::Mesh::Nothing::create(controlParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	// billboardGSSizeCB
+	D3D11_BUFFER_DESC billboardSizeCBDesc;
+	billboardSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	billboardSizeCBDesc.CPUAccessFlags = 0;
+	billboardSizeCBDesc.MiscFlags = 0;
+	billboardSizeCBDesc.StructureByteStride = 0;
+	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
+
+	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
+	D3D11_SUBRESOURCE_DATA initialBbSize;
+	initialBbSize.pSysMem = &billboardSize;
+
+	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, cpBillboardSizeCB.GetAddressOf());
+
+	// Shaders
+	ComPtr<ID3DBlob> billboardVertexShaderByteCode = loadShaderCode("vsBillboard.cso");
+	Egg::Mesh::Shader::P billboardVertexShader = Egg::Mesh::Shader::create("vsBillboard.cso", device, billboardVertexShaderByteCode);
+
+	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
+	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
+		
+	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
+	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
+	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+
+
+	// Depth settings
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	// Depth test parameters
+	dsDesc.DepthEnable = false;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	// Stencil test parameters
+	dsDesc.StencilEnable = false;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create depth stencil state
+	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+
+	billboardMaterial->depthStencilState = DSState;
+
+	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, cpBillboardNothing);
+	cpBillboards = Egg::Mesh::Shaded::create(cpBillboardNothing, billboardMaterial, billboardInputLayout);
+
 
 }
 
@@ -1255,6 +1332,54 @@ void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 	
+}
+
+void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	billboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	billboards->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	billboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	billboards->draw(context);
+
+}
+ 
+void Game::renderControlParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	cpBillboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	cpBillboards->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	cpBillboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	cpBillboards->draw(context);
+
 }
 
 void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -2067,12 +2192,14 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	else if (renderMode == Particles)
 	{
-		renderBalls(context);
+		renderParticleBillboard(context);
+		//renderBalls(context);
 		clearContext(context);
 	}
 	else if (renderMode == ControlParticles)
 	{
-		renderControlBalls(context);
+		renderControlParticleBillboard(context);
+		//renderControlBalls(context);
 		clearContext(context);
 	}	
 	

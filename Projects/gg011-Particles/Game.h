@@ -162,6 +162,10 @@ private:
 
 
 	// Debug
+	Egg::Mesh::Nothing::P cpBillboardNothing;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> cpBillboardSizeCB;
+	Egg::Mesh::Shaded::P cpBillboards;
+	Egg::Mesh::Shader::P billboardsPixelShader;
 	Egg::Mesh::Shader::P controlParticleBallPixelShader;
 	Egg::Mesh::Shader::P particleBallPixelShader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> debugTypeCB;
@@ -210,6 +214,7 @@ public:
 	void CreateControlMesh();
 	void CreateControlParticles();
 	void CreateBillboard();
+	void CreateBillboardForControlParticles();
 	void CreatePrefixSum();
 	void CreateEnviroment();
 	void CreateMetaball();
@@ -220,6 +225,8 @@ public:
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
+	void renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderControlParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
