@@ -37,6 +37,9 @@
     <Filter Include="Shaders\Debug">
       <UniqueIdentifier>{8ac18417-4294-4896-ab56-e6d9c988b5b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Other">
+      <UniqueIdentifier>{1b94ab63-66a0-428f-a4da-02811b949a6d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -183,6 +186,15 @@
     </FxCompile>
     <FxCompile Include="Shaders\psBillboardSV22.hlsl">
       <Filter>Shaders\Billboard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\vsSimpleMetaball.hlsl">
+      <Filter>Shaders\Other</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psSimpleMetaball.hlsl">
+      <Filter>Shaders\Other</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboard.hlsl">
+      <Filter>Shaders\Other</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

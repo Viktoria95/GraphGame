@@ -15,7 +15,7 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024*2;
+const unsigned int defaultParticleCount = 10;
 const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
@@ -31,6 +31,7 @@ Game::~Game(void)
 HRESULT Game::createResources()
 {
 	CreateCommon();
+	CreateSimpleMetaballResources();
 	CreateParticles();
 	CreateControlMesh();
 	CreateControlParticles();
@@ -70,6 +71,8 @@ void Game::CreateCommon()
 	adapticeControlPressureIsActive = true;
 	controlParticleAnimtaionIsActive = false;
 
+	simple = true;
+	billboard = false;
 	radius = 1.0;
 	metaBallMinToHit = 0.9;
 	binaryStepCount = 2;
@@ -134,6 +137,58 @@ void Game::CreateCommon()
 	metaballFunctionCBDesc.Usage = D3D11_USAGE_DEFAULT;
 	Egg::ThrowOnFail("Failed to create metaballFunctionCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&metaballFunctionCBDesc, nullptr, metaballFunctionCB.GetAddressOf());
+}
+
+void Game::CreateSimpleMetaballResources() {
+	using namespace Microsoft::WRL;
+
+	// Shaders
+	Egg::Mesh::Geometry::P fullQuadGeometry = Egg::Mesh::Indexed::createQuad(device);
+
+	ComPtr<ID3DBlob> simpleMetaballVertexShaderByteCode = loadShaderCode("vsSimpleMetaball.cso");
+	simpleMetaballVertexShader = Egg::Mesh::Shader::create("vsSimpleMetaball.cso", device, simpleMetaballVertexShaderByteCode);
+
+	ComPtr<ID3DBlob> simpleMetaballPixelShaderByteCode = loadShaderCode("psSimpleMetaball.cso");
+	simpleMetaballPixelShader = Egg::Mesh::Shader::create("psSimpleMetaball.cso", device, simpleMetaballPixelShaderByteCode);
+
+	Egg::Mesh::Material::P metaballMaterial = Egg::Mesh::Material::create();
+	metaballMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, simpleMetaballVertexShader);
+
+	metaballMaterial->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+
+	// Depth settings
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	// Depth test parameters
+	dsDesc.DepthEnable = false;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	// Stencil test parameters
+	dsDesc.StencilEnable = false;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create depth stencil state
+	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+
+	metaballMaterial->depthStencilState = DSState;
+
+	ComPtr<ID3D11InputLayout>metaballInputLayout = inputBinder->getCompatibleInputLayout(simpleMetaballVertexShaderByteCode, fullQuadGeometry);
+	simpleMetaball = Egg::Mesh::Shaded::create(fullQuadGeometry, metaballMaterial, metaballInputLayout);
 }
 
 void Game::CreateParticles()
@@ -524,7 +579,7 @@ void Game::CreateBillboard() {
 	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
 	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
 
-	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
+	Egg::Math::float4 billboardSize(4.0, 4.0, 0, 0);
 	D3D11_SUBRESOURCE_DATA initialBbSize;
 	initialBbSize.pSysMem = &billboardSize;
 
@@ -537,6 +592,9 @@ void Game::CreateBillboard() {
 
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
+
+	ComPtr<ID3DBlob> billboardPixelShaderByteCode = loadShaderCode("psBillboard.cso");
+	billboardsPixelShader = Egg::Mesh::Shader::create("psBillboard.cso", device, billboardPixelShaderByteCode);
 
 	ComPtr<ID3DBlob> billboardPixelShaderAByteCode = loadShaderCode("psBillboardA.cso");
 	billboardsPixelShaderA = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderAByteCode);
@@ -556,43 +614,40 @@ void Game::CreateBillboard() {
 	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
 	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
 	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
-	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
 	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
 	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
+	//// Depth settings
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	//D3D11_DEPTH_STENCIL_DESC dsDesc;
 
-	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
+	//// Depth test parameters
+	//dsDesc.DepthEnable = false;
+	//dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	//dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	//// Stencil test parameters
+	//dsDesc.StencilEnable = false;
+	//dsDesc.StencilReadMask = 0xFF;
+	//dsDesc.StencilWriteMask = 0xFF;
 
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
+	//// Stencil operations if pixel is front-facing
+	//dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	//dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is back-facing
+	//dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	//dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Create depth stencil state
+	//device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
-
-	billboardMaterial->depthStencilState = DSState;
-
-
+	//billboardMaterial->depthStencilState = DSState;
 
 	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
 	billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
@@ -1257,6 +1312,35 @@ void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	
 }
 
+void Game::renderBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	uint values[4] = { 0,0,0,0 };
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = float4x4::identity;
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	billboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	billboards->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	//ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	//ppUnorderedAccessViews[0] = offsetUAV.Get();
+	//ppUnorderedAccessViews[1] = linkUAV.Get();
+	//uint t[2] = { 0,0 };
+	//context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 2, ppUnorderedAccessViews, t);
+	billboards->draw(context);
+
+}
+
 void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	uint values[4] = { 0,0,0,0 };
@@ -1268,6 +1352,7 @@ void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
 	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
@@ -1293,6 +1378,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
 	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
@@ -1497,6 +1583,51 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	metaballs->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	metaballs->draw(context);
+}
+
+void Game::renderSimpleMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = float4x4::identity;
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	int type[5];
+	if (simple == true)
+		type[0] = 0;
+	else
+		type[0] = 1;
+
+	int mfunctionType[1];
+	if (billboard)
+		mfunctionType[0] = 0;
+	else 
+		mfunctionType[0] = 1;
+
+	context->UpdateSubresource(metaballFunctionCB.Get(), 0, nullptr, mfunctionType, 0, 0);
+
+	context->UpdateSubresource(shadingTypeCB.Get(), 0, nullptr, type, 0, 0);
+
+	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
+	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
+	context->PSSetShaderResources(2, 1, controlParticleCounterSRV.GetAddressOf());
+
+	simpleMetaball->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, simpleMetaballPixelShader);
+
+
+	simpleMetaball->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	simpleMetaball->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	simpleMetaball->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	simpleMetaball->getMaterial()->setCb("shadingTypeCB", shadingTypeCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	simpleMetaball->getMaterial()->setCb("metaballFunctionCB", metaballFunctionCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	simpleMetaball->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	simpleMetaball->draw(context);
 }
 
 void Game::renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
@@ -1952,6 +2083,26 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearRenderTarget(context);
 
+	// Metaball
+	renderSimpleMetaball(context);
+	clearContext(context);
+
+	if (billboard)
+	{
+		//Billboard 
+		renderBillboard(context);
+		clearContext(context);
+	}
+
+
+}
+
+/*void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	using namespace Egg::Math;
+
+	clearRenderTarget(context);
+
 	//stepAnimationKey(context);
 
 	Egg::Math::float4 billboardSize((1.0/radius) *0.04, (1.0 / radius) *0.04, 0, 0);
@@ -2106,7 +2257,9 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
 	//context->Unmap(uavCounterReadback.Get(), 0);
 	//auto b = 1;
-}
+}*/
+
+
 
 void Game::animate(double dt, double t)
 {
@@ -2122,219 +2275,228 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	if (uMsg == WM_KEYDOWN)
 	{
-		if (wParam == 'G')
+		if (wParam == 'M')
 		{
-			renderMode = Gradient;
+			simple = !simple;
 		}
-		else if (wParam == 'R')
+		if (wParam == 'B')
 		{
-			renderMode = Realistic;
+			billboard = !billboard;
 		}
-		else if (wParam == 'M')
-		{
-			if (shading == PhongShading)
-				shading = MetalShading;
-			else if (metalShading == Gold)
-				metalShading = Copper;
-			else if (metalShading == Copper)
-				metalShading = Aluminium;
-			else if (metalShading == Aluminium)
-				metalShading = Gold;
-		}
-		else if (wParam == 'P')
-		{
-			shading = PhongShading;
-		}
-		else if (wParam == 'F')
-		{
-			if (metaballFunction == Simple)
-				metaballFunction = Wyvill;
-			else if (metaballFunction == Wyvill)
-				metaballFunction = Nishimura;
-			else if (metaballFunction == Nishimura)
-				metaballFunction = Murakami;
-			else if (metaballFunction == Murakami)
-				metaballFunction = Simple;
-		}
-		else if (wParam == 'V')
-		{
-			if (waterShading == SimpleWater)
-				waterShading = DeepWater;
-			else if (waterShading == DeepWater)
-				waterShading = SimpleWater;
-		}
-		else if (wParam == 'X' && radius <= 2.0)
-		{
-			radius += 0.1;
-		}
-		else if (wParam == 'Y' && radius > 0.0)
-		{
-			radius -= 0.1;
-		}
-		else if (wParam == 'O' && metaBallMinToHit < 10.0)
-		{
-			metaBallMinToHit += 0.1;
-		}
-		else if (wParam == 'I' && metaBallMinToHit > 0.1)
-		{
-			metaBallMinToHit -= 0.1;
-		}
-		else if (wParam == 'T')
-		{
-			if (testCount == 0) {
-				radius = 0.8;
-				testCount++;
-			}
-			else if (testCount == 1)
-			{
-				radius = 1.0;
-				testCount++;
-			}
-			else if (testCount == 2)
-			{
-				radius = 1.3;
-				testCount=0;
-			}
-		}
-		else if (wParam == 'U')
-		{
-			if (testCount2 == 0) {
-				metaBallMinToHit = 0.2;
-				testCount2++;
-			}
-			else if (testCount2 == 1)
-			{
-				metaBallMinToHit = 0.9;
-				testCount2++;
-			}
-			else if (testCount2 == 2)
-			{
-				metaBallMinToHit = 1.5;
-				testCount2=0;
-			}
-		}
-		else if (wParam == 'H')
-		{
-			if (binaryStepCount == 4)
-				binaryStepCount = 0;
-			else
-				binaryStepCount += 2;
-		}
-		else if (wParam == 'J')
-		{
-			if (maxRecursion == 3)
-				maxRecursion = 1;
-			else
-				maxRecursion+=1;
-		}
-		else if (wParam == 'K')
-		{
-			if (marchCount == 40)
-				marchCount = 25;
-			else 
-				marchCount = 40;
-		}
-		else if (wParam == '0')
-		{
-			if (billboardsLoadAlgorithm == Normal)
-			{
-				billboardsLoadAlgorithm = ABuffer;
-			}
-			else if (billboardsLoadAlgorithm == ABuffer)
-			{
-				billboardsLoadAlgorithm = SBuffer;
-			}
-			else if (billboardsLoadAlgorithm == SBuffer)
-			{
-				billboardsLoadAlgorithm = Normal;
-			}
-		}
-		else if (wParam == '1')
-		{
-			billboardsLoadAlgorithm = Normal;
-			if (renderMode != Particles)
-			{
-				renderMode = Particles;
-				debugType = 0;
-			}
-			else
-			{
-				debugType = (debugType + 1) % maxDebugType;
-			}
-		}
-		else if (wParam == '2')
-		{
-			billboardsLoadAlgorithm = Normal;
-			renderMode = ControlParticles;
-		}		
-		else if (wParam == '3')
-		{
-			flowControl = (FlowControl)((flowControl + 1) % 2);
-		}
-		else if (wParam == '4')
-		{
-			if (controlParams[0] < 0.5)
-			{
-				controlParams[0] = 1.0;
-			}
-			else
-			{
-				controlParams[0] = 0.0;
-			}
-		}
-		else if (wParam == '5')
-		{
-			if (controlParams[1] < 0.5)
-			{
-				controlParams[1] = 1.0;
-			}
-			else
-			{
-				controlParams[1] = 0.0;
-			}
-		}
-		else if (wParam == '6')
-		{
-			if (controlParams[2] < 0.5)
-			{
-				controlParams[2] = 1.0;
-			}
-			else
-			{
-				controlParams[2] = 0.0;
-			}
-		}
-		else if (wParam == '7')
-		{
-			if (controlParams[3] < 0.5)
-			{
-				controlParams[3] = 1.0;
-			}
-			else
-			{
-				controlParams[3] = 0.0;
-			}
-		}
-		else if (wParam == '8')
-		{
-			//controlParams[7] -= 0.1;
-			//std::cout << controlParams[7] << std::endl;
 
-			currentKey = 0;
-		}
-		else if (wParam == '9')
-		{
-			//controlParams[7] += 0.1;
-			//std::cout << controlParams[7] << std::endl;
-			if (drawFlatControlMesh)
-			{
-				drawFlatControlMesh = false;
-			}
-			else
-			{
-				drawFlatControlMesh = true;
-			}
-		}
+	//	if (wParam == 'G')
+	//	{
+	//		renderMode = Gradient;
+	//	}
+	//	else if (wParam == 'R')
+	//	{
+	//		renderMode = Realistic;
+	//	}
+	//	else if (wParam == 'M')
+	//	{
+	//		if (shading == PhongShading)
+	//			shading = MetalShading;
+	//		else if (metalShading == Gold)
+	//			metalShading = Copper;
+	//		else if (metalShading == Copper)
+	//			metalShading = Aluminium;
+	//		else if (metalShading == Aluminium)
+	//			metalShading = Gold;
+	//	}
+	//	else if (wParam == 'P')
+	//	{
+	//		shading = PhongShading;
+	//	}
+	//	else if (wParam == 'F')
+	//	{
+	//		if (metaballFunction == Simple)
+	//			metaballFunction = Wyvill;
+	//		else if (metaballFunction == Wyvill)
+	//			metaballFunction = Nishimura;
+	//		else if (metaballFunction == Nishimura)
+	//			metaballFunction = Murakami;
+	//		else if (metaballFunction == Murakami)
+	//			metaballFunction = Simple;
+	//	}
+	//	else if (wParam == 'V')
+	//	{
+	//		if (waterShading == SimpleWater)
+	//			waterShading = DeepWater;
+	//		else if (waterShading == DeepWater)
+	//			waterShading = SimpleWater;
+	//	}
+	//	else if (wParam == 'X' && radius <= 2.0)
+	//	{
+	//		radius += 0.1;
+	//	}
+	//	else if (wParam == 'Y' && radius > 0.0)
+	//	{
+	//		radius -= 0.1;
+	//	}
+	//	else if (wParam == 'O' && metaBallMinToHit < 10.0)
+	//	{
+	//		metaBallMinToHit += 0.1;
+	//	}
+	//	else if (wParam == 'I' && metaBallMinToHit > 0.1)
+	//	{
+	//		metaBallMinToHit -= 0.1;
+	//	}
+	//	else if (wParam == 'T')
+	//	{
+	//		if (testCount == 0) {
+	//			radius = 0.8;
+	//			testCount++;
+	//		}
+	//		else if (testCount == 1)
+	//		{
+	//			radius = 1.0;
+	//			testCount++;
+	//		}
+	//		else if (testCount == 2)
+	//		{
+	//			radius = 1.3;
+	//			testCount=0;
+	//		}
+	//	}
+	//	else if (wParam == 'U')
+	//	{
+	//		if (testCount2 == 0) {
+	//			metaBallMinToHit = 0.2;
+	//			testCount2++;
+	//		}
+	//		else if (testCount2 == 1)
+	//		{
+	//			metaBallMinToHit = 0.9;
+	//			testCount2++;
+	//		}
+	//		else if (testCount2 == 2)
+	//		{
+	//			metaBallMinToHit = 1.5;
+	//			testCount2=0;
+	//		}
+	//	}
+	//	else if (wParam == 'H')
+	//	{
+	//		if (binaryStepCount == 4)
+	//			binaryStepCount = 0;
+	//		else
+	//			binaryStepCount += 2;
+	//	}
+	//	else if (wParam == 'J')
+	//	{
+	//		if (maxRecursion == 3)
+	//			maxRecursion = 1;
+	//		else
+	//			maxRecursion+=1;
+	//	}
+	//	else if (wParam == 'K')
+	//	{
+	//		if (marchCount == 40)
+	//			marchCount = 25;
+	//		else 
+	//			marchCount = 40;
+	//	}
+	//	else if (wParam == '0')
+	//	{
+	//		if (billboardsLoadAlgorithm == Normal)
+	//		{
+	//			billboardsLoadAlgorithm = ABuffer;
+	//		}
+	//		else if (billboardsLoadAlgorithm == ABuffer)
+	//		{
+	//			billboardsLoadAlgorithm = SBuffer;
+	//		}
+	//		else if (billboardsLoadAlgorithm == SBuffer)
+	//		{
+	//			billboardsLoadAlgorithm = Normal;
+	//		}
+	//	}
+	//	else if (wParam == '1')
+	//	{
+	//		billboardsLoadAlgorithm = Normal;
+	//		if (renderMode != Particles)
+	//		{
+	//			renderMode = Particles;
+	//			debugType = 0;
+	//		}
+	//		else
+	//		{
+	//			debugType = (debugType + 1) % maxDebugType;
+	//		}
+	//	}
+	//	else if (wParam == '2')
+	//	{
+	//		billboardsLoadAlgorithm = Normal;
+	//		renderMode = ControlParticles;
+	//	}		
+	//	else if (wParam == '3')
+	//	{
+	//		flowControl = (FlowControl)((flowControl + 1) % 2);
+	//	}
+	//	else if (wParam == '4')
+	//	{
+	//		if (controlParams[0] < 0.5)
+	//		{
+	//			controlParams[0] = 1.0;
+	//		}
+	//		else
+	//		{
+	//			controlParams[0] = 0.0;
+	//		}
+	//	}
+	//	else if (wParam == '5')
+	//	{
+	//		if (controlParams[1] < 0.5)
+	//		{
+	//			controlParams[1] = 1.0;
+	//		}
+	//		else
+	//		{
+	//			controlParams[1] = 0.0;
+	//		}
+	//	}
+	//	else if (wParam == '6')
+	//	{
+	//		if (controlParams[2] < 0.5)
+	//		{
+	//			controlParams[2] = 1.0;
+	//		}
+	//		else
+	//		{
+	//			controlParams[2] = 0.0;
+	//		}
+	//	}
+	//	else if (wParam == '7')
+	//	{
+	//		if (controlParams[3] < 0.5)
+	//		{
+	//			controlParams[3] = 1.0;
+	//		}
+	//		else
+	//		{
+	//			controlParams[3] = 0.0;
+	//		}
+	//	}
+	//	else if (wParam == '8')
+	//	{
+	//		//controlParams[7] -= 0.1;
+	//		//std::cout << controlParams[7] << std::endl;
+
+	//		currentKey = 0;
+	//	}
+	//	else if (wParam == '9')
+	//	{
+	//		//controlParams[7] += 0.1;
+	//		//std::cout << controlParams[7] << std::endl;
+	//		if (drawFlatControlMesh)
+	//		{
+	//			drawFlatControlMesh = false;
+	//		}
+	//		else
+	//		{
+	//			drawFlatControlMesh = true;
+	//		}
+	//	}
 	}
 
 	return false;

@@ -57,6 +57,13 @@ private:
 	bool adapticeControlPressureIsActive;
 	bool controlParticleAnimtaionIsActive;
 
+	// Simple metaball rendering
+	bool simple;
+	bool billboard;
+	Egg::Mesh::Shaded::P simpleMetaball;
+	Egg::Mesh::Shader::P simpleMetaballVertexShader;
+	Egg::Mesh::Shader::P simpleMetaballPixelShader;
+
 	// Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
@@ -85,6 +92,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
 
 	Egg::Mesh::Shaded::P billboards;
+	Egg::Mesh::Shader::P billboardsPixelShader;
 	Egg::Mesh::Shader::P billboardsPixelShaderA;
 	Egg::Mesh::Shader::P billboardsPixelShaderS1;
 	Egg::Mesh::Shader::P billboardsPixelShaderS2;
@@ -206,6 +214,7 @@ public:
 
 
 	void CreateCommon();
+	void CreateSimpleMetaballResources();
 	void CreateParticles();
 	void CreateControlMesh();
 	void CreateControlParticles();
@@ -220,12 +229,13 @@ public:
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
+	void renderBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardSV21(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBillboardSV22(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-
+	void renderSimpleMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
