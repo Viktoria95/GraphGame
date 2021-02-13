@@ -564,36 +564,36 @@ void Game::CreateBillboard() {
 	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
 
-	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
+	//// Depth settings
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	//D3D11_DEPTH_STENCIL_DESC dsDesc;
 
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	//// Depth test parameters
+	//dsDesc.DepthEnable = false;
+	//dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	//dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
+	//// Stencil test parameters
+	//dsDesc.StencilEnable = false;
+	//dsDesc.StencilReadMask = 0xFF;
+	//dsDesc.StencilWriteMask = 0xFF;
 
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is front-facing
+	//dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	//dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is back-facing
+	//dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	//dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+	//// Create depth stencil state
+	//device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 
-	billboardMaterial->depthStencilState = DSState;
+	//billboardMaterial->depthStencilState = DSState;
 
 
 
@@ -766,35 +766,35 @@ void Game::CreateBillboardForControlParticles() {
 
 
 	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	//D3D11_DEPTH_STENCIL_DESC dsDesc;
 
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	//// Depth test parameters
+	//dsDesc.DepthEnable = false;
+	//dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	//dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
+	//// Stencil test parameters
+	//dsDesc.StencilEnable = false;
+	//dsDesc.StencilReadMask = 0xFF;
+	//dsDesc.StencilWriteMask = 0xFF;
 
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is front-facing
+	//dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	//dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is back-facing
+	//dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	//dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+	//// Create depth stencil state
+	//device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 
-	billboardMaterial->depthStencilState = DSState;
+	//billboardMaterial->depthStencilState = DSState;
 
 	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, cpBillboardNothing);
 	cpBillboards = Egg::Mesh::Shaded::create(cpBillboardNothing, billboardMaterial, billboardInputLayout);
