@@ -37,6 +37,9 @@
     <Filter Include="Shaders\Debug">
       <UniqueIdentifier>{8ac18417-4294-4896-ab56-e6d9c988b5b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Hash">
+      <UniqueIdentifier>{6f55be36-a3e8-49f0-909b-bdf62ab87722}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -184,8 +187,20 @@
     <FxCompile Include="Shaders\psBillboardSV22.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psBillboard.hlsl">
+	<FxCompile Include="Shaders\psBillboard.hlsl">
       <Filter>Shaders\Debug</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListInit.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListNonZero.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListCompact.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListLength.hlsl">
+      <Filter>Shaders\Hash</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
