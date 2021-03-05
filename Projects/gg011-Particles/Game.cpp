@@ -35,12 +35,12 @@ HRESULT Game::createResources()
 	CreateControlMesh();
 	CreateControlParticles();
 	CreateBillboard();
+	CreateBillboardForControlParticles();
 	CreatePrefixSum();
 	CreateEnviroment();
 	CreateMetaball();
 	CreateAnimation();
 	CreateDebug();
-	
 
 	//controlParams[5] = 1.0;
 	controlParams[7] = 0.0;
@@ -144,208 +144,44 @@ void Game::CreateParticles()
 	for (int i = 0; i < defaultParticleCount; i++)
 		particles.push_back(Particle());
 
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		particleBufferDesc.StructureByteStride = sizeof(Particle);
-		particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(Particle);
 
-		D3D11_SUBRESOURCE_DATA initialParticleData;
-		initialParticleData.pSysMem = &particles.at(0);
+	// Data Buffer
+	D3D11_BUFFER_DESC particleBufferDesc;
+	particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	particleBufferDesc.CPUAccessFlags = 0;
+	particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	particleBufferDesc.StructureByteStride = sizeof(Particle);
+	particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(Particle);
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleDataBuffer.GetAddressOf());
+	D3D11_SUBRESOURCE_DATA initialParticleData;
+	initialParticleData.pSysMem = &particles.at(0);
 
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
-
-		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(particleDataBuffer.Get(), &particleSRVDesc, &particleSRV);
+	Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleDataBuffer.GetAddressOf());
 
 
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+	// Shader Resource View
+	D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+	particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	particleSRVDesc.Buffer.FirstElement = 0;
+	particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
-		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
-	}
+	Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+		device->CreateShaderResourceView(particleDataBuffer.Get(), &particleSRVDesc, &particleSRV);
 
 
-	/// Hashtables
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1)  * sizeof(uint32_t);
+	// Unordered Access View
+	D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+	particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	particleUAVDesc.Buffer.FirstElement = 0;
+	particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+	particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistDataBuffer.Get(), &particleSRVDesc, &clistSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistDataBuffer.Get(), &particleUAVDesc, &clistUAV);
-	}
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistLengthDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistLengthDataBuffer.Get(), &particleSRVDesc, &clistLengthSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistLengthDataBuffer.Get(), &particleUAVDesc, &clistLengthUAV);
-	}
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistNonZeroDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistNonZeroDataBuffer.Get(), &particleSRVDesc, &clistNonZeroSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistNonZeroDataBuffer.Get(), &particleUAVDesc, &clistNonZeroUAV);
-	}
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistBeginDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistBeginDataBuffer.Get(), &particleSRVDesc, &clistBeginSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistBeginDataBuffer.Get(), &particleUAVDesc, &clistBeginUAV);
-	}
-	{
-		using namespace Microsoft::WRL;
-
-		ComPtr<ID3DBlob> clistShaderInitByteCode = loadShaderCode("csCListInit.cso");
-		clistShaderInit = Egg::Mesh::Shader::create("csCListInit.cso", device, clistShaderInitByteCode);
-
-
-		ComPtr<ID3DBlob> clistShaderNonZeroByteCode = loadShaderCode("csCListNonZero.cso");
-		clistShaderNonZero = Egg::Mesh::Shader::create("csCListNonZero.cso", device, clistShaderNonZeroByteCode);
-
-		ComPtr<ID3DBlob> clistCompactByteCode = loadShaderCode("csCListCompact.cso");
-		clistShaderCompact = Egg::Mesh::Shader::create("csCListCompact.cso", device, clistCompactByteCode);
-
-		ComPtr<ID3DBlob> clistLengthByteCode = loadShaderCode("csCListLength.cso");
-		clistShaderLength = Egg::Mesh::Shader::create("csCListLength.cso", device, clistLengthByteCode);
-	}
+	Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+		device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
 }
 
 void Game::CreateControlParticles()
@@ -702,6 +538,9 @@ void Game::CreateBillboard() {
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
 
+	ComPtr<ID3DBlob> billboardPixelShaderByteCode = loadShaderCode("psBillboard.cso");
+	billboardsPixelShader = Egg::Mesh::Shader::create("psBillboard.cso", device, billboardPixelShaderByteCode);
+
 	ComPtr<ID3DBlob> billboardPixelShaderAByteCode = loadShaderCode("psBillboardA.cso");
 	billboardsPixelShaderA = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderAByteCode);
 
@@ -725,36 +564,36 @@ void Game::CreateBillboard() {
 	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
 
-	// Depth settings
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
+	//// Depth settings
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	//D3D11_DEPTH_STENCIL_DESC dsDesc;
 
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	//// Depth test parameters
+	//dsDesc.DepthEnable = false;
+	//dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	//dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-	// Stencil test parameters
-	dsDesc.StencilEnable = false;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
+	//// Stencil test parameters
+	//dsDesc.StencilEnable = false;
+	//dsDesc.StencilReadMask = 0xFF;
+	//dsDesc.StencilWriteMask = 0xFF;
 
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is front-facing
+	//dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	//dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//// Stencil operations if pixel is back-facing
+	//dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	//dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	// Create depth stencil state
-	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+	//// Create depth stencil state
+	//device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 
-	billboardMaterial->depthStencilState = DSState;
+	//billboardMaterial->depthStencilState = DSState;
 
 
 
@@ -886,6 +725,80 @@ void Game::CreateBillboard() {
 	counterUAVDesc.Buffer.NumElements = counterSize;
 	counterUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(counterBuffer.Get(), &counterUAVDesc, &counterUAV);
+
+}
+
+void Game::CreateBillboardForControlParticles() {
+	using namespace Microsoft::WRL;
+
+	// Vertex Input
+	cpBillboardNothing = Egg::Mesh::Nothing::create(controlParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	// billboardGSSizeCB
+	D3D11_BUFFER_DESC billboardSizeCBDesc;
+	billboardSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	billboardSizeCBDesc.CPUAccessFlags = 0;
+	billboardSizeCBDesc.MiscFlags = 0;
+	billboardSizeCBDesc.StructureByteStride = 0;
+	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
+
+	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
+	D3D11_SUBRESOURCE_DATA initialBbSize;
+	initialBbSize.pSysMem = &billboardSize;
+
+	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, cpBillboardSizeCB.GetAddressOf());
+
+	// Shaders
+	ComPtr<ID3DBlob> billboardVertexShaderByteCode = loadShaderCode("vsBillboard.cso");
+	Egg::Mesh::Shader::P billboardVertexShader = Egg::Mesh::Shader::create("vsBillboard.cso", device, billboardVertexShaderByteCode);
+
+	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
+	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
+		
+	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
+	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
+	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+
+
+	// Depth settings
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	//D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	//// Depth test parameters
+	//dsDesc.DepthEnable = false;
+	//dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	//dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	//// Stencil test parameters
+	//dsDesc.StencilEnable = false;
+	//dsDesc.StencilReadMask = 0xFF;
+	//dsDesc.StencilWriteMask = 0xFF;
+
+	//// Stencil operations if pixel is front-facing
+	//dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	//dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	//// Stencil operations if pixel is back-facing
+	//dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	//dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	//dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	//// Create depth stencil state
+	//device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+
+	//billboardMaterial->depthStencilState = DSState;
+
+	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, cpBillboardNothing);
+	cpBillboards = Egg::Mesh::Shaded::create(cpBillboardNothing, billboardMaterial, billboardInputLayout);
+
 
 }
 
@@ -1421,6 +1334,54 @@ void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	
 }
 
+void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	billboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	billboards->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	billboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	billboards->draw(context);
+
+}
+ 
+void Game::renderControlParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	cpBillboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	cpBillboards->getMaterial()->setCb("metaballPSEyePosCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	cpBillboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	cpBillboards->draw(context);
+
+}
+
 void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	uint values[4] = { 0,0,0,0 };
@@ -1749,92 +1710,13 @@ void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 	context->Dispatch(defaultParticleCount, 1, 1);
 
-	//for (int i = 0; i < defaultParticleCount / 2; i++)
-	{
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
 
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortOddShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		context->Dispatch(defaultParticleCount / 2 - 2, 1, 1);
-	}
-	
-}
-
-void Game::renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	uint zeros[2] = { 0, 0 };
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderInit->getShader().Get()), nullptr, 0);
-	context->CSSetShaderResources(0, 1, particleSRV.GetAddressOf());
-	context->CSSetUnorderedAccessViews(0, 1, clistUAV.GetAddressOf(), zeros);
-	context->Dispatch(defaultParticleCount, 1, 1);
-}
-
-void Game::renderNonZeroCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	uint zeros[2] = { 0, 0 };
-
-	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
-	ppUnorderedAccessViews[0] = clistUAV.Get();
-	ppUnorderedAccessViews[1] = clistNonZeroUAV.Get();
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderNonZero->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 2, ppUnorderedAccessViews, zeros);
-	context->Dispatch(defaultParticleCount, 1, 1);
-}
-
-void Game::renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	uint zeros[1] = { 0 };
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumComputeShader->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 1, clistNonZeroUAV.GetAddressOf(), zeros);
-	context->Dispatch((int)ceil((defaultParticleCount + 1/ 512.0)), 1, 1);
-
-	int loopCount = (int)ceil(((defaultParticleCount + 1) / 512.0) / 512.0);
-
-	for (int i = 0; i < loopCount; i++)
-	{
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanBucketResultShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, clistNonZeroUAV.GetAddressOf(), zeros);
-		context->CSSetUnorderedAccessViews(1, 1, clistLengthUAV.GetAddressOf(), zeros);
-		Egg::Math::int1 sizeVector[1];
-		sizeVector[0] = i;
-		context->UpdateSubresource(scanBucketSizeCB.Get(), 0, nullptr, sizeVector, 0, 0);
-		context->CSSetConstantBuffers(0, 1, scanBucketSizeCB.GetAddressOf());
-		context->Dispatch(1, 1, 1);
-	}
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(prefixSumScanAddBucketResultShader->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 1, clistNonZeroUAV.GetAddressOf(), zeros);
-	context->CSSetUnorderedAccessViews(1, 1, clistLengthUAV.GetAddressOf(), zeros);
-	context->Dispatch((int)ceil((defaultParticleCount + 1 / 512.0)), 1, 1);
-
-	resultBuffer.Reset();
-}
-
-void Game::renderCompactCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	uint zeros[2] = { 0, 0 };
-
-	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];
-	ppUnorderedAccessViews[0] = clistUAV.Get();
-	ppUnorderedAccessViews[1] = clistNonZeroUAV.Get();
-	ppUnorderedAccessViews[2] = clistBeginUAV.Get();
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderCompact->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 3, ppUnorderedAccessViews, zeros);
-	context->Dispatch(defaultParticleCount, 1, 1);
-}
-
-void Game::renderLengthCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
-	uint zeros[2] = { 0, 0 };
-
-	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
-	ppUnorderedAccessViews[0] = clistBeginUAV.Get();
-	ppUnorderedAccessViews[1] = clistLengthUAV.Get();
-
-	context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderLength->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 2, ppUnorderedAccessViews, zeros);
-	context->Dispatch(defaultParticleCount, 1, 1);
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortOddShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount / 2 - 2, 1, 1);
 }
 
 void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -2193,34 +2075,9 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
 
-	// Hash
-	{
-		// Sort
-		renderSort(context);
-		clearContext(context);
-
-		// CLists
-		renderInitCList(context);
-		clearContext(context);
-
-		renderNonZeroCList(context);
-		clearContext(context);
-
-		renderNonZeroPrefix(context);
-		clearContext(context);
-
-		renderCompactCList(context);
-		clearContext(context);
-
-		renderLengthCList(context);
-		clearContext(context);
-	}
-	
-	return;
-
 	clearRenderTarget(context);
 
-	stepAnimationKey(context);
+	//stepAnimationKey(context);
 
 	Egg::Math::float4 billboardSize((1.0/radius) *0.04, (1.0 / radius) *0.04, 0, 0);
 	//Egg::Math::float4 billboardSize(0.001, 0.001, 0, 0);
@@ -2229,8 +2086,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	
 	static bool first = true;
 
-	//currentKey = 45;
-	//if (first) stepAnimationKey(context);
+	currentKey = 45;
+	if (first) stepAnimationKey(context);
 
 	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
 	//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
@@ -2335,12 +2192,14 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	else if (renderMode == Particles)
 	{
-		renderBalls(context);
+		renderParticleBillboard(context);
+		//renderBalls(context);
 		clearContext(context);
 	}
 	else if (renderMode == ControlParticles)
 	{
-		renderControlBalls(context);
+		renderControlParticleBillboard(context);
+		//renderControlBalls(context);
 		clearContext(context);
 	}	
 	
@@ -2349,8 +2208,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	clearContext(context);	
 	
 	// Sort
-	//renderSort(context);
-	//clearContext(context);
+	renderSort(context);
+	clearContext(context);
 
 	//renderAnimatedControlMesh(context);
 	//clearContext(context);
