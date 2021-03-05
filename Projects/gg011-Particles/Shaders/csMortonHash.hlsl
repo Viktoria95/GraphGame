@@ -11,7 +11,7 @@ uint mortonHash(float3 pos) {
 
 	uint hash = 0;
 	uint i;
-	for (i = 0; i < 10; ++i)
+	for (i = 0; i < 3; ++i)
 	{
 		hash |= ((x & (1 << i)) << 2 * i)  |  ((z & (1 << i)) << (2 * i + 1))  |  ((y & (1 << i)) << (2 * i + 2));
 	}

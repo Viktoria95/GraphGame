@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "Math/math.h"
 class Particle
 {

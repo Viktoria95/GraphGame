@@ -74,7 +74,7 @@ float Zindex(float3 p)
 		}
 	}
 
-	return index / hitCount / maxZindex;
+	return index / hitCount / (maxZindex / 10.0);
 }
 
 float Pressure(float3 p)

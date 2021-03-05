@@ -80,6 +80,24 @@ private:
 	Egg::Mesh::Shaded::P animatedControlMeshFlat;
 	float animatedControlMeshScale;
 
+	// Hashtables
+	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> clistLengthDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistLengthSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistLengthUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> clistNonZeroDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistNonZeroSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistNonZeroUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> clistBeginDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistBeginSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistBeginUAV;
+	Egg::Mesh::Shader::P clistShaderInit;
+	Egg::Mesh::Shader::P clistShaderNonZero;
+	Egg::Mesh::Shader::P clistShaderCompact;
+	Egg::Mesh::Shader::P clistShaderLength;
+
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
@@ -230,7 +248,14 @@ public:
 	void renderControlBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderNonZeroCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderCompactCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderLengthCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderEnvironment(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
