@@ -1,5 +1,6 @@
 #include "window.hlsli"
 #include "particle.hlsli"
+#include "mortonHash.hlsli"
 
 //#define metaBallRadius 1.0 / 0.005
 #define metaBallRadius 1.0 / 0.005
@@ -384,6 +385,7 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 		{
 			if (metaballVisualizer.callMetaballTestFunction(p, pos))
 			{
+				//return float4(1.0, 1.0, 1.0, 1.0);
 				p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
 				float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
 				float3 ref = reflect(normalize(rayDir), normal);

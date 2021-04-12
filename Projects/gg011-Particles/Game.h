@@ -25,7 +25,7 @@ public:
 	static const unsigned int counterSize = 3;
 
 private:
-	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2 };
+	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2, HashSimple };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
 	enum ControlParticlePlacement { Vertex, Render, Animated };	
@@ -87,16 +87,31 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistLengthDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistLengthSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistLengthUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> clistNonZeroDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistNonZeroSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistNonZeroUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistBeginDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistBeginSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistBeginUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> clistCellCountDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistCellCountSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistCellCountUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistLengthDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistLengthSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistLengthUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistBeginDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistBeginSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistBeginUAV;
+
 	Egg::Mesh::Shader::P clistShaderInit;
-	Egg::Mesh::Shader::P clistShaderNonZero;
 	Egg::Mesh::Shader::P clistShaderCompact;
 	Egg::Mesh::Shader::P clistShaderLength;
+	Egg::Mesh::Shader::P clistShaderSortEven;
+	Egg::Mesh::Shader::P clistShaderSortOdd;
+	Egg::Mesh::Shader::P hlistShaderInit;
+	Egg::Mesh::Shader::P hlistShaderBegin;
+	Egg::Mesh::Shader::P hlistShaderLength;
 
 	// Billboard
 	Egg::Mesh::Nothing::P billboardNothing;	
@@ -164,6 +179,8 @@ private:
 	Egg::Mesh::Shader::P metaballGradientSPixelShader;
 	Egg::Mesh::Shader::P metaballRealisticS2PixelShader;
 	Egg::Mesh::Shader::P metaballGradientS2PixelShader;
+	Egg::Mesh::Shader::P metaballRealisticHashSimpleShader;
+	Egg::Mesh::Shader::P metaballGradientHashSimpleShader;
 
 	// Animation
 	Egg::Mesh::Shader::P fluidSimulationShader;
@@ -258,10 +275,13 @@ public:
 
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderNonZeroCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderCompactCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderLengthCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderInitHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderSortCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderBeginHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderLengthHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

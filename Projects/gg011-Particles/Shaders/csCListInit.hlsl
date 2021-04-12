@@ -4,35 +4,34 @@
 
 StructuredBuffer<Particle> particles;
 RWByteAddressBuffer clist;
+RWByteAddressBuffer clistNonZero;
 
+//uint tid : SV_GroupIndex, uint3 groupIdx : SV_GroupID
 [numthreads(1, 1, 1)]
 void csCListInit(uint3 DTid : SV_GroupID)
 {
 	unsigned int tid = DTid.x;
 
-	if (tid == 0)
+	uint value = 0;
+	uint address = tid * 4;
+	if (tid > 0 && particles[tid - 1].zindex != particles[tid].zindex)
 	{
-		//clist[0] = 0;
-		clist.Store(0,0);
+		value = tid;
 	}
-	else 
+	clist.Store(address, value);
+	
+	uint nonzero = 0;
+	if (value > 0)
 	{
-		if (tid == particleCount - 1)
-		{
-			//clist[tid + 1] = particleCount;
-			clist.Store((tid + 1)*4, particleCount);
-		}		
+		nonzero = 1;
+	}
+	clistNonZero.Store(address, nonzero);
 
-		if (particles[tid - 1].zindex == particles[tid].zindex)
-		{
-			//clist[tid] = 0;
-			clist.Store((tid) * 4, 0);
-		}
-		else
-		{
-			//clist[tid] = tid;
-			clist.Store((tid) * 4, tid);
-		}
+	if (tid == particleCount-1)
+	{
+		address += 4;
+		clist.Store(address, particleCount);
+		clistNonZero.Store(address, 1);
 	}
 }
 

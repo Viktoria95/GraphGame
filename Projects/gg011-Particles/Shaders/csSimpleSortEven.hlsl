@@ -8,7 +8,7 @@ RWStructuredBuffer<Particle> particles;
 void csSimpleSortEven(uint3 DTid : SV_GroupID)
 {
 	unsigned int tid = DTid.x;
-	unsigned int firstIdx = tid * 2 + 1;
+	unsigned int firstIdx = tid * 2;
 	unsigned int secondIdx = firstIdx + 1;
 
 	if (particles[firstIdx].zindex > particles[secondIdx].zindex)

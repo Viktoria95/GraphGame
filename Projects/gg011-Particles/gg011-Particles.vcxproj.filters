@@ -187,13 +187,10 @@
     <FxCompile Include="Shaders\psBillboardSV22.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-	<FxCompile Include="Shaders\psBillboard.hlsl">
+    <FxCompile Include="Shaders\psBillboard.hlsl">
       <Filter>Shaders\Debug</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csCListInit.hlsl">
-      <Filter>Shaders\Hash</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csCListNonZero.hlsl">
       <Filter>Shaders\Hash</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
@@ -201,6 +198,27 @@
     </FxCompile>
     <FxCompile Include="Shaders\csCListLength.hlsl">
       <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListSortEven.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCListSortOdd.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csHListInit.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csHListBegin.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csHListLength.hlsl">
+      <Filter>Shaders\Hash</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballHashSimpleGradient.hlsl">
+      <Filter>Shaders\Metaball</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psMetaballHashSimpleRealistic.hlsl">
+      <Filter>Shaders\Metaball</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -221,6 +239,15 @@
     </None>
     <None Include="Shaders\metaballABuffer.hlsli">
       <Filter>Shaders\Metaball</Filter>
+    </None>
+    <None Include="Shaders\hash.hlsli">
+      <Filter>Shaders\Hash</Filter>
+    </None>
+    <None Include="Shaders\metaballHashSimple.hlsli">
+      <Filter>Shaders\Metaball</Filter>
+    </None>
+    <None Include="Shaders\mortonHash.hlsli">
+      <Filter>Shaders\Animation</Filter>
     </None>
   </ItemGroup>
 </Project>
