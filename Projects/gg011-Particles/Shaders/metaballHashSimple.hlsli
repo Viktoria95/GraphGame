@@ -13,12 +13,11 @@ bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTeste
 
 	uint zIndex = mortonHash(p.xyz);
 	uint zHash = zIndex % hashCount;
-	//zHash = 11;
 
 	uint cIdx = hlistBegin.Load(zHash * 4);
 	uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
-	cIdx = 0;
-	cIdxMax = 2048;
+//	cIdx = 0;
+//	cIdxMax = 70;
 	bool result = false;
 	[loop]
 	for (; cIdx < cIdxMax; cIdx++) {
@@ -36,9 +35,18 @@ bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTeste
 			}
 		}
 	}
-
 	return result;
+
 	
+/*	bool result = false;
+	for (uint pIdx=0; pIdx < 2048; pIdx++) {
+		if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
+		{
+			result = true;
+			pIdx = 2048;
+		}
+	}
+	return result;*/
 
 	//uint zIndex = mortonHash(pos.xyz);
 	//uint zHash = zIndex % hashCount;

@@ -10,6 +10,7 @@
 #include <assimp/scene.h>       
 #include <assimp/postProcess.h> 
 #include "DualQuaternion.h"
+#include "sort_permutation.h"
 
 #include <iostream> 
 
@@ -20,7 +21,7 @@ const unsigned int defaultParticleCount = 1024 * 2;
 const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
-const unsigned int hashCount = 13;
+const unsigned int hashCount = 2333;
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
 {
@@ -76,7 +77,7 @@ void Game::CreateCommon()
 	metaBallMinToHit = 0.9;
 	binaryStepCount = 2;
 	maxRecursion = 2;
-	marchCount = 25;
+	marchCount = 2500;
 
 	debugType = 0;
 	testCount = 0;
@@ -138,13 +139,65 @@ void Game::CreateCommon()
 		device->CreateBuffer(&metaballFunctionCBDesc, nullptr, metaballFunctionCB.GetAddressOf());
 }
 
+uint hash(uint zindex) {
+	return zindex % hashCount;
+}
+
+#define boundarySide 0.3
+#define boundaryBottom 0.0
+#define boundaryTop 1.0
+
+uint mortonHash(float3 pos) {
+
+	const float maxIndex = 1023.999999;
+	//const float maxIndex = 15.0;
+	uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
+	uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
+	uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
+
+	uint hash = 0;
+	uint i;
+	for (i = 0; i < 10; ++i)
+	{
+		hash |= ((x & (1 << i)) << 2 * i) | ((z & (1 << i)) << (2 * i + 1)) | ((y & (1 << i)) << (2 * i + 2));
+	}
+
+	x = (x | (x << 10)) & 0x000f801f;  // 000000000011111000000000011111
+	x = (x | (x << 6))  & 0x03038607;  // 000011000000111000011000000111
+	x = (x | (x << 4))  & 0x03218643;  // 000011001000011000011001000011
+	x = (x | (x << 2))  & 0x09249249;  // 001001001001001001001001001001
+	z = (z | (z << 10)) & 0x000f801f;  // 000000000011111000000000011111
+	z = (z | (z << 6))  & 0x03038607;  // 000011000000111000011000000111
+	z = (z | (z << 4))  & 0x03218643;  // 000011001000011000011001000011
+	z = (z | (z << 2))  & 0x09249249;  // 001001001001001001001001001001
+	y = (y | (y << 10)) & 0x000f801f;  // 000000000011111000000000011111
+	y = (y | (y << 6))  & 0x03038607;  // 000011000000111000011000000111
+	y = (y | (y << 4))  & 0x03218643;  // 000011001000011000011001000011
+	y = (y | (y << 2))  & 0x09249249;  // 001001001001001001001001001001
+
+	uint fhash = x | (z << 1) | (y << 2);
+	if (fhash != hash) {
+		bool kamu = true;
+	}
+
+	return fhash;
+}
+
 void Game::CreateParticles()
 {
 	std::vector<Particle> particles;
 
 	// Create Particles
-	for (int i = 0; i < defaultParticleCount; i++)
-		particles.push_back(Particle());
+	for (int i = 0; i < defaultParticleCount; i++) {
+		auto p = Particle();
+		// TODOLL: compute Morton to zindex
+		p.zindex = mortonHash(p.position);
+		particles.push_back(p);
+	}
+	// TODOLL: sort zindex
+	std::sort(particles.begin(), particles.end(), [](const Particle& a, const Particle& b) {
+		return a.zindex < b.zindex;
+		});
 
 	{
 		// Data Buffer
@@ -186,6 +239,9 @@ void Game::CreateParticles()
 			device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
 	}
 
+	std::vector<uint> clist(defaultParticleCount + 1);
+	std::vector<uint> clistlength(defaultParticleCount);
+	std::vector<uint> clistbegin(defaultParticleCount);
 
 	/// Hashtables
 	{
@@ -198,9 +254,25 @@ void Game::CreateParticles()
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
 		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistDataBuffer.GetAddressOf());
+		// TODOLL: construct clist
+		clist[0] = 0;
+		for (uint i = 1; i < defaultParticleCount; i++) {
+			if (particles[i - 1].zindex != particles[i].zindex) {
+				clist[i] = i;
+			}
+			else {
+				clist[i] = -1;
+			}
+		}
+		clist[defaultParticleCount] = defaultParticleCount;
 
+		D3D11_SUBRESOURCE_DATA cListData;
+		cListData.SysMemPitch = 0;
+		cListData.SysMemSlicePitch = 0;
+		cListData.pSysMem = clist.data();
+
+		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &cListData, clistDataBuffer.GetAddressOf());
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
@@ -232,10 +304,44 @@ void Game::CreateParticles()
 		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
+		particleBufferDesc.ByteWidth = (defaultParticleCount) * sizeof(uint32_t);
+
+		// TODOLL: construct clistlength, begin
+		clistbegin[0] = 0;
+		clistlength[0] = 1;
+		uint j = 0;
+		for (uint i = 1; i < defaultParticleCount; i++) {
+			if (clist[i] == -1) {
+				clistlength[j]++;
+			}
+			else {
+				j++;
+				clistbegin[j] = i;
+				clistlength[j] = 1;
+			}
+		}
+		// clistlength[j] = 0; // should not matter, after last one, but it would be 1 and that could be confusing
+		clistlength.resize(j);
+		clistbegin.resize(j);
+
+		// sort compact clist by hash
+		auto p = sort_permutation(clistbegin,
+			[particles](const uint& a, const uint& b) { return hash(particles[a].zindex) < hash(particles[b].zindex); }
+		);
+
+		apply_permutation_in_place(clistlength, p);
+		apply_permutation_in_place(clistbegin, p);
+
+		clistlength.resize(defaultParticleCount);
+		clistbegin.resize(defaultParticleCount);
+
+		D3D11_SUBRESOURCE_DATA cListLengthData;
+		cListLengthData.SysMemPitch = 0;
+		cListLengthData.SysMemSlicePitch = 0;
+		cListLengthData.pSysMem = clistlength.data();
 
 		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistLengthDataBuffer.GetAddressOf());
+			device->CreateBuffer(&particleBufferDesc, &cListLengthData, clistLengthDataBuffer.GetAddressOf());
 
 
 		// Shader Resource View
@@ -243,7 +349,7 @@ void Game::CreateParticles()
 		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
 		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
+		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
 		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
 			device->CreateShaderResourceView(clistLengthDataBuffer.Get(), &particleSRVDesc, &clistLengthSRV);
@@ -254,7 +360,7 @@ void Game::CreateParticles()
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
+		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
@@ -268,29 +374,32 @@ void Game::CreateParticles()
 		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
+		particleBufferDesc.ByteWidth = (defaultParticleCount) * sizeof(uint32_t);
+
+		D3D11_SUBRESOURCE_DATA cListBeginData;
+		cListBeginData.SysMemPitch = 0;
+		cListBeginData.SysMemSlicePitch = 0;
+		cListBeginData.pSysMem = clistbegin.data();
 
 		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistBeginDataBuffer.GetAddressOf());
-
+			device->CreateBuffer(&particleBufferDesc, &cListBeginData, clistBeginDataBuffer.GetAddressOf());
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
 		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
 		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
+		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
 		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
 			device->CreateShaderResourceView(clistBeginDataBuffer.Get(), &particleSRVDesc, &clistBeginSRV);
-
 
 		// Unordered Access View
 		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
+		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
@@ -334,6 +443,8 @@ void Game::CreateParticles()
 			device->CreateUnorderedAccessView(clistCellCountDataBuffer.Get(), &particleUAVDesc, &clistCellCountUAV);
 	}
 
+	std::vector<uint> hlistbegin(hashCount);
+	std::vector<uint> hlistlength(hashCount);
 	{
 		// Data Buffer
 		D3D11_BUFFER_DESC particleBufferDesc;
@@ -342,18 +453,36 @@ void Game::CreateParticles()
 		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount) * sizeof(uint32_t);
+		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
+
+		// TODOLL: construct clistlength, begin
+		std::fill(hlistbegin.begin(), hlistbegin.end(), -1);
+		std::fill(hlistlength.begin(), hlistlength.end(), 0);
+		hlistbegin[0] = 0;
+		hlistlength[0] = 1;
+		for (uint i = 1; i < clistbegin.size(); i++) {
+			uint ihash = hash(particles[clist[clistbegin[i]]].zindex);
+			if (hash(particles[clist[clistbegin[i-1]]].zindex) != ihash) {
+				if (hlistbegin[ihash] == 1) {
+					// TODO: embed
+				}
+				hlistbegin[ihash] = i;
+				hlistlength[ihash] = 1;
+			}
+			else {
+				hlistlength[ihash]++;
+			}
+		}
 
 		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
 			device->CreateBuffer(&particleBufferDesc, NULL, hlistDataBuffer.GetAddressOf());
-
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
 		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
 		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+		particleSRVDesc.Buffer.NumElements = hashCount;
 
 		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
 			device->CreateShaderResourceView(hlistDataBuffer.Get(), &particleSRVDesc, &hlistSRV);
@@ -364,7 +493,7 @@ void Game::CreateParticles()
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+		particleUAVDesc.Buffer.NumElements = hashCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
@@ -380,9 +509,13 @@ void Game::CreateParticles()
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
 		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, hlistLengthDataBuffer.GetAddressOf());
+		D3D11_SUBRESOURCE_DATA hListLengthData;
+		hListLengthData.SysMemPitch = 0;
+		hListLengthData.SysMemSlicePitch = 0;
+		hListLengthData.pSysMem = hlistlength.data();
 
+		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &hListLengthData, hlistLengthDataBuffer.GetAddressOf());
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
@@ -416,9 +549,13 @@ void Game::CreateParticles()
 		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
 		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, hlistBeginDataBuffer.GetAddressOf());
+		D3D11_SUBRESOURCE_DATA hListBeginData;
+		hListBeginData.SysMemPitch = 0;
+		hListBeginData.SysMemSlicePitch = 0;
+		hListBeginData.pSysMem = hlistbegin.data();
 
+		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &hListBeginData, hlistBeginDataBuffer.GetAddressOf());
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
@@ -429,7 +566,6 @@ void Game::CreateParticles()
 
 		Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
 			device->CreateShaderResourceView(hlistBeginDataBuffer.Get(), &particleSRVDesc, &hlistBeginSRV);
-
 
 		// Unordered Access View
 		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
@@ -1902,16 +2038,16 @@ void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 	context->Dispatch(defaultParticleCount, 1, 1);
 
-	for (int i = 0; i < defaultParticleCount / 2; i++)
-	{
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		context->Dispatch(defaultParticleCount / 2, 1, 1);
-
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortOddShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
-	}
+//	for (int i = 0; i < defaultParticleCount / 2; i++)
+//	{
+//		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortEvenShader->getShader().Get()), nullptr, 0);
+//		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+//		context->Dispatch(defaultParticleCount / 2, 1, 1);
+//
+//		context->CSSetShader(static_cast<ID3D11ComputeShader*>(simpleSortOddShader->getShader().Get()), nullptr, 0);
+//		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+//		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
+//	}
 
 }
 
@@ -2017,16 +2153,16 @@ void Game::renderSortCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	ppUnorderedAccessViews[2] = clistCellCountUAV.Get();
 	ppUnorderedAccessViews[3] = hlistUAV.Get();
 
-	for (int i = 0; i < defaultParticleCount / 2; i++)
-	{
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderSortEven->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 4, ppUnorderedAccessViews, zeros);
-		context->Dispatch(defaultParticleCount / 2, 1, 1);
-
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderSortOdd->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 4, ppUnorderedAccessViews, zeros);
-		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
-	}
+//	for (int i = 0; i < defaultParticleCount / 2; i++)
+//	{
+//		context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderSortEven->getShader().Get()), nullptr, 0);
+//		context->CSSetUnorderedAccessViews(0, 4, ppUnorderedAccessViews, zeros);
+//		context->Dispatch(defaultParticleCount / 2, 1, 1);
+//
+//		context->CSSetShader(static_cast<ID3D11ComputeShader*>(clistShaderSortOdd->getShader().Get()), nullptr, 0);
+//		context->CSSetUnorderedAccessViews(0, 4, ppUnorderedAccessViews, zeros);
+//		context->Dispatch(defaultParticleCount / 2 - 1, 1, 1);
+//	}
 }
 
 void Game::renderBeginHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
@@ -2414,33 +2550,33 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	// Hash
 	{
 		// Sort
-		renderSort(context);
-		clearContext(context);
+//		renderSort(context);
+//		clearContext(context);
 
 		// CLists
-		renderInitCList(context);
-		clearContext(context);
+//		renderInitCList(context);
+//		clearContext(context);
 
-		renderNonZeroPrefix(context);
-		clearContext(context);
+//		renderNonZeroPrefix(context);
+//		clearContext(context);
 
-		renderCompactCList(context);
-		clearContext(context);
+//		renderCompactCList(context);
+//		clearContext(context);
 
-		renderLengthCList(context);
-		clearContext(context);
+//		renderLengthCList(context);
+//		clearContext(context);
 
-		renderInitHList(context);
-		clearContext(context);
+//		renderInitHList(context);
+//		clearContext(context);
 
-		renderSortCList(context);
-		clearContext(context);
+//		renderSortCList(context);
+//		clearContext(context);
 
-		renderBeginHList(context);
-		clearContext(context);
+//		renderBeginHList(context);
+//		clearContext(context);
 
-		renderLengthHList(context);
-		clearContext(context);
+//		renderLengthHList(context);
+//		clearContext(context);
 	}
 
 	//return;
@@ -2576,8 +2712,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	}
 
 	// Animation
-	renderAnimation(context);
-	clearContext(context);
+//	renderAnimation(context);
+//	clearContext(context);
 
 	// Sort
 	//renderSort(context);
