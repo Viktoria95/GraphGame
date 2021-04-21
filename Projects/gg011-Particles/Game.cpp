@@ -77,7 +77,7 @@ void Game::CreateCommon()
 	metaBallMinToHit = 0.9;
 	binaryStepCount = 2;
 	maxRecursion = 2;
-	marchCount = 2500;
+	marchCount = 250;
 
 	debugType = 0;
 	testCount = 0;
@@ -149,11 +149,14 @@ uint hash(uint zindex) {
 
 uint mortonHash(float3 pos) {
 
-	const float maxIndex = 1023.999999;
-	//const float maxIndex = 15.0;
-	uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
-	uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
-	uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
+//	const float maxIndex = 1023.9999;
+	const float maxIndex = 15.9999;
+//	uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
+//	uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
+//	uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
+	uint x = pos.x * 15.9999;
+	uint y = pos.y * 15.9999;
+	uint z = pos.z * 15.9999;
 
 	uint hash = 0;
 	uint i;
@@ -194,6 +197,8 @@ void Game::CreateParticles()
 		p.zindex = mortonHash(p.position);
 		particles.push_back(p);
 	}
+	particles[777].position = float3(0.5, 0.5, 0.5);
+	particles[777].zindex = mortonHash(float3(0.5, 0.5, 0.5));
 	// TODOLL: sort zindex
 	std::sort(particles.begin(), particles.end(), [](const Particle& a, const Particle& b) {
 		return a.zindex < b.zindex;
@@ -343,6 +348,9 @@ void Game::CreateParticles()
 		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
 			device->CreateBuffer(&particleBufferDesc, &cListLengthData, clistLengthDataBuffer.GetAddressOf());
 
+		// get rid of zeroes, we do not need to hash those
+		clistlength.resize(j);
+		clistbegin.resize(j);
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
@@ -463,9 +471,6 @@ void Game::CreateParticles()
 		for (uint i = 1; i < clistbegin.size(); i++) {
 			uint ihash = hash(particles[clist[clistbegin[i]]].zindex);
 			if (hash(particles[clist[clistbegin[i-1]]].zindex) != ihash) {
-				if (hlistbegin[ihash] == 1) {
-					// TODO: embed
-				}
 				hlistbegin[ihash] = i;
 				hlistlength[ihash] = 1;
 			}
@@ -473,6 +478,7 @@ void Game::CreateParticles()
 				hlistlength[ihash]++;
 			}
 		}
+		// TODO embed
 
 		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
 			device->CreateBuffer(&particleBufferDesc, NULL, hlistDataBuffer.GetAddressOf());
@@ -539,6 +545,11 @@ void Game::CreateParticles()
 		Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
 			device->CreateUnorderedAccessView(hlistLengthDataBuffer.Get(), &particleUAVDesc, &hlistLengthUAV);
 	}
+
+	float3 testp = float3(0.5, 0.5, 0.5);
+	uint testmorton = mortonHash(testp);
+	uint testh = testmorton % 2333;
+
 	{
 		// Data Buffer
 		D3D11_BUFFER_DESC particleBufferDesc;
@@ -1881,7 +1892,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	if (billboardsLoadAlgorithm == HashSimple) {
 		uint values[4] = { 0,0,0,0 };
-		context->ClearUnorderedAccessViewUint(hlistBeginUAV.Get(), values);
+//		context->ClearUnorderedAccessViewUint(hlistBeginUAV.Get(), values);
 
 		ID3D11UnorderedAccessView* ppUnorderedAccessViews[4];
 		ppUnorderedAccessViews[0] = hlistBeginUAV.Get();

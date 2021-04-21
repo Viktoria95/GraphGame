@@ -1,10 +1,10 @@
 #include "metaball.hlsli"
 #include "hash.hlsli"
 
-RWByteAddressBuffer hlistBegin;
-RWByteAddressBuffer hlistLength;
-RWByteAddressBuffer clistBegin;
-RWByteAddressBuffer clistLength;
+RWByteAddressBuffer hlistBegin : register(u1);
+RWByteAddressBuffer hlistLength : register(u2);
+RWByteAddressBuffer clistBegin : register(u3);
+RWByteAddressBuffer clistLength : register(u4);
 
 bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTester)
 {
@@ -16,22 +16,28 @@ bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTeste
 
 	uint cIdx = hlistBegin.Load(zHash * 4);
 	uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
-//	cIdx = 0;
-//	cIdxMax = 70;
 	bool result = false;
 	[loop]
 	for (; cIdx < cIdxMax; cIdx++) {
 		uint pIdx = clistBegin.Load(cIdx * 4);
 		uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
-		//pIdx = 0;
-		//pIdxMax = 2048;
+//		pIdx = 244;
+//		pIdxMax = pIdx + 2;
 		[loop]
 		for (; pIdx < pIdxMax; pIdx++) {
-			if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
-			{
-				result = true;
-				pIdx = pIdxMax;
-				cIdx = cIdxMax;
+//			if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
+			float3 diff = (p - particles[pIdx].position) / (0.6 /*boundarysize*/ / 16.0 /*hash maxindex*/);
+			float r2 = dot(diff, diff);
+			if (r2 < 1.0) {
+				float r4 = r2 * r2;
+				float r6 = r4 * r2;
+				acc += (-4.0 / 9.0) * r6 + (17.0 / 9.0) * r4 - (22.0 / 9.0) * r2 + 1;
+				if (acc > 0.5)
+				{
+					result = true;
+					pIdx = pIdxMax;
+					cIdx = cIdxMax;
+				}
 			}
 		}
 	}

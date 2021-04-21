@@ -369,8 +369,10 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 	(
 		p,
 		d,
-		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
-		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+//		float3 (-boundarySideThreshold, boundaryBottomThreshold, -boundarySideThreshold),
+//		float3 (boundarySideThreshold, boundaryTopThreshold, boundarySideThreshold),
+		float3(0,0,0),
+		float3(1,1,1),
 		intersect,
 		tStart,
 		tEnd
@@ -383,9 +385,10 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 
 		for (int i = 0; i<marchCount; i++)
 		{
+			//p = float3(0.5, 0.5, 0.5);
 			if (metaballVisualizer.callMetaballTestFunction(p, pos))
 			{
-				//return float4(1.0, 1.0, 1.0, 1.0);
+				return float4(1.0, 0.0, 1.0, 1.0);
 				p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
 				float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
 				float3 ref = reflect(normalize(rayDir), normal);

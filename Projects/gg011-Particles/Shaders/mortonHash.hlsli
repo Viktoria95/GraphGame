@@ -5,11 +5,15 @@ uint mortonHash(float3 pos) {
 	//uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * 1023.0;
 	//uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * 1023.0;
 
-	const float maxIndex = 1023.9999;
-	//const float maxIndex = 15.0;
-	uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
-	uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
-	uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
+//	const float maxIndex = 1023.9999;
+	const float maxIndex = 15.9999;
+//	uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
+//	uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
+//	uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
+	uint x = pos.x * 15.9999;
+	uint y = pos.y * 15.9999;
+	uint z = pos.z * 15.9999;
+
 	//if (pos.z < 100000.0) {
 		//x = y = z = 0;
 	//}
