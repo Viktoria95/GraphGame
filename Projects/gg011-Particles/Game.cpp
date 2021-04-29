@@ -15,8 +15,8 @@
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
-//const unsigned int defaultParticleCount = 64;
+//const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int defaultParticleCount = 256;
 const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
@@ -72,7 +72,8 @@ void Game::CreateCommon()
 	adapticeControlPressureIsActive = true;
 	controlParticleAnimtaionIsActive = false;
 
-	radius = 1.0;
+	//radius = 1.0;
+	radius = 1.1;
 	metaBallMinToHit = 0.9;
 	binaryStepCount = 2;
 	maxRecursion = 2;
@@ -1744,8 +1745,8 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->PSSetShaderResources(3, 1, idSRV.GetAddressOf());
 
 	if (billboardsLoadAlgorithm == HashSimple) {
-		uint values[4] = { 0,0,0,0 };
-		context->ClearUnorderedAccessViewUint(hlistBeginUAV.Get(), values);
+		//uint values[4] = { 0,0,0,0 };
+		//context->ClearUnorderedAccessViewUint(hlistBeginUAV.Get(), values);
 
 		ID3D11UnorderedAccessView* ppUnorderedAccessViews[4];
 		ppUnorderedAccessViews[0] = hlistBeginUAV.Get();
@@ -2046,12 +2047,13 @@ void Game::renderBeginHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 void Game::renderLengthHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	uint zeros[2] = { 0, 0 };
 
-	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];
 	ppUnorderedAccessViews[0] = hlistBeginUAV.Get();
 	ppUnorderedAccessViews[1] = hlistLengthUAV.Get();
+	ppUnorderedAccessViews[2] = clistCellCountUAV.Get();
 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(hlistShaderLength->getShader().Get()), nullptr, 0);
-	context->CSSetUnorderedAccessViews(0, 2, ppUnorderedAccessViews, zeros);
+	context->CSSetUnorderedAccessViews(0, 3, ppUnorderedAccessViews, zeros);
 	context->Dispatch(hashCount, 1, 1);
 }
 

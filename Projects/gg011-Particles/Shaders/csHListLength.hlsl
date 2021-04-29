@@ -20,9 +20,12 @@ void csHListLength(uint3 DTid : SV_GroupID)
 	}
 	*/
 
-	uint address = tid * 4;
-	uint length = hlistLength.Load(address) - hlistBegin.Load(address);
-	hlistLength.Store(address, length);
+	if (tid < hashCount - 1)
+	{
+		uint address = tid * 4;
+		uint length = hlistLength.Load(address) - hlistBegin.Load(address);
+		hlistLength.Store(address, length);
+	}
 }
 
 

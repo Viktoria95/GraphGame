@@ -8,72 +8,60 @@ RWByteAddressBuffer clistLength;
 
 bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTester)
 {
-	
+	bool result = false;
 	float acc = 0.0;
 
-	uint zIndex = mortonHash(p.xyz);
-	uint zHash = zIndex % hashCount;
-	//zHash = 11;
+	//uint zHash = 0;
 
-	uint cIdx = hlistBegin.Load(zHash * 4);
-	uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
-	cIdx = 0;
-	cIdxMax = 2048;
-	bool result = false;
+	const float displacementStep = 0.08;
+	const int displacementDist = 1;
+
+	int xDis;
+	int yDis;
+	int zDis;
 	[loop]
-	for (; cIdx < cIdxMax; cIdx++) {
-		uint pIdx = clistBegin.Load(cIdx * 4);
-		uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
-		//pIdx = 0;
-		//pIdxMax = 2048;
+	for (xDis = -displacementDist; xDis <= displacementDist; xDis++) {
 		[loop]
-		for (; pIdx < pIdxMax; pIdx++) {
-			if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
-			{
-				result = true;
-				pIdx = pIdxMax;
-				cIdx = cIdxMax;
+		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
+			[loop]
+			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
+				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
+
+				uint zIndex = mortonHash(testp);
+				uint zHash = zIndex % hashCount;
+
+				//zHash = 0;
+
+
+				uint cIdx = hlistBegin.Load(zHash * 4);
+				uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
+
+				[loop]
+				for (; cIdx < cIdxMax; cIdx++) {
+					uint pIdx = clistBegin.Load(cIdx * 4);
+					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+
+					[loop]
+					for (; pIdx < pIdxMax; pIdx++) {
+						if (particles[pIdx].zindex == zIndex) {
+							acc += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
+							if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
+							{
+								result = true;
+								pIdx = pIdxMax;
+								cIdx = cIdxMax;
+								xDis = displacementDist;
+								yDis = displacementDist;
+								zDis = displacementDist;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
 	return result;
-	
-
-	//uint zIndex = mortonHash(pos.xyz);
-	//uint zHash = zIndex % hashCount;
-	
-	/*
-	uint zHash = 0;
-	bool result = false;
-	[loop]
-	for (; zHash < hashCount; zHash++) {
-		float acc = 0.0;
-
-
-
-		uint cIdx = hlistBegin.Load(zHash * 4);
-		uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
-
-		
-		[loop]
-		for (; cIdx < cIdxMax; cIdx++) {
-			uint pIdx = clistBegin.Load(cIdx * 4);
-			uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
-			[loop]
-			for (; pIdx < pIdxMax; pIdx++) {
-				if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
-				{
-					result = true;
-					pIdx = pIdxMax;
-					cIdx = cIdxMax;
-				}
-			}
-		}
-	}
-	return result;*/
-	
-	
 }
 
 
@@ -87,14 +75,101 @@ float3 Grad_HashSimple(float3 p, float4 pos)
 	uint cIdx = hlistBegin.Load(zHash * 4);
 	uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
 	for (; cIdx < cIdxMax; cIdx++) {
-		uint pIdx = clistBegin.Load(cIdx * 4);
-		uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
-		for (; pIdx < pIdxMax; pIdx++) {
-			grad = calculateGrad(p, particles[pIdx].position, grad);
+	uint pIdx = clistBegin.Load(cIdx * 4);
+	uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+	for (; pIdx < pIdxMax; pIdx++) {
+	grad = calculateGrad(p, particles[pIdx].position, grad);
+	}
+	}
+	*/
+	/*
+	const float displacementStep = 0.08;
+	int displacementDist = 1;
+
+	int xDis;
+	int yDis;
+	int zDis;
+	[loop]
+	for (xDis = -displacementDist; xDis <= displacementDist; xDis++) {
+		[loop]
+		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
+			[loop]
+			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
+
+				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
+
+				uint zIndex = mortonHash(testp);
+				uint zHash = zIndex % hashCount;
+
+
+				uint cIdx = hlistBegin.Load(zHash * 4);
+				uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
+
+				[loop]
+				for (; cIdx < cIdxMax; cIdx++) {
+					uint pIdx = clistBegin.Load(cIdx * 4);
+					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+
+					[loop]
+					for (; pIdx < pIdxMax; pIdx++) {
+						grad.x += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
+						grad = calculateGrad(p, particles[pIdx].position, grad);
+					}
+				}
+			}
 		}
 	}
 	*/
-	return grad;	
+
+	const float displacementStep = 0.08;
+	const int displacementDist = 1;
+
+	int xDis;
+	int yDis;
+	int zDis;
+	[loop]
+	for (xDis = -displacementDist; xDis <= displacementDist; xDis++) {
+		[loop]
+		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
+			[loop]
+			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
+				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
+
+				uint zIndex = mortonHash(testp);
+				uint zHash = zIndex % hashCount;
+
+				//zHash = 0;
+
+
+				uint cIdx = hlistBegin.Load(zHash * 4);
+				uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
+
+				[loop]
+				for (; cIdx < cIdxMax; cIdx++) {
+					uint pIdx = clistBegin.Load(cIdx * 4);
+					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+
+					[loop]
+					for (; pIdx < pIdxMax; pIdx++) {
+						//acc += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
+						//if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
+						if (particles[pIdx].zindex == zIndex) {
+							grad = calculateGrad(p, particles[pIdx].position, grad);
+						}
+							//result = true;
+							//pIdx = pIdxMax;
+							//cIdx = cIdxMax;
+							//xDis = displacementDist;
+							//yDis = displacementDist;
+							//zDis = displacementDist;
+
+					}
+				}
+			}
+		}
+	}
+
+	return grad;
 }
 
 class HashSimpleMetaballVisualizer : IMetaballVisualizer
