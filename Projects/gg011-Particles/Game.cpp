@@ -12,10 +12,12 @@
 #include "DualQuaternion.h"
 
 #include <iostream> 
+#include <time.h>
 
 using namespace Egg::Math;
 
-const unsigned int defaultParticleCount = 10;
+unsigned int defaultParticleCount = 1;
+unsigned int frameCount = 0, imageCount = 2397;
 const unsigned int controlParticleCount = 1024 * 8;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
@@ -137,6 +139,19 @@ void Game::CreateCommon()
 	metaballFunctionCBDesc.Usage = D3D11_USAGE_DEFAULT;
 	Egg::ThrowOnFail("Failed to create metaballFunctionCB.", __FILE__, __LINE__) ^
 		device->CreateBuffer(&metaballFunctionCBDesc, nullptr, metaballFunctionCB.GetAddressOf());
+
+	// metaballFunctionCB
+	D3D11_BUFFER_DESC metaballCountCBDesc;
+	metaballCountCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	metaballCountCBDesc.ByteWidth = sizeof(int) * 4;
+	metaballCountCBDesc.CPUAccessFlags = 0;
+	metaballCountCBDesc.MiscFlags = 0;
+	metaballCountCBDesc.StructureByteStride = 0;
+	metaballCountCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	Egg::ThrowOnFail("Failed to create metaballFunctionCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&metaballCountCBDesc, nullptr, metaballCountCB.GetAddressOf());
+
+
 }
 
 void Game::CreateSimpleMetaballResources() {
@@ -193,7 +208,11 @@ void Game::CreateSimpleMetaballResources() {
 
 void Game::CreateParticles()
 {
+	srand(time(NULL));
+
 	std::vector<Particle> particles;
+
+	defaultParticleCount = 40; // int1::random(1, 50);
 
 	// Create Particles
 	for (int i = 0; i < defaultParticleCount; i++)
@@ -778,6 +797,50 @@ void Game::CreateBillboard() {
 	counterUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(counterBuffer.Get(), &counterUAVDesc, &counterUAV);
 
+	D3D11_TEXTURE2D_DESC bufferDesc;
+	bufferDesc.ArraySize = 1;
+	bufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	bufferDesc.Height = 512;
+	bufferDesc.MipLevels = 1;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.SampleDesc.Quality = 0;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.Width = 512;
+	device->CreateTexture2D(&bufferDesc, 0, &_Texture2D);
+
+	//Creating a view of the texture to be used when binding it as a render target
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	renderTargetViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	renderTargetViewDesc.Texture2D.MipSlice = 0;
+	device->CreateRenderTargetView(_Texture2D, 0, &_RenderTargetView);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+	shaderResourceViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+	shaderResourceViewDesc.Texture2D.MipLevels = 1;
+	device->CreateShaderResourceView(_Texture2D, &shaderResourceViewDesc, &_ShaderResourceView);
+
+	D3D11_TEXTURE2D_DESC desc;
+	desc.Width = 512;
+	desc.Height = 512;
+	desc.MipLevels = desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_STAGING;
+	desc.BindFlags = 0;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
+	desc.MiscFlags = 0;
+
+	//ID3D11Texture2D *pTexture = NULL;
+	pTexture = NULL;
+	device->CreateTexture2D(&desc, NULL, &pTexture);
+
 }
 
 void Game::CreatePrefixSum() {
@@ -1282,7 +1345,7 @@ HRESULT Game::releaseResources()
 void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 
-	float clearColor[4] = { 0.9f, 0.7f, 0.1f, 0.0f };
+	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	context->ClearRenderTargetView(defaultRenderTargetView.Get(), clearColor);
 	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
 }
@@ -1609,8 +1672,11 @@ void Game::renderSimpleMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> cont
 	else 
 		mfunctionType[0] = 1;
 
-	context->UpdateSubresource(metaballFunctionCB.Get(), 0, nullptr, mfunctionType, 0, 0);
+	int metaballCount[1];
+	metaballCount[0] = defaultParticleCount;
 
+	context->UpdateSubresource(metaballFunctionCB.Get(), 0, nullptr, mfunctionType, 0, 0);
+	context->UpdateSubresource(metaballCountCB.Get(), 0, nullptr, metaballCount, 0, 0);
 	context->UpdateSubresource(shadingTypeCB.Get(), 0, nullptr, type, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
@@ -1625,6 +1691,7 @@ void Game::renderSimpleMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> cont
 	simpleMetaball->getMaterial()->setCb("metaballVSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	simpleMetaball->getMaterial()->setCb("shadingTypeCB", shadingTypeCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	simpleMetaball->getMaterial()->setCb("metaballFunctionCB", metaballFunctionCB, Egg::Mesh::ShaderStageFlag::Pixel);
+	simpleMetaball->getMaterial()->setCb("metaballCountCB", metaballCountCB, Egg::Mesh::ShaderStageFlag::Pixel);
 	simpleMetaball->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	simpleMetaball->draw(context);
@@ -2077,27 +2144,65 @@ void Game::stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	delete[] boneTrafos;
 }
 
+void Game::saveToImage(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, const char* fileName) {
+	context->CopyResource(pTexture, _Texture2D);
+	DirectX::ScratchImage image;
+	const size_t cSize = strlen(fileName) + 1;
+	wchar_t* wc = new wchar_t[cSize];
+	size_t tmp = 0;
+	mbstowcs_s(&tmp, wc, cSize, fileName, cSize);
+
+	HRESULT hr = DirectX::CaptureTexture(device.Get(), context.Get(), pTexture, image);
+
+	const DirectX::Image* images = image.GetImages();
+	size_t nImages = image.GetImageCount();
+	DirectX::SaveToWICFile(images, nImages, DirectX::WIC_FLAGS_NONE, DirectX::GetWICCodec(DirectX::WICCodecs::WIC_CODEC_JPEG), wc);
+}
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
 
 	clearRenderTarget(context);
 
-	// Metaball
-	renderSimpleMetaball(context);
-	clearContext(context);
+	// Billboard
+	if (/*frameCount % 2 == 0*/ 1 == 0) {
+		std::string fileNev("metaball_before/teszt_");
+		fileNev += std::to_string(imageCount);
+		fileNev += ".jpg";
 
-	if (billboard)
-	{
-		//Billboard 
 		renderBillboard(context);
+		//saveToImage(context, (char*)fileNev.c_str());
 		clearContext(context);
 	}
 
+	// Metaball
+	if (/*frameCount % 2 == 1*/ 1 == 1) {
+		std::string fileNev("metaball_after/teszt_");
+		fileNev += std::to_string(imageCount);
+		fileNev += ".jpg";
 
+		renderSimpleMetaball(context);
+		//saveToImage(context, (char*)fileNev.c_str());
+		clearContext(context);
+
+		/*CreateParticles();
+		CreateBillboard();
+		CreateSimpleMetaballResources();*/
+
+		//firstPersonCam->setRandomEyePosition();
+
+		imageCount++;
+	}	
+
+	frameCount++;
+
+	if (imageCount == 4000) {
+		int a = 1;
+	}
 }
-
-/*void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+/*
+void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
 
@@ -2258,8 +2363,6 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	//context->Unmap(uavCounterReadback.Get(), 0);
 	//auto b = 1;
 }*/
-
-
 
 void Game::animate(double dt, double t)
 {

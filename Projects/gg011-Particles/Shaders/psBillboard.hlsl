@@ -14,10 +14,11 @@ float4 psBillboard(GsosBillboard input) : SV_Target
 	float3 normal = float3(input.tex.x-0.5, input.tex.y-0.5, 0.0);
 	normal.z = sqrt(pow(0.1, 2) - pow(normal.x, 2) - pow(normal.y, 2));
 
-	float3 color = float3(s*input.tex.x, s*input.tex.y, s);
+	//float3 color = float3(s*input.tex.x, s*input.tex.y, s);
+	float3 color = normalize(normal);
 
 	color *= (1.0 / (length(eyePos.xyz - particles[input.id].position.xyz) / 10.0));
 
-	return float4 (normalize(normal), 1.0);
+	return float4 (color, 1.0);
 
 }

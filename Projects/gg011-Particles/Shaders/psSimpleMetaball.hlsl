@@ -1,7 +1,5 @@
 #include "metaball.hlsli"
 
-#define metaballCount 10
-
 float distanceFromSphere(float3 p, float3 center, float r) {
 	return length(p - center) - r;
 }
@@ -36,7 +34,7 @@ float3 calculateGradient(float3 p) {
 
 bool testFunction(float3 p, float3 position, float acc, out float accOut)
 {
-	/*const float MinimumHitDistance = 0.001;
+    /*const float MinimumHitDistance = 0.001;
 	float r = abs(distance(p, position));
 	float res = (1.0 / (r*r)) * (1.0 / (r*r));
 	accOut = acc + res;
@@ -44,13 +42,14 @@ bool testFunction(float3 p, float3 position, float acc, out float accOut)
 	{
 		return true;
 	}
-	return false;*/
+	return false; */
 
 	
+	//ez a jo 
 
-	const float MinimumHitDistance = 0.001;
+	const float MinimumHitDistance = 0.1;
 	float res = 1.0 / ((p.x - position.x)*(p.x - position.x) + (p.y - position.y)*(p.y - position.y) + (p.z - position.z)*(p.z - position.z));
-	if (abs(distance(p, position)) < 4.0)
+	if (abs(distance(p, position)) < 1.0)
 		accOut = acc + res;
 	if (accOut > MinimumHitDistance)
 	{
@@ -58,24 +57,25 @@ bool testFunction(float3 p, float3 position, float acc, out float accOut)
 	}
 	return false; 
 
-	//float r = 0.0;
-	//float b = 4.0;
-	//float a = 1.1;
+	/*
+	float r = 0.0;
+	float b = 4.0;
+	float a = 1.1;
 
-	//r = abs(distance(p, position));
+	r = abs(distance(p, position));
 
-	//float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0)*pow(r / b, 4) - (22.0 / 9.0)*pow(r / b, 2) + 1;
+	float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0)*pow(r / b, 4) - (22.0 / 9.0)*pow(r / b, 2) + 1;
 
-	//if (r < b) {
-	//	accOut = acc + a*res;
-	//}
+	if (r < b) {
+		accOut = acc + a*res;
+	}
 
-	//if (accOut > metaBallMinToHit.x)
-	//{
-	//	return true;
-	//}
+	if (accOut > metaBallMinToHit.x)
+	{
+		return true;
+	}
 
-	//return false;
+	return false;*/
 }
 
 bool testAllMetaballs(float3 p, float TotalDistanceTraveled, out float TotalsDistanceTraveledOut) {
@@ -117,7 +117,7 @@ float3 GradForMetaball(float3 p) {
 float4 calculateSimpleColor(float3 currentPos, float3 rayDir) {
 	float3 normal = normalize(GradForMetaball(currentPos));
 	float3 ref = reflect(normalize(rayDir), normal);
-	return float4(normal* (1.0/(length(eyePos-currentPos) / 10.0)), 1.0);// envTexture.SampleLevel(ss, ref, 0);
+	return float4(normal * (1.0/(length(eyePos-currentPos) / 10.0)), 1.0);// envTexture.SampleLevel(ss, ref, 0);
 }
 
 float4 calculateComplexColor(float3 rayDir) {
@@ -152,7 +152,7 @@ float4 calculateComplexColor(float3 rayDir) {
 		uint marchRecursionDepth = stack[stackSize].recursionDepth;
 		float marchAlfa = stack[stackSize].alfa;
 
-		if (marchRecursionDepth < 1) 
+		if (marchRecursionDepth < 2) 
 		{
 			bool startedInside = testAllMetaballs(marchPos, TotalDistanceTraveled, TotalDistanceTraveled);
 			//float3 start = marchPos;
@@ -243,7 +243,7 @@ float4 psSimpleMetaball(VsosQuad input) : SV_Target
 	if (functionType == 0)
 		return envTexture.Sample(ss, d);
 
-	const int NumberOfSteps = 100;
+	const int NumberOfSteps = 500;
 	const float MinimumHitDistance = 0.001;
 	const float MaximumHitDistance = 1000.0;
 	float TotalDistanceTraveled = 0.0;
@@ -272,7 +272,7 @@ float4 psSimpleMetaball(VsosQuad input) : SV_Target
 		}
 	}
 
-	return envTexture.Sample(ss, d);
+	return float4(0.0, 0.0, 0.0, 1.0);//envTexture.Sample(ss, d);
 }
 
 

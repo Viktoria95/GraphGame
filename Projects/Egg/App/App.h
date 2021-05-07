@@ -11,6 +11,7 @@ namespace Egg {
 
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer;
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> defaultRenderTargetView;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> _RenderTargetView;
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencil;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> defaultDepthStencilView;
 

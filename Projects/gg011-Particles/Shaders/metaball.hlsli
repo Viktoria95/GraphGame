@@ -40,6 +40,10 @@ cbuffer shadingTypeCB {
 	int marchCount;
 };
 
+cbuffer metaballCountCB {
+	int metaballCount;
+};
+
 cbuffer metaballFunctionCB {
 	int functionType;
 };

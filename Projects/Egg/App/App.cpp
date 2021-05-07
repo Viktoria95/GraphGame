@@ -67,6 +67,7 @@ HRESULT App::releaseSwapChainResources()
 {
 	backBuffer.Reset();
 	defaultRenderTargetView.Reset();
+	_RenderTargetView.Reset();
 	depthStencil.Reset();
 	defaultDepthStencilView.Reset();
 	return S_OK;

@@ -65,6 +65,12 @@ const float3& Cam::FirstPerson::getEyePosition()
 	return position;
 }
 
+const void Cam::FirstPerson::setRandomEyePosition()
+{
+	position = float3(float1::random(-5.38, 5.38), float1::random(-5.38, 5.38), float1::random(-25.38, -5.38));
+	ahead = (float3(0.0, 0.0, 0.0) - position).normalize();
+}
+
 const float3& Cam::FirstPerson::getAhead()
 {
 	return ahead;

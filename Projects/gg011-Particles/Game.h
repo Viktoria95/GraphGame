@@ -16,8 +16,8 @@ public:
 	//static const unsigned int windowHeight = 720;
 	//static const unsigned int windowWidth = 1280;
 
-	static const unsigned int windowHeight = 1024;
-	static const unsigned int windowWidth = 1024;
+	static const unsigned int windowHeight = 512;
+	static const unsigned int windowWidth = 512;
 
 	static const unsigned int fillWindowHeight = 200;
 	static const unsigned int fillWindowWidth = 200;
@@ -39,6 +39,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> modelViewProjCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> eyePosCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingCB;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballCountCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingTypeCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballFunctionCB;
 
@@ -178,6 +179,10 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> uavCounterReadback;
 
+	ID3D11Texture2D *pTexture;
+	ID3D11Texture2D *_Texture2D;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _ShaderResourceView;
+
 	// Skeletal
 	int meshIdxInFile;
 	float animatedMeshScale;
@@ -255,5 +260,7 @@ public:
 	void rigControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void animateControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void saveToImage(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, const char* fileName);
+
 
 GG_ENDCLASS

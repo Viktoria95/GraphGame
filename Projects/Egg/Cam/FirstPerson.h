@@ -47,6 +47,8 @@ namespace Egg { namespace Cam {
 
 		/// Returns eye position.
 		const Egg::Math::float3& getEyePosition();
+		/// Sets random eye position.
+		const void setRandomEyePosition();
 		/// Returns the ahead vector.
 		const Egg::Math::float3& getAhead();
 		/// Returns the ndc-to-world-view-direction matrix to be used in shaders.

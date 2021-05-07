@@ -17,7 +17,8 @@ public:
 	void reborn() {
 		using namespace Egg::Math;
 		position = float3(float3::random(-10.0, 10.0).x,float3::random(-5.0, 5.0).x,0.0);
-		/*position.y += 0.05;
+		/*position = float3::random(-200.0 * 0.0457, 200.0 * 0.0457);
+		position.y += 0.05;
 		position.y *= 5.0;*/
 		//position.y += 5.0;
 
