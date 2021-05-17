@@ -40,6 +40,9 @@
     <Filter Include="Shaders\Hash">
       <UniqueIdentifier>{6f55be36-a3e8-49f0-909b-bdf62ab87722}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\PBD">
+      <UniqueIdentifier>{b6debc23-889e-4d34-906c-8783061767cf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -187,9 +190,6 @@
     <FxCompile Include="Shaders\psBillboardSV22.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\psBillboard.hlsl">
-      <Filter>Shaders\Debug</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csCListInit.hlsl">
       <Filter>Shaders\Hash</Filter>
     </FxCompile>
@@ -220,6 +220,27 @@
     <FxCompile Include="Shaders\psMetaballHashSimpleRealistic.hlsl">
       <Filter>Shaders\Metaball</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csPBDBending.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDCollision.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDDistance.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDFinalUpdate.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDGravity.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psBillboard.hlsl">
+      <Filter>Shaders\Debug</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\vsBillboardControl.hlsl">
+      <Filter>Shaders\Debug</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">
@@ -248,6 +269,9 @@
     </None>
     <None Include="Shaders\mortonHash.hlsli">
       <Filter>Shaders\Animation</Filter>
+    </None>
+    <None Include="Shaders\PBD.hlsli">
+      <Filter>Shaders\PBD</Filter>
     </None>
   </ItemGroup>
 </Project>

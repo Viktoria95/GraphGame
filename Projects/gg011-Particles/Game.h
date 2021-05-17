@@ -28,7 +28,7 @@ private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2, HashSimple };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
-	enum ControlParticlePlacement { Vertex, Render, Animated };	
+	enum ControlParticlePlacement { Vertex, Render, Animated, PBD };	
 	enum Metal { Aluminium, Copper, Gold };
 	enum Shading { MetalShading, PhongShading };
 	enum MetaballFunction {Simple, Wyvill, Nishimura, Murakami};
@@ -80,6 +80,19 @@ private:
 	Egg::Mesh::Shaded::P animatedControlMeshFlat;
 	float animatedControlMeshScale;
 
+	// PBD
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleNewPosDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleNewPosSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleNewPosUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleVelocityDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleVelocitySRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleVelocityUAV;
+	Egg::Mesh::Shader::P PBDShaderGravity;
+	Egg::Mesh::Shader::P PBDShaderCollision;
+	Egg::Mesh::Shader::P PBDShaderDistance;
+	Egg::Mesh::Shader::P PBDShaderBending;
+	Egg::Mesh::Shader::P PBDShaderFinalUpdate;
+
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistSRV;
@@ -118,6 +131,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> billboardSizeCB;
 
 	Egg::Mesh::Shaded::P billboards;
+	Egg::Mesh::Shaded::P billboardsControl;
 	Egg::Mesh::Shader::P billboardsPixelShaderA;
 	Egg::Mesh::Shader::P billboardsPixelShaderS1;
 	Egg::Mesh::Shader::P billboardsPixelShaderS2;
@@ -291,6 +305,7 @@ public:
 	void renderAnimatedControlMeshInTPose(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void setBufferForIndirectDispatch(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void setAdaptiveControlPressure(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

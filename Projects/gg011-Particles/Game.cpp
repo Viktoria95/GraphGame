@@ -15,12 +15,18 @@
 
 using namespace Egg::Math;
 
-//const unsigned int defaultParticleCount = 1024 * 2;
-const unsigned int defaultParticleCount = 256;
-const unsigned int controlParticleCount = 1024 * 8;
+const unsigned int defaultParticleCount = 1024 * 2;
+//const unsigned int defaultParticleCount = 256;
+//const unsigned int controlParticleCount = 1024 * 8;
+const unsigned int controlParticleCount = 4096;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
+const unsigned int PBDGrideSize = 16;
+//const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
+//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
+
+
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
 {
@@ -37,6 +43,7 @@ HRESULT Game::createResources()
 	CreateControlMesh();
 	CreateControlParticles();
 	CreateBillboard();
+	CreateBillboardForControlParticles();
 	CreatePrefixSum();
 	CreateEnviroment();
 	CreateMetaball();
@@ -58,14 +65,17 @@ void Game::CreateCommon()
 
 	firstPersonCam->setAspect(windowWidth / windowHeight);
 
-	billboardsLoadAlgorithm = HashSimple;
+	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
-	controlParticlePlacement = Render;
+	controlParticlePlacement = PBD;
 	metalShading = Gold;
 	shading = PhongShading;
 	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
+
+	billboardsLoadAlgorithm = Normal;
+	renderMode = ControlParticles;
 
 	drawFlatControlMesh = false;
 	animtedIsActive = true;
@@ -523,6 +533,35 @@ void Game::CreateControlParticles()
 			controlParticles.push_back(cp);
 		}
 	}
+	if (controlParticlePlacement == PBD) {
+		for (int i = 0; i < PBDGrideSize; i++)
+		{
+			for (int j = 0; j < PBDGrideSize; j++)
+			{
+				for (int k = 0; k < PBDGrideSize; k++)
+				{
+					ControlParticle cp;
+					memset(&cp, 0, sizeof (ControlParticle));
+					//cp.position.x = k * 0.01;
+					//cp.position.y = j * 0.01;
+					//cp.position.z = i * 0.01;
+					//cp.position += PBDGrideTrans;
+					float4 defaultPos (k * 0.01, j * 0.01, i * 0.01, 1.0);
+					//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
+					const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(),  3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+					//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+					defaultPos = defaultPos * PBDGrideTrans;
+					cp.position = defaultPos.xyz;
+
+
+					cp.controlPressureRatio = 1.0;
+					cp.temp = 0.0f;					
+					//controlParticles.push_back(cp);
+					controlParticles[i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k] = (cp);
+				}
+			}
+		}
+	}
 	//else 
 	if (controlParticlePlacement == Render || controlParticlePlacement == Animated)
 	{
@@ -715,6 +754,107 @@ void Game::CreateControlParticles()
 
 	}
 
+	if (controlParticlePlacement = PBD) {
+		{
+			// Data Buffer
+			D3D11_BUFFER_DESC particleBufferDesc;
+			particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+			particleBufferDesc.CPUAccessFlags = 0;
+			particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+			particleBufferDesc.StructureByteStride = sizeof(float4);
+			particleBufferDesc.ByteWidth = controlParticleCount * sizeof(float4);
+
+			Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleBufferDesc, NULL, controlParticleNewPosDataBuffer.GetAddressOf());
+
+
+			// Shader Resource View
+			D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+			particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleSRVDesc.Buffer.FirstElement = 0;
+			particleSRVDesc.Buffer.NumElements = controlParticles.size();
+
+			Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(controlParticleNewPosDataBuffer.Get(), &particleSRVDesc, &controlParticleNewPosSRV);
+
+
+			// Unordered Access View
+			D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+			particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleUAVDesc.Buffer.FirstElement = 0;
+			particleUAVDesc.Buffer.NumElements = controlParticles.size();
+			particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+			Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(controlParticleNewPosDataBuffer.Get(), &particleUAVDesc, &controlParticleNewPosUAV);
+		}
+		{
+			// Data Buffer
+			D3D11_BUFFER_DESC particleBufferDesc;
+			particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+			particleBufferDesc.CPUAccessFlags = 0;
+			particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+			particleBufferDesc.StructureByteStride = sizeof(float4);
+			particleBufferDesc.ByteWidth = controlParticleCount * sizeof(float4);
+
+			std::vector<float4> initVelocioty (controlParticleCount);
+			D3D11_SUBRESOURCE_DATA initialParticleData;
+			initialParticleData.pSysMem = &initVelocioty.at(0);
+
+			Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleBufferDesc, NULL, controlParticleVelocityDataBuffer.GetAddressOf());
+
+
+			// Shader Resource View
+			D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+			particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleSRVDesc.Buffer.FirstElement = 0;
+			particleSRVDesc.Buffer.NumElements = controlParticles.size();
+
+			Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(controlParticleVelocityDataBuffer.Get(), &particleSRVDesc, &controlParticleVelocitySRV);
+
+
+			// Unordered Access View
+			D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+			particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleUAVDesc.Buffer.FirstElement = 0;
+			particleUAVDesc.Buffer.NumElements = controlParticles.size();
+			particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+			Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(controlParticleVelocityDataBuffer.Get(), &particleUAVDesc, &controlParticleVelocityUAV);
+		}
+
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDGravity.cso");
+			PBDShaderGravity = Egg::Mesh::Shader::create("csPBDGravity.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDCollision.cso");
+			PBDShaderCollision = Egg::Mesh::Shader::create("csPBDCollision.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDDistance.cso");
+			PBDShaderDistance = Egg::Mesh::Shader::create("csPBDDistance.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDBending.cso");
+			PBDShaderBending = Egg::Mesh::Shader::create("csPBDBending.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
+			PBDShaderFinalUpdate = Egg::Mesh::Shader::create("csPBDFinalUpdate.cso", device, shaderByteCode);
+		}
+
+	}
+
 	{
 		// ControlParticleCounter
 
@@ -727,8 +867,19 @@ void Game::CreateControlParticles()
 		particleCounterBufferDesc.StructureByteStride = sizeof(uint);
 		particleCounterBufferDesc.ByteWidth = sizeof(uint);
 
-		Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleCounterBufferDesc, NULL, controlParticleCounterDataBuffer.GetAddressOf());
+		if (controlParticlePlacement = PBD) {
+			uint32_t controlParticleCountInitData = controlParticleCount;
+			D3D11_SUBRESOURCE_DATA initialData;
+			initialData.pSysMem = &controlParticleCountInitData;
+
+			Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleCounterBufferDesc, &initialData, controlParticleCounterDataBuffer.GetAddressOf());
+		}
+		else {
+			Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleCounterBufferDesc, NULL, controlParticleCounterDataBuffer.GetAddressOf());
+		}
+		
 
 
 		// Shader Resource View
@@ -827,6 +978,9 @@ void Game::CreateBillboard() {
 	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
 	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
 
+	ComPtr<ID3DBlob> billboardPixelShaderByteCode = loadShaderCode("psBillboard.cso");
+	billboardsPixelShader = Egg::Mesh::Shader::create("psBillboard.cso", device, billboardPixelShaderByteCode);
+
 	ComPtr<ID3DBlob> billboardPixelShaderAByteCode = loadShaderCode("psBillboardA.cso");
 	billboardsPixelShaderA = Egg::Mesh::Shader::create("psBillboardA.cso", device, billboardPixelShaderAByteCode);
 
@@ -849,13 +1003,12 @@ void Game::CreateBillboard() {
 	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
 	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
 
-
 	// Depth settings
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
 	D3D11_DEPTH_STENCIL_DESC dsDesc;
 
 	// Depth test parameters
-	dsDesc.DepthEnable = false;
+	dsDesc.DepthEnable = true;
 	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
@@ -880,12 +1033,8 @@ void Game::CreateBillboard() {
 	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
 
 	billboardMaterial->depthStencilState = DSState;
-
-
-
 	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, billboardNothing);
 	billboards = Egg::Mesh::Shaded::create(billboardNothing, billboardMaterial, billboardInputLayout);
-
 
 	// Create Offset Buffer
 	D3D11_BUFFER_DESC offsetBufferDesc;
@@ -1011,6 +1160,80 @@ void Game::CreateBillboard() {
 	counterUAVDesc.Buffer.NumElements = counterSize;
 	counterUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 	device->CreateUnorderedAccessView(counterBuffer.Get(), &counterUAVDesc, &counterUAV);
+
+}
+
+void Game::CreateBillboardForControlParticles() {
+	using namespace Microsoft::WRL;
+
+	// Vertex Input
+	cpBillboardNothing = Egg::Mesh::Nothing::create(controlParticleCount, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	// billboardGSSizeCB
+	D3D11_BUFFER_DESC billboardSizeCBDesc;
+	billboardSizeCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	billboardSizeCBDesc.CPUAccessFlags = 0;
+	billboardSizeCBDesc.MiscFlags = 0;
+	billboardSizeCBDesc.StructureByteStride = 0;
+	billboardSizeCBDesc.Usage = D3D11_USAGE_DEFAULT;
+	billboardSizeCBDesc.ByteWidth = sizeof(Egg::Math::float4) * 1;
+
+	Egg::Math::float4 billboardSize(.1, .1, 0, 0);
+	D3D11_SUBRESOURCE_DATA initialBbSize;
+	initialBbSize.pSysMem = &billboardSize;
+
+	Egg::ThrowOnFail("Failed to create billboardGSSizeCB.", __FILE__, __LINE__) ^
+		device->CreateBuffer(&billboardSizeCBDesc, &initialBbSize, cpBillboardSizeCB.GetAddressOf());
+
+	// Shaders
+	ComPtr<ID3DBlob> billboardVertexShaderByteCode = loadShaderCode("vsBillboardControl.cso");
+	Egg::Mesh::Shader::P billboardVertexShader = Egg::Mesh::Shader::create("vsBillboard.cso", device, billboardVertexShaderByteCode);
+
+	ComPtr<ID3DBlob> billboardGeometryShaderByteCode = loadShaderCode("gsBillboard.cso");
+	Egg::Mesh::Shader::P billboardGeometryShader = Egg::Mesh::Shader::create("gsBillboard.cso", device, billboardGeometryShaderByteCode);
+
+	Egg::Mesh::Material::P billboardMaterial = Egg::Mesh::Material::create();
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Vertex, billboardVertexShader);
+	billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Geometry, billboardGeometryShader);
+	//billboardMaterial->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardPixelShader);
+	billboardMaterial->setCb("billboardGSTransCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Geometry);
+	billboardMaterial->setCb("billboardGSSizeCB", billboardSizeCB, Egg::Mesh::ShaderStageFlag::Geometry);
+
+
+	// Depth settings
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	// Depth test parameters
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	// Stencil test parameters
+	dsDesc.StencilEnable = false;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create depth stencil state
+	device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+
+	billboardMaterial->depthStencilState = DSState;
+
+	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, cpBillboardNothing);
+	cpBillboards = Egg::Mesh::Shaded::create(cpBillboardNothing, billboardMaterial, billboardInputLayout);
+
 
 }
 
@@ -1549,6 +1772,52 @@ void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	context->RSSetViewports(1, pViewports);
 
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+
+}
+
+void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, particleSRV.GetAddressOf());
+
+	billboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+
+	billboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	billboards->draw(context);
+
+}
+
+void Game::renderControlParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	cpBillboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+
+	cpBillboards->getMaterial()->setShader(Egg::Mesh::ShaderStageFlag::Pixel, billboardsPixelShader);
+
+	cpBillboards->draw(context);
 
 }
 
@@ -2409,11 +2678,45 @@ void Game::stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	delete[] boneTrafos;
 }
 
+void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	const UINT zeros[4] = { 0,0,0,0 };
+	
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderGravity->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+	context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
+	context->Dispatch(controlParticleCount, 1, 1);
+	
+	clearContext(context);
+
+	const int NITER = 50;
+	for (int i = 0; i < NITER; ++i)
+	{
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
+		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+		context->Dispatch(controlParticleCount, 1, 1);
+
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderDistance->getShader().Get()), nullptr, 0);
+		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+		context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
+	}
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
+	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());	
+	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
+	context->Dispatch(controlParticleCount, 1, 1);
+}
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
 
 	// Hash
+	if (billboardsLoadAlgorithm == HashSimple)
 	{
 		// Sort
 		renderSort(context);
@@ -2445,6 +2748,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		clearContext(context);
 	}
 
+	
 	//return;
 
 	clearRenderTarget(context);
@@ -2458,10 +2762,16 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	static bool first = true;
 
+
+	if (controlParticlePlacement == PBD)
+	{
+		renderPBD(context);
+	}
+
 	//currentKey = 45;
 	//if (first) stepAnimationKey(context);
 
-	if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render))
+	if ((first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render)) && controlParticlePlacement != PBD)
 		//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
 	{
 		//if (controlParticlePlacement == Render)
@@ -2568,12 +2878,14 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	else if (renderMode == Particles)
 	{
-		renderBalls(context);
+		renderParticleBillboard(context);
+		//renderBalls(context);
 		clearContext(context);
 	}
 	else if (renderMode == ControlParticles)
 	{
-		renderControlBalls(context);
+		renderControlParticleBillboard(context);
+		//renderControlBalls(context);
 		clearContext(context);
 	}
 

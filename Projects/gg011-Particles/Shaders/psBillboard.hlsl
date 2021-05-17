@@ -1,8 +1,5 @@
 #include "billboard.hlsli"
-#include "metaball.hlsli"
-
-StructuredBuffer<ControlParticle> controlParticles;
-Buffer<uint> controlParticleCounter;
+#include "particle.hlsli"
 
 float4 psBillboard(GsosBillboard input) : SV_Target
 {
