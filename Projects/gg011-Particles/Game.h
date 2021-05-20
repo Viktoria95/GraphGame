@@ -16,8 +16,11 @@ public:
 	//static const unsigned int windowHeight = 720;
 	//static const unsigned int windowWidth = 1280;
 
-	static const unsigned int windowHeight = 512;
-	static const unsigned int windowWidth = 512;
+	//static const unsigned int windowHeight = 512;
+	//static const unsigned int windowWidth = 512;
+
+	static const unsigned int windowHeight = 1080;
+	static const unsigned int windowWidth = 1920;
 
 	static const unsigned int fillWindowHeight = 200;
 	static const unsigned int fillWindowWidth = 200;

@@ -808,7 +808,7 @@ void Game::CreateBillboard() {
 	bufferDesc.SampleDesc.Count = 1;
 	bufferDesc.SampleDesc.Quality = 0;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.Width = 512;
+	bufferDesc.Width = imageWidht;
 	device->CreateTexture2D(&bufferDesc, 0, &_Texture2D);
 
 	//Creating a view of the texture to be used when binding it as a render target
@@ -826,7 +826,7 @@ void Game::CreateBillboard() {
 	device->CreateShaderResourceView(_Texture2D, &shaderResourceViewDesc, &_ShaderResourceView);
 
 	D3D11_TEXTURE2D_DESC desc;
-	desc.Width = 512;
+	desc.Width = imageWidht;
 	desc.Height = 512;
 	desc.MipLevels = desc.ArraySize = 1;
 	desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -2166,31 +2166,31 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	clearRenderTarget(context);
 
 	// Billboard
-	if (/*frameCount % 2 == 0*/ 1 == 0) {
+	if (/*frameCount % 2 == 0*/ 1 == 1) {
 		std::string fileNev("metaball_before/teszt_");
 		fileNev += std::to_string(imageCount);
 		fileNev += ".jpg";
 
 		renderBillboard(context);
-		//saveToImage(context, (char*)fileNev.c_str());
+		saveToImage(context, (char*)fileNev.c_str());
 		clearContext(context);
 	}
 
 	// Metaball
-	if (/*frameCount % 2 == 1*/ 1 == 1) {
+	if (/*frameCount % 2 == 1*/ 1 == 0) {
 		std::string fileNev("metaball_after/teszt_");
 		fileNev += std::to_string(imageCount);
 		fileNev += ".jpg";
 
 		renderSimpleMetaball(context);
-		//saveToImage(context, (char*)fileNev.c_str());
+		saveToImage(context, (char*)fileNev.c_str());
 		clearContext(context);
 
 		/*CreateParticles();
 		CreateBillboard();
 		CreateSimpleMetaballResources();*/
 
-		//firstPersonCam->setRandomEyePosition();
+		firstPersonCam->setRandomEyePosition();
 
 		imageCount++;
 	}	
