@@ -12,13 +12,15 @@
 #include "DualQuaternion.h"
 
 #include <iostream> 
+#include <array> 
 
 using namespace Egg::Math;
 
 const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int defaultParticleCount = 256;
 //const unsigned int controlParticleCount = 1024 * 8;
-const unsigned int controlParticleCount = 4096;
+//const unsigned int controlParticleCount = 4096;
+const unsigned int controlParticleCount = 4;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
@@ -26,6 +28,12 @@ const unsigned int PBDGrideSize = 16;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
+std::vector<float3> cpuDefPos = { float3{ 0.0f, 0.0f, 0.0f }, float3{ 0.1f, 0.0f, 0.0f }, float3{ 0.0f, 0.1f, 0.0f }, float3{ 0.0f, 0.0f, 0.1f } };
+//std::vector<float3> cpuPos = { float3{0.0f, 0.0f, 0.0f}, float3{ 0.1f, 0.0f, 0.0f}, float3{ 0.0f, 0.1f, 0.0f}, float3{ 0.0f, 0.0f, 0.1f } };
+std::vector<float3> cpuPos (4);
+std::vector<float3> cpuNewPos (4);
+std::vector<float3> cpuVelocity = { float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 } };
+float4x4 originalTrans = float4x4::identity;
 
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
@@ -68,7 +76,7 @@ void Game::CreateCommon()
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
-	controlParticlePlacement = PBD;
+	controlParticlePlacement = CPU;
 	metalShading = Gold;
 	shading = PhongShading;
 	metaballFunction = Wyvill;
@@ -562,6 +570,31 @@ void Game::CreateControlParticles()
 			}
 		}
 	}
+
+	if (controlParticlePlacement == CPU) {
+		for (int i = 0; i < cpuPos.size (); i++) {
+			ControlParticle cp;
+			memset(&cp, 0, sizeof(ControlParticle));
+
+			
+			float4 transformed(cpuDefPos[i].x, cpuDefPos[i].y, cpuDefPos[i].z, 1.0);
+			
+				
+			const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+			//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+			//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
+			transformed = transformed * PBDGrideTrans;
+			transformed /= transformed.w;
+
+			cpuPos[i] = transformed.xyz;
+
+			cp.position = transformed.xyz;
+			cp.controlPressureRatio = 1.0;
+			cp.temp = 0.0f;
+			controlParticles[i] = (cp);
+		}
+	}
+
 	//else 
 	if (controlParticlePlacement == Render || controlParticlePlacement == Animated)
 	{
@@ -754,7 +787,7 @@ void Game::CreateControlParticles()
 
 	}
 
-	if (controlParticlePlacement = PBD) {
+	if (controlParticlePlacement == PBD) {
 		{
 			// Data Buffer
 			D3D11_BUFFER_DESC particleBufferDesc;
@@ -867,7 +900,7 @@ void Game::CreateControlParticles()
 		particleCounterBufferDesc.StructureByteStride = sizeof(uint);
 		particleCounterBufferDesc.ByteWidth = sizeof(uint);
 
-		if (controlParticlePlacement = PBD) {
+		if (controlParticlePlacement == PBD) {
 			uint32_t controlParticleCountInitData = controlParticleCount;
 			D3D11_SUBRESOURCE_DATA initialData;
 			initialData.pSysMem = &controlParticleCountInitData;
@@ -2711,6 +2744,286 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(controlParticleCount, 1, 1);
 }
 
+std::array<float3,4> get_nabla_p_Sij(const float4x4& F, const float4x4& C, uint32_t i, uint32_t j) {
+	std::array<float3, 4> result;
+
+	result[0] = float3(0.0f, 0.0f, 0.0f);
+	for (uint32_t pIdx = 1; pIdx < 4; pIdx++) {
+		result[pIdx] =
+			float3(F.m[0][j] * C.m[pIdx-1][i], F.m[1][j] * C.m[pIdx-1][i], F.m[2][j] * C.m[pIdx-1][i]) +
+			float3(F.m[0][i] * C.m[pIdx-1][j], F.m[1][i] * C.m[pIdx-1][j], F.m[2][i] * C.m[pIdx-1][j]);
+		result[0] -= result[pIdx];
+	}		
+
+	return result;
+}
+
+std::array<float3, 4> get_overline_nabla_p_Sij(const float4x4& F, const float4x4& C, float Sij, uint32_t i, uint32_t j) {
+	std::array<float3, 4> result = get_nabla_p_Sij (F, C, i, j);
+
+	result[0] = float3(0.0f, 0.0f, 0.0f);
+	for (uint32_t pIdx = 1; pIdx < 4; pIdx++) {
+		float3 iRankOne (F.m[0][i] * C.m[pIdx - 1][i], F.m[1][i] * C.m[pIdx - 1][i], F.m[2][i] * C.m[pIdx - 1][i]);
+		float3 jRankOne (F.m[0][j] * C.m[pIdx - 1][j], F.m[1][j] * C.m[pIdx - 1][j], F.m[2][j] * C.m[pIdx - 1][j]);
+
+		float iLengthPow2 = (float3(F.m[0][i], F.m[1][i], F.m[2][i]).lengthSquared());
+		float jLengthPow2 = (float3(F.m[0][j], F.m[1][j], F.m[2][j]).lengthSquared());
+
+		float iLength = sqrt(iLengthPow2);
+		float jLength = sqrt(jLengthPow2);
+
+		float iLengthPow3 = iLengthPow2 * iLength;
+		float jLengthPow3 = jLengthPow2 * jLength;
+
+		result[pIdx] /= iLength;
+		result[pIdx] /= jLength;
+
+		result[pIdx] -= ((iRankOne * iLengthPow2 + jRankOne * jLengthPow2) * Sij / iLengthPow3 / jLengthPow3);
+
+		result[0] -= result[pIdx];
+	}
+
+	return result;
+}
+
+float get_lambda_stretch(float Sii, float sum_length_of_nabla_p_Sii) {
+	float sqrtSii = sqrt(Sii);
+	return 2.0f * sqrtSii * (sqrtSii - 1.0f) / (sum_length_of_nabla_p_Sii);
+}
+
+float get_lambda_shear(float Sij, float sum_length_of_nabla_p_Sij) {
+	return Sij / (sum_length_of_nabla_p_Sij);
+}
+
+float get_lambda_volume(float Cvol, float sum_length_of_nabla_Cvol) {
+	return Cvol / (sum_length_of_nabla_Cvol);
+}
+
+std::array<float3, 4> get_delta_p_for_stretch(const float4x4& F, const float4x4& C, const float Sii, uint32_t i) {
+	std::array<float3, 4> nabla_p_Sii = get_nabla_p_Sij(F, C, i, i);
+
+	float sum_length = 0.0f;
+	for (const auto& it : nabla_p_Sii) {
+		sum_length += it.lengthSquared();
+	}
+
+	for (uint32_t k = 0; k < 4; k++) {
+		nabla_p_Sii[k] *= -1.0f * get_lambda_stretch(Sii, sum_length);
+	}
+
+	return nabla_p_Sii;
+}
+
+std::array<float3, 4> get_delta_p_for_stretch(const float4x4& F, const float4x4& C, const float4x4& S) {
+	std::array<float3, 4> delta_p;
+
+	for (uint32_t i = 0; i < 3; i++) {
+		std::array<float3, 4> delta_p_by_i = get_delta_p_for_stretch(F, C, S.m[i][i], i);
+		for (uint32_t k = 0; k < 4; k++) {
+			delta_p[k] += delta_p_by_i[k];
+		}
+	}
+
+	return delta_p;
+}
+
+std::array<float3, 4> get_delta_p_for_shear(const float4x4& F, const float4x4& C, const float Sij, uint32_t i, uint32_t j) {
+	std::array<float3, 4> nabla_p_Sij = get_overline_nabla_p_Sij(F, C, Sij, i, j);
+	
+	float sum_length = 0.0f;	
+	for (const auto& it : nabla_p_Sij) {
+		sum_length += it.lengthSquared();
+	}
+	
+	for (uint32_t k = 0; k < 4; k++) {
+		nabla_p_Sij[k] *= -1.0f * get_lambda_shear(Sij, sum_length);
+	}
+
+	return nabla_p_Sij;
+}
+
+std::array<float3, 4> get_delta_p_for_shear(const float4x4& F, const float4x4& C, const float4x4& S) {
+	std::array<float3, 4> delta_p;
+
+	auto add_by_k = [&F, &C, &S, &delta_p] (uint32_t i, uint32_t j) {
+		std::array<float3, 4> delta_p_by_ij = get_delta_p_for_shear(F, C, S.m[i][j], i, j);
+		for (uint32_t k = 0; k < 4; k++)
+		{
+			delta_p[k] += delta_p_by_ij[k];
+		}
+	};
+
+	add_by_k(1, 0);
+	add_by_k(2, 0);
+	add_by_k(2, 1);
+
+	return delta_p;
+}
+
+std::array<float3, 4> get_delta_p_for_volume(const float4x4& P, const float4x4& Q) {
+	std::array<float3, 4> delta_p;
+
+	std::array<float3, 3> p = { float3{ P.m[0][0], P.m[1][0] , P.m[2][0] }, float3{ P.m[0][1], P.m[1][1] , P.m[2][1] }, float3{ P.m[0][2], P.m[1][2] , P.m[2][2] } };
+	std::array<float3, 3> q = { float3{ Q.m[0][0], P.m[1][0] , Q.m[2][0] }, float3{ Q.m[0][1], Q.m[1][1] , Q.m[2][1] }, float3{ Q.m[0][2], Q.m[1][2] , Q.m[2][2] } };
+
+	//nabla p only at first
+	delta_p[1] = p[1].cross(p[2]);
+	delta_p[2] = p[2].cross(p[0]);
+	delta_p[3] = p[0].cross(p[1]);
+	delta_p[0] = -delta_p[1] -delta_p[2] -delta_p[3];
+
+	float sum_length = 0.0f;
+	for (const auto& it : delta_p) {
+		sum_length += it.lengthSquared();
+	}
+
+	float Cvol = p[0].dot(p[1].cross(p[2])) - q[0].dot(q[1].cross(q[2]));
+	for (uint32_t k = 0; k < 4; k++) {
+		delta_p[k] *= -1.0f * get_lambda_volume(Cvol, sum_length);
+	}
+
+	return delta_p;
+}
+
+void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	
+	const float dt = 0.005f;
+
+	// Grav
+	const float3 grav = float3(0.0, -0.98, 0.0);
+	for (int i = 0; i < cpuPos.size(); i++) {
+		cpuVelocity[i] += grav * dt;
+		if (i == 0) {
+			//cpuVelocity[i] += float3(0.0, 0.0, 0.01) * dt;
+		}
+		cpuNewPos[i] = cpuPos[i] + cpuVelocity[i] * dt;
+	}
+
+	// Final 1st
+	/*
+	for (int i = 0; i < cpuPos.size(); i++) {
+		float3 deltaPos = cpuNewPos[i] - cpuPos[i];
+		cpuVelocity[i] = (deltaPos) / dt;
+		cpuPos[i] = cpuNewPos[i];
+	}*/
+	
+	// TODO
+	float4x4 P
+	(
+		cpuNewPos[1].x - cpuNewPos[0].x, cpuNewPos[2].x - cpuNewPos[0].x, cpuNewPos[3].x - cpuNewPos[0].x, 0.0f,
+		cpuNewPos[1].y - cpuNewPos[0].y, cpuNewPos[2].y - cpuNewPos[0].y, cpuNewPos[3].y - cpuNewPos[0].y, 0.0f,
+		cpuNewPos[1].z - cpuNewPos[0].z, cpuNewPos[2].z - cpuNewPos[0].z, cpuNewPos[3].z - cpuNewPos[0].z, 0.0f,
+		0.0f,							 0.0f,							  0.0f,							   1.0f
+	);
+
+	float4x4 Q
+	(
+		cpuDefPos[1].x - cpuDefPos[0].x, cpuDefPos[2].x - cpuDefPos[0].x, cpuDefPos[3].x - cpuDefPos[0].x, 0.0f,
+		cpuDefPos[1].y - cpuDefPos[0].y, cpuDefPos[2].y - cpuDefPos[0].y, cpuDefPos[3].y - cpuDefPos[0].y, 0.0f,
+		cpuDefPos[1].z - cpuDefPos[0].z, cpuDefPos[2].z - cpuDefPos[0].z, cpuDefPos[3].z - cpuDefPos[0].z, 0.0f,
+		0.0f,							 0.0f,							  0.0f,							   1.0f
+	);
+
+	float4x4 C = Q.invert();
+	float4x4 F = P * C;
+	float4x4 S = F.transpose() * F;
+	
+	//Stretch
+	std::array<float3, 4> deltaPforStretch = get_delta_p_for_stretch(F, C, S);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[k] += deltaPforStretch[k];
+	}
+
+	//Shear
+	std::array<float3, 4> deltaPforShear = get_delta_p_for_shear(F, C, S);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[k] += deltaPforShear[k] * 0.3;
+	}
+
+	//Volume
+	std::array<float3, 4> deltaPforVolume = get_delta_p_for_volume(P, Q);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[k] += deltaPforVolume[k] * 0.25;
+	}
+	
+	// Collision const float boundaryEps = 0.0001;
+	const float boundarySide =  0.3;
+	const float boundaryBottom = 0.0;
+	const float boundaryTop = 1.0;
+	const float boundaryEps = 0.0001;
+	for (int i = 0; i < cpuPos.size(); i++) {
+		if (cpuNewPos[i].y < boundaryBottom)
+		{
+			cpuNewPos[i].y = boundaryBottom + boundaryEps;
+		}
+
+		if (cpuNewPos[i].y > boundaryTop)
+		{
+			cpuNewPos[i].y = boundaryTop - boundaryEps;
+		}
+
+		if (cpuNewPos[i].z > boundarySide)
+		{
+			cpuNewPos[i].z = boundarySide - boundaryEps;
+		}
+
+		if (cpuNewPos[i].z < -boundarySide)
+		{
+			cpuNewPos[i].z = -boundarySide + boundaryEps;
+		}
+
+		if (cpuNewPos[i].x > boundarySide)
+		{
+			cpuNewPos[i].x = boundarySide - boundaryEps;
+		}
+
+		if (cpuNewPos[i].x < -boundarySide)
+		{
+			cpuNewPos[i].x = -boundarySide + boundaryEps;
+		}
+	}
+
+	const float siffnessForDamping = 0.0;
+	const float minDeltaPosForDamping = 0.0001;
+	float velocityDotSumForDamping = 0.0;
+	
+	
+	// Final 2nd
+	for (int i = 0; i < cpuPos.size(); i++) {
+		float3 deltaPos = cpuNewPos[i] - cpuPos[i];
+		float deltaPosLength = deltaPos.length();
+		if (deltaPosLength > minDeltaPosForDamping) {
+			float3 normDeltaPos = deltaPos / deltaPosLength;
+			velocityDotSumForDamping += normDeltaPos.dot(cpuVelocity[i]);
+		}
+		
+	}
+
+	for (int i = 0; i < cpuPos.size(); i++) {
+		float3 deltaPos = cpuNewPos[i] - cpuPos[i];
+		cpuVelocity[i] = (deltaPos) / dt;
+		cpuPos[i] = cpuNewPos[i];		
+
+		float deltaPosLength = deltaPos.length();
+		if (deltaPosLength > minDeltaPosForDamping) {
+			float3 normDeltaPos = deltaPos / deltaPosLength;
+			cpuVelocity[i] = cpuVelocity[i] - normDeltaPos * siffnessForDamping * velocityDotSumForDamping;
+		}
+		
+	}
+	
+	std::vector<ControlParticle> controlParticles(controlParticleCount);
+	for (int i = 0; i < cpuPos.size(); i++) {
+		ControlParticle cp;
+		memset(&cp, 0, sizeof(ControlParticle));
+		cp.position = cpuPos[i].xyz;
+		cp.controlPressureRatio = 1.0;
+		cp.temp = 0.0f;
+		controlParticles[i] = (cp);
+	}
+	context->UpdateSubresource(controlParticleDataBuffer.Get(), 0, nullptr, &controlParticles[0], 0, 0);
+}
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
@@ -2768,10 +3081,15 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		renderPBD(context);
 	}
 
+	if (controlParticlePlacement == CPU)
+	{
+		renderPBDOnCPU(context);
+	}
+
 	//currentKey = 45;
 	//if (first) stepAnimationKey(context);
 
-	if ((first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render)) && controlParticlePlacement != PBD)
+	if ((first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render)) && controlParticlePlacement != PBD&& controlParticlePlacement != CPU)
 		//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
 	{
 		//if (controlParticlePlacement == Render)

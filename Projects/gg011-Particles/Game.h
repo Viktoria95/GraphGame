@@ -28,7 +28,7 @@ private:
 	enum BillboardsAlgorithm { Normal, ABuffer, SBuffer, SBufferV2, HashSimple };
 	enum RenderMode { Realistic, Gradient, ControlParticles, Particles };
 	enum FlowControl { RealisticFlow, ControlledFlow };
-	enum ControlParticlePlacement { Vertex, Render, Animated, PBD };	
+	enum ControlParticlePlacement { Vertex, Render, Animated, PBD, CPU };	
 	enum Metal { Aluminium, Copper, Gold };
 	enum Shading { MetalShading, PhongShading };
 	enum MetaballFunction {Simple, Wyvill, Nishimura, Murakami};
@@ -306,6 +306,7 @@ public:
 	void renderFlatControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderFlatAnimatedControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void fillControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void setBufferForIndirectDispatch(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void setAdaptiveControlPressure(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
