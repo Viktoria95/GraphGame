@@ -2907,83 +2907,85 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		cpuPos[i] = cpuNewPos[i];
 	}*/
 	
-	// TODO
-	float4x4 P
-	(
-		cpuNewPos[1].x - cpuNewPos[0].x, cpuNewPos[2].x - cpuNewPos[0].x, cpuNewPos[3].x - cpuNewPos[0].x, 0.0f,
-		cpuNewPos[1].y - cpuNewPos[0].y, cpuNewPos[2].y - cpuNewPos[0].y, cpuNewPos[3].y - cpuNewPos[0].y, 0.0f,
-		cpuNewPos[1].z - cpuNewPos[0].z, cpuNewPos[2].z - cpuNewPos[0].z, cpuNewPos[3].z - cpuNewPos[0].z, 0.0f,
-		0.0f,							 0.0f,							  0.0f,							   1.0f
-	);
+	for (uint32_t pbdIter = 0; pbdIter < 5; pbdIter++) {
 
-	float4x4 Q
-	(
-		cpuDefPos[1].x - cpuDefPos[0].x, cpuDefPos[2].x - cpuDefPos[0].x, cpuDefPos[3].x - cpuDefPos[0].x, 0.0f,
-		cpuDefPos[1].y - cpuDefPos[0].y, cpuDefPos[2].y - cpuDefPos[0].y, cpuDefPos[3].y - cpuDefPos[0].y, 0.0f,
-		cpuDefPos[1].z - cpuDefPos[0].z, cpuDefPos[2].z - cpuDefPos[0].z, cpuDefPos[3].z - cpuDefPos[0].z, 0.0f,
-		0.0f,							 0.0f,							  0.0f,							   1.0f
-	);
+		float4x4 P
+		(
+			cpuNewPos[1].x - cpuNewPos[0].x, cpuNewPos[2].x - cpuNewPos[0].x, cpuNewPos[3].x - cpuNewPos[0].x, 0.0f,
+			cpuNewPos[1].y - cpuNewPos[0].y, cpuNewPos[2].y - cpuNewPos[0].y, cpuNewPos[3].y - cpuNewPos[0].y, 0.0f,
+			cpuNewPos[1].z - cpuNewPos[0].z, cpuNewPos[2].z - cpuNewPos[0].z, cpuNewPos[3].z - cpuNewPos[0].z, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		);
 
-	float4x4 C = Q.invert();
-	float4x4 F = P * C;
-	float4x4 S = F.transpose() * F;
-	
-	//Stretch
-	std::array<float3, 4> deltaPforStretch = get_delta_p_for_stretch(F, C, S);
-	for (uint32_t k = 0; k < 4; k++) {
-		cpuNewPos[k] += deltaPforStretch[k];
-	}
+		float4x4 Q
+		(
+			cpuDefPos[1].x - cpuDefPos[0].x, cpuDefPos[2].x - cpuDefPos[0].x, cpuDefPos[3].x - cpuDefPos[0].x, 0.0f,
+			cpuDefPos[1].y - cpuDefPos[0].y, cpuDefPos[2].y - cpuDefPos[0].y, cpuDefPos[3].y - cpuDefPos[0].y, 0.0f,
+			cpuDefPos[1].z - cpuDefPos[0].z, cpuDefPos[2].z - cpuDefPos[0].z, cpuDefPos[3].z - cpuDefPos[0].z, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		);
 
-	//Shear
-	std::array<float3, 4> deltaPforShear = get_delta_p_for_shear(F, C, S);
-	for (uint32_t k = 0; k < 4; k++) {
-		cpuNewPos[k] += deltaPforShear[k] * 0.3;
-	}
+		float4x4 C = Q.invert();
+		float4x4 F = P * C;
+		float4x4 S = F.transpose() * F;
 
-	//Volume
-	std::array<float3, 4> deltaPforVolume = get_delta_p_for_volume(P, Q);
-	for (uint32_t k = 0; k < 4; k++) {
-		cpuNewPos[k] += deltaPforVolume[k] * 0.25;
-	}
-	
-	// Collision const float boundaryEps = 0.0001;
-	const float boundarySide =  0.3;
-	const float boundaryBottom = 0.0;
-	const float boundaryTop = 1.0;
-	const float boundaryEps = 0.0001;
-	for (int i = 0; i < cpuPos.size(); i++) {
-		if (cpuNewPos[i].y < boundaryBottom)
-		{
-			cpuNewPos[i].y = boundaryBottom + boundaryEps;
+		//Stretch
+		std::array<float3, 4> deltaPforStretch = get_delta_p_for_stretch(F, C, S);
+		for (uint32_t k = 0; k < 4; k++) {
+			cpuNewPos[k] += deltaPforStretch[k];
 		}
 
-		if (cpuNewPos[i].y > boundaryTop)
-		{
-			cpuNewPos[i].y = boundaryTop - boundaryEps;
+		//Shear
+		std::array<float3, 4> deltaPforShear = get_delta_p_for_shear(F, C, S);
+		for (uint32_t k = 0; k < 4; k++) {
+			cpuNewPos[k] += deltaPforShear[k] * 0.3;
 		}
 
-		if (cpuNewPos[i].z > boundarySide)
-		{
-			cpuNewPos[i].z = boundarySide - boundaryEps;
+		//Volume
+		std::array<float3, 4> deltaPforVolume = get_delta_p_for_volume(P, Q);
+		for (uint32_t k = 0; k < 4; k++) {
+			cpuNewPos[k] += deltaPforVolume[k] * 0.25;
 		}
 
-		if (cpuNewPos[i].z < -boundarySide)
-		{
-			cpuNewPos[i].z = -boundarySide + boundaryEps;
-		}
+		// Collision const float boundaryEps = 0.0001;
+		const float boundarySide = 0.3;
+		const float boundaryBottom = 0.0;
+		const float boundaryTop = 1.0;
+		const float boundaryEps = 0.0001;
+		for (int i = 0; i < cpuPos.size(); i++) {
+			if (cpuNewPos[i].y < boundaryBottom)
+			{
+				cpuNewPos[i].y = boundaryBottom + boundaryEps;
+			}
 
-		if (cpuNewPos[i].x > boundarySide)
-		{
-			cpuNewPos[i].x = boundarySide - boundaryEps;
-		}
+			if (cpuNewPos[i].y > boundaryTop)
+			{
+				cpuNewPos[i].y = boundaryTop - boundaryEps;
+			}
 
-		if (cpuNewPos[i].x < -boundarySide)
-		{
-			cpuNewPos[i].x = -boundarySide + boundaryEps;
-		}
-	}
+			if (cpuNewPos[i].z > boundarySide)
+			{
+				cpuNewPos[i].z = boundarySide - boundaryEps;
+			}
 
-	const float siffnessForDamping = 0.0;
+			if (cpuNewPos[i].z < -boundarySide)
+			{
+				cpuNewPos[i].z = -boundarySide + boundaryEps;
+			}
+
+			if (cpuNewPos[i].x > boundarySide)
+			{
+				cpuNewPos[i].x = boundarySide - boundaryEps;
+			}
+
+			if (cpuNewPos[i].x < -boundarySide)
+			{
+				cpuNewPos[i].x = -boundarySide + boundaryEps;
+			}
+		}
+	} // pbdIter END
+
+	const float siffnessForDamping = 0.0; // if 0.0 => dumping is turned off
 	const float minDeltaPosForDamping = 0.0001;
 	float velocityDotSumForDamping = 0.0;
 	
