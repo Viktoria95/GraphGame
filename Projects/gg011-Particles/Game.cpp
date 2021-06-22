@@ -20,19 +20,21 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int defaultParticleCount = 256;
 //const unsigned int controlParticleCount = 1024 * 8;
 //const unsigned int controlParticleCount = 4096;
-const unsigned int controlParticleCount = 4;
+//const unsigned int controlParticleCount = 4;
+const unsigned int controlParticleCount = 4*4*4 * 2;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-const unsigned int PBDGrideSize = 16;
+constexpr unsigned int PBDGrideSize = 4;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
-std::vector<float3> cpuDefPos = { float3{ 0.0f, 0.0f, 0.0f }, float3{ 0.1f, 0.0f, 0.0f }, float3{ 0.0f, 0.1f, 0.0f }, float3{ 0.0f, 0.0f, 0.1f } };
+//std::vector<float3> cpuDefPos = { float3{ 0.0f, 0.0f, 0.0f }, float3{ 0.1f, 0.0f, 0.0f }, float3{ 0.0f, 0.1f, 0.0f }, float3{ 0.0f, 0.0f, 0.1f } };
 //std::vector<float3> cpuPos = { float3{0.0f, 0.0f, 0.0f}, float3{ 0.1f, 0.0f, 0.0f}, float3{ 0.0f, 0.1f, 0.0f}, float3{ 0.0f, 0.0f, 0.1f } };
-std::vector<float3> cpuPos (4);
-std::vector<float3> cpuNewPos (4);
-std::vector<float3> cpuVelocity = { float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 },float3{ 0.0, 0.0, 0.0 } };
+std::vector<float3> cpuDefPos;
+std::vector<float3> cpuPos;
+std::vector<float3> cpuNewPos;
+std::vector<float3> cpuVelocity;
 float4x4 originalTrans = float4x4::identity;
 
 
@@ -572,6 +574,53 @@ void Game::CreateControlParticles()
 	}
 
 	if (controlParticlePlacement == CPU) {
+		cpuDefPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
+		cpuPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
+		cpuNewPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
+		cpuVelocity.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
+
+		for (int n = 0; n < 2; n++)
+		{
+			for (int i = 0; i < PBDGrideSize; i++)
+			{
+				for (int j = 0; j < PBDGrideSize; j++)
+				{
+					for (int k = 0; k < PBDGrideSize; k++)
+					{
+						ControlParticle cp;
+						memset(&cp, 0, sizeof(ControlParticle));
+						//cp.position.x = k * 0.01;
+						//cp.position.y = j * 0.01;
+						//cp.position.z = i * 0.01;
+						//cp.position += PBDGrideTrans;
+						const float GridDist = 0.05;
+						float4 defaultPos(k * GridDist, j * GridDist, i * GridDist, 1.0);
+						
+						if (n == 1) {
+							defaultPos += float4(GridDist / 2.0, GridDist / 2.0, GridDist / 2.0, 0.0);
+							//defaultPos += float4(0.3, 0.3, 0.3, 0.0);
+						}
+
+						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
+						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						defaultPos = defaultPos * PBDGrideTrans;
+						cp.position = defaultPos.xyz;
+
+
+						cp.controlPressureRatio = 1.0;
+						cp.temp = 0.0f;
+						//controlParticles.push_back(cp);
+						uint32_t arrayIndex = n * PBDGrideSize * PBDGrideSize * PBDGrideSize + i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k;
+						cpuDefPos[arrayIndex] = cp.position;
+						cpuPos[arrayIndex] = cp.position;
+						controlParticles[arrayIndex] = (cp);
+					}
+				}
+			}
+		}
+
+		/*
 		for (int i = 0; i < cpuPos.size (); i++) {
 			ControlParticle cp;
 			memset(&cp, 0, sizeof(ControlParticle));
@@ -593,6 +642,7 @@ void Game::CreateControlParticles()
 			cp.temp = 0.0f;
 			controlParticles[i] = (cp);
 		}
+		*/
 	}
 
 	//else 
@@ -2885,6 +2935,140 @@ std::array<float3, 4> get_delta_p_for_volume(const float4x4& P, const float4x4& 
 	return delta_p;
 }
 
+void executeConstraintsOnVertices(std::array<uint32_t, 4> pIdx) {
+	float4x4 P
+	(
+		cpuNewPos[pIdx[1]].x - cpuNewPos[pIdx[0]].x, cpuNewPos[pIdx[2]].x - cpuNewPos[pIdx[0]].x, cpuNewPos[pIdx[3]].x - cpuNewPos[pIdx[0]].x, 0.0f,
+		cpuNewPos[pIdx[1]].y - cpuNewPos[pIdx[0]].y, cpuNewPos[pIdx[2]].y - cpuNewPos[pIdx[0]].y, cpuNewPos[pIdx[3]].y - cpuNewPos[pIdx[0]].y, 0.0f,
+		cpuNewPos[pIdx[1]].z - cpuNewPos[pIdx[0]].z, cpuNewPos[pIdx[2]].z - cpuNewPos[pIdx[0]].z, cpuNewPos[pIdx[3]].z - cpuNewPos[pIdx[0]].z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+
+	float4x4 Q
+	(
+		cpuDefPos[pIdx[1]].x - cpuDefPos[pIdx[0]].x, cpuDefPos[pIdx[2]].x - cpuDefPos[pIdx[0]].x, cpuDefPos[pIdx[3]].x - cpuDefPos[pIdx[0]].x, 0.0f,
+		cpuDefPos[pIdx[1]].y - cpuDefPos[pIdx[0]].y, cpuDefPos[pIdx[2]].y - cpuDefPos[pIdx[0]].y, cpuDefPos[pIdx[3]].y - cpuDefPos[pIdx[0]].y, 0.0f,
+		cpuDefPos[pIdx[1]].z - cpuDefPos[pIdx[0]].z, cpuDefPos[pIdx[2]].z - cpuDefPos[pIdx[0]].z, cpuDefPos[pIdx[3]].z - cpuDefPos[pIdx[0]].z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+
+	float4x4 C = Q.invert();
+	float4x4 F = P * C;
+	float4x4 S = F.transpose() * F;
+
+	//Stretch
+	std::array<float3, 4> deltaPforStretch = get_delta_p_for_stretch(F, C, S);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[pIdx[k]] += deltaPforStretch[k] * 0.03;
+	}
+
+	//Shear
+	std::array<float3, 4> deltaPforShear = get_delta_p_for_shear(F, C, S);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[pIdx[k]] += deltaPforShear[k] * 0.02;
+	}
+
+	//Volume
+	std::array<float3, 4> deltaPforVolume = get_delta_p_for_volume(P, Q);
+	for (uint32_t k = 0; k < 4; k++) {
+		cpuNewPos[pIdx[k]] += deltaPforVolume[k] * 0.002;
+	}
+}
+
+void executeBoundaryOnAllVertices() {
+	const float boundarySide = 0.3;
+	const float boundaryBottom = 0.0;
+	const float boundaryTop = 1.0;
+	const float boundaryEps = 0.0001;
+	for (int i = 0; i < cpuPos.size(); i++) {
+		if (cpuNewPos[i].y < boundaryBottom)
+		{
+			cpuNewPos[i].y = boundaryBottom + boundaryEps;
+		}
+
+		if (cpuNewPos[i].y > boundaryTop)
+		{
+			cpuNewPos[i].y = boundaryTop - boundaryEps;
+		}
+
+		if (cpuNewPos[i].z > boundarySide)
+		{
+			cpuNewPos[i].z = boundarySide - boundaryEps;
+		}
+
+		if (cpuNewPos[i].z < -boundarySide)
+		{
+			cpuNewPos[i].z = -boundarySide + boundaryEps;
+		}
+
+		if (cpuNewPos[i].x > boundarySide)
+		{
+			cpuNewPos[i].x = boundarySide - boundaryEps;
+		}
+
+		if (cpuNewPos[i].x < -boundarySide)
+		{
+			cpuNewPos[i].x = -boundarySide + boundaryEps;
+		}
+	}
+}
+
+void executeFrictionOnAllVertices() {
+	const float boundarySide = 0.3;
+	const float boundaryBottom = 0.0;
+	const float boundaryTop = 1.0;
+	const float boundaryEps = 0.0001;
+	const float friction = 0.4;
+	for (int i = 0; i < cpuPos.size(); i++) {
+		if (cpuNewPos[i].y < boundaryBottom + 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+
+		if (cpuNewPos[i].y > boundaryTop - 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+
+		if (cpuNewPos[i].z > boundarySide - 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+
+		if (cpuNewPos[i].z < -boundarySide + 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+
+		if (cpuNewPos[i].x > boundarySide - 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+
+		if (cpuNewPos[i].x < -boundarySide + 2.0 * boundaryEps)
+		{
+			cpuVelocity[i] *= friction;
+		}
+	}
+}
+
+uint32_t changeToArrayIndex (uint32_t x, uint32_t y, uint32_t z, uint32_t n) {
+	return n * PBDGrideSize * PBDGrideSize * PBDGrideSize + z  * PBDGrideSize * PBDGrideSize + y * PBDGrideSize + x;
+};
+
+void forAllXYZ(std::function<void(uint32_t, uint32_t, uint32_t)> f) {
+	for (int i = 0; i < PBDGrideSize; i++)
+	{
+		for (int j = 0; j < PBDGrideSize; j++)
+		{
+			for (int k = 0; k < PBDGrideSize; k++)
+			{
+				f(k, j, i);
+			}
+		}
+	}
+}
+
 void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	
 	const float dt = 0.005f;
@@ -2893,102 +3077,112 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	const float3 grav = float3(0.0, -0.98, 0.0);
 	for (int i = 0; i < cpuPos.size(); i++) {
 		cpuVelocity[i] += grav * dt;
-		if (i == 0) {
-			//cpuVelocity[i] += float3(0.0, 0.0, 0.01) * dt;
-		}
 		cpuNewPos[i] = cpuPos[i] + cpuVelocity[i] * dt;
 	}
-
-	// Final 1st
-	/*
-	for (int i = 0; i < cpuPos.size(); i++) {
-		float3 deltaPos = cpuNewPos[i] - cpuPos[i];
-		cpuVelocity[i] = (deltaPos) / dt;
-		cpuPos[i] = cpuNewPos[i];
-	}*/
 	
+	// Constraints
 	for (uint32_t pbdIter = 0; pbdIter < 5; pbdIter++) {
-
-		float4x4 P
-		(
-			cpuNewPos[1].x - cpuNewPos[0].x, cpuNewPos[2].x - cpuNewPos[0].x, cpuNewPos[3].x - cpuNewPos[0].x, 0.0f,
-			cpuNewPos[1].y - cpuNewPos[0].y, cpuNewPos[2].y - cpuNewPos[0].y, cpuNewPos[3].y - cpuNewPos[0].y, 0.0f,
-			cpuNewPos[1].z - cpuNewPos[0].z, cpuNewPos[2].z - cpuNewPos[0].z, cpuNewPos[3].z - cpuNewPos[0].z, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		);
-
-		float4x4 Q
-		(
-			cpuDefPos[1].x - cpuDefPos[0].x, cpuDefPos[2].x - cpuDefPos[0].x, cpuDefPos[3].x - cpuDefPos[0].x, 0.0f,
-			cpuDefPos[1].y - cpuDefPos[0].y, cpuDefPos[2].y - cpuDefPos[0].y, cpuDefPos[3].y - cpuDefPos[0].y, 0.0f,
-			cpuDefPos[1].z - cpuDefPos[0].z, cpuDefPos[2].z - cpuDefPos[0].z, cpuDefPos[3].z - cpuDefPos[0].z, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		);
-
-		float4x4 C = Q.invert();
-		float4x4 F = P * C;
-		float4x4 S = F.transpose() * F;
-
-		//Stretch
-		std::array<float3, 4> deltaPforStretch = get_delta_p_for_stretch(F, C, S);
-		for (uint32_t k = 0; k < 4; k++) {
-			cpuNewPos[k] += deltaPforStretch[k];
-		}
-
-		//Shear
-		std::array<float3, 4> deltaPforShear = get_delta_p_for_shear(F, C, S);
-		for (uint32_t k = 0; k < 4; k++) {
-			cpuNewPos[k] += deltaPforShear[k] * 0.3;
-		}
-
-		//Volume
-		std::array<float3, 4> deltaPforVolume = get_delta_p_for_volume(P, Q);
-		for (uint32_t k = 0; k < 4; k++) {
-			cpuNewPos[k] += deltaPforVolume[k] * 0.25;
-		}
-
-		// Collision const float boundaryEps = 0.0001;
-		const float boundarySide = 0.3;
-		const float boundaryBottom = 0.0;
-		const float boundaryTop = 1.0;
-		const float boundaryEps = 0.0001;
-		for (int i = 0; i < cpuPos.size(); i++) {
-			if (cpuNewPos[i].y < boundaryBottom)
-			{
-				cpuNewPos[i].y = boundaryBottom + boundaryEps;
+		
+		/// X EDGE
+		// 1stCube: X edge; 2ndCube: Y edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (x < PBDGrideSize - 1 && y > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x+1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y-1,z,1) });
 			}
+		});
 
-			if (cpuNewPos[i].y > boundaryTop)
-			{
-				cpuNewPos[i].y = boundaryTop - boundaryEps;
+		// 1stCube: X edge; 2ndCube: Y edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (x < PBDGrideSize - 1 && y > 0 && z > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x+1,y,z,0), changeToArrayIndex(x,y,z-1,1), changeToArrayIndex(x,y-1,z-1,1) });
 			}
+		});
 
-			if (cpuNewPos[i].z > boundarySide)
-			{
-				cpuNewPos[i].z = boundarySide - boundaryEps;
+		// 1stCube: X edge; 2ndCube: Z edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (x < PBDGrideSize - 1 && z > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x+1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z-1,1) });
 			}
+		});
 
-			if (cpuNewPos[i].z < -boundarySide)
-			{
-				cpuNewPos[i].z = -boundarySide + boundaryEps;
+		// 1stCube: X edge; 2ndCube: Z edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (x < PBDGrideSize - 1 && z > 0 && y > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y-1,z,1), changeToArrayIndex(x,y-1,z-1,1) });
 			}
+		});
 
-			if (cpuNewPos[i].x > boundarySide)
-			{
-				cpuNewPos[i].x = boundarySide - boundaryEps;
-			}
 
-			if (cpuNewPos[i].x < -boundarySide)
-			{
-				cpuNewPos[i].x = -boundarySide + boundaryEps;
+		/// Y EDGE
+		// 1stCube: Y edge; 2ndCube: X edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (y < PBDGrideSize - 1 && x > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y+1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x-1,y,z,1) });
 			}
-		}
+		});
+
+		// 1stCube: Y edge; 2ndCube: X edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (y < PBDGrideSize - 1 && x > 0 && z > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y+1,z,0), changeToArrayIndex(x,y,z-1,1), changeToArrayIndex(x-1,y,z-1,1) });
+			}
+		});
+
+		// 1stCube: Y edge; 2ndCube: Z edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (y < PBDGrideSize - 1 && z > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y+1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z-1,1) });
+			}
+		});
+
+		// 1stCube: Y edge; 2ndCube: Z edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (y < PBDGrideSize - 1 && z > 0 && x > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y+1,z,0), changeToArrayIndex(x-1,y,z,1), changeToArrayIndex(x-1,y,z-1,1) });
+			}
+		});
+
+
+
+
+		/// Z EDGE
+		// 1stCube: Z edge; 2ndCube: X edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (z < PBDGrideSize - 1 && x > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z+1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x-1,y,z,1) });
+			}
+		});
+
+		// 1stCube: Z edge; 2ndCube: X edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (z < PBDGrideSize - 1 && x > 0 && y > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z+1,0), changeToArrayIndex(x,y-1,z,1), changeToArrayIndex(x-1,y-1,z,1) });
+			}
+		});
+
+		// 1stCube: Z edge; 2ndCube: Y edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (z < PBDGrideSize - 1 && y > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z+1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y-1,z,1) });
+			}
+		});
+
+		// 1stCube: Z edge; 2ndCube: Y edge;
+		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
+			if (z < PBDGrideSize - 1 && y > 0 && x > 0) {
+				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z+1,0), changeToArrayIndex(x-1,y,z,1), changeToArrayIndex(x-1,y-1,z,1) });
+			}
+		});
+
+		
+		//Bound
+		executeBoundaryOnAllVertices();
+
 	} // pbdIter END
-
+	
 	const float siffnessForDamping = 0.0; // if 0.0 => dumping is turned off
 	const float minDeltaPosForDamping = 0.0001;
 	float velocityDotSumForDamping = 0.0;
-	
 	
 	// Final 2nd
 	for (int i = 0; i < cpuPos.size(); i++) {
@@ -3013,6 +3207,8 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		}
 		
 	}
+
+	executeFrictionOnAllVertices();
 	
 	std::vector<ControlParticle> controlParticles(controlParticleCount);
 	for (int i = 0; i < cpuPos.size(); i++) {
