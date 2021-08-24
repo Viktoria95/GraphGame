@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{5dc232d4-d884-42d5-9fba-d915463cd791}</UniqueIdentifier>
     </Filter>
@@ -42,6 +38,13 @@
     </Filter>
     <Filter Include="Shaders\PBD">
       <UniqueIdentifier>{b6debc23-889e-4d34-906c-8783061767cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Sponge">
+      <UniqueIdentifier>{05429b3e-ee53-4f95-89f3-8bd33801f802}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Debug\Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -241,6 +244,87 @@
     <FxCompile Include="Shaders\vsBillboardControl.hlsl">
       <Filter>Shaders\Debug</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csPBDSetDefPos.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron0.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron1.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron2.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron3.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron4.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron5.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron6.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron7.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron8.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron9.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron10.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron11.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron12.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron13.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron14.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron15.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron16.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron17.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron18.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron19.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron20.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron21.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron22.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron23.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psSponge.hlsl">
+      <Filter>Shaders\Sponge</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\vsSponge.hlsl">
+      <Filter>Shaders\Sponge</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">
@@ -271,6 +355,9 @@
       <Filter>Shaders\Animation</Filter>
     </None>
     <None Include="Shaders\PBD.hlsli">
+      <Filter>Shaders\PBD</Filter>
+    </None>
+    <None Include="Shaders\PBDTetrahedron.hlsli">
       <Filter>Shaders\PBD</Filter>
     </None>
   </ItemGroup>

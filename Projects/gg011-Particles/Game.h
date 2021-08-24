@@ -41,6 +41,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> shadingTypeCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> metaballFunctionCB;
+	std::vector<ControlParticle> controlParticles;
 
 	Egg::Mesh::InputBinder::P inputBinder;
 
@@ -81,17 +82,23 @@ private:
 	float animatedControlMeshScale;
 
 	// PBD
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDefPosDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleDefPosSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleDefPosUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleNewPosDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleNewPosSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleNewPosUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleVelocityDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleVelocitySRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleVelocityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> CmatCB;
 	Egg::Mesh::Shader::P PBDShaderGravity;
 	Egg::Mesh::Shader::P PBDShaderCollision;
 	Egg::Mesh::Shader::P PBDShaderDistance;
 	Egg::Mesh::Shader::P PBDShaderBending;
 	Egg::Mesh::Shader::P PBDShaderFinalUpdate;
+	std::array<Egg::Mesh::Shader::P, 24> PBDShaderTetrahedron;
+	Egg::Mesh::Shader::P PBDShaderSetDefPos;
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
@@ -231,6 +238,9 @@ private:
 	int nKeys;
 	int nNodes;
 
+	// Sponge
+	Egg::Mesh::Shaded::P spongeMesh;
+
 	std::vector<std::string> boneNames;
 	//	std::vector<Egg::Math::float4x4> riggingPoseBoneTransforms;
 	std::vector<std::vector<unsigned char> > boneTransformationChainNodeIndices;
@@ -261,6 +271,7 @@ public:
 	void CreateCommon();
 	void CreateParticles();
 	void CreateControlMesh();
+	void CreateSpongeMesh();
 	void CreateControlParticles();
 	void CreateBillboard();
 	void CreateBillboardForControlParticles();
@@ -287,6 +298,7 @@ public:
 	void renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
+	void renderSpongeMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
@@ -313,5 +325,7 @@ public:
 	void rigControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void animateControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
+	Egg::Math::float3 calculateNormal(Egg::Math::float3 p0, Egg::Math::float3 p1, Egg::Math::float3 p2);
 
 GG_ENDCLASS

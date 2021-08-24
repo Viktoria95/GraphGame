@@ -21,11 +21,13 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int controlParticleCount = 1024 * 8;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
-const unsigned int controlParticleCount = 4*4*4 * 2;
+//const unsigned int controlParticleCount = 4*4*4 * 2;
+const unsigned int controlParticleCount = 6 * 6 * 6 * 2;
+//const unsigned int controlParticleCount = 16*16*16;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-constexpr unsigned int PBDGrideSize = 4;
+constexpr unsigned int PBDGrideSize = 6;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -36,6 +38,10 @@ std::vector<float3> cpuPos;
 std::vector<float3> cpuNewPos;
 std::vector<float3> cpuVelocity;
 float4x4 originalTrans = float4x4::identity;
+
+uint32_t changeToArrayIndex(uint32_t x, uint32_t y, uint32_t z, uint32_t n) {
+	return n * PBDGrideSize * PBDGrideSize * PBDGrideSize + z  * PBDGrideSize * PBDGrideSize + y * PBDGrideSize + x;
+};
 
 
 Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg::App(device)
@@ -54,6 +60,7 @@ HRESULT Game::createResources()
 	CreateControlParticles();
 	CreateBillboard();
 	CreateBillboardForControlParticles();
+	CreateSpongeMesh();
 	CreatePrefixSum();
 	CreateEnviroment();
 	CreateMetaball();
@@ -78,7 +85,8 @@ void Game::CreateCommon()
 	billboardsLoadAlgorithm = SBuffer;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
-	controlParticlePlacement = CPU;
+	controlParticlePlacement = PBD;
+	//controlParticlePlacement = CPU;
 	metalShading = Gold;
 	shading = PhongShading;
 	metaballFunction = Wyvill;
@@ -497,7 +505,7 @@ void Game::CreateControlParticles()
 {
 	using namespace Microsoft::WRL;
 
-	std::vector<ControlParticle> controlParticles(controlParticleCount);
+	controlParticles = std::vector<ControlParticle>(controlParticleCount);
 
 	Assimp::Importer importer;
 
@@ -543,6 +551,7 @@ void Game::CreateControlParticles()
 			controlParticles.push_back(cp);
 		}
 	}
+	/*
 	if (controlParticlePlacement == PBD) {
 		for (int i = 0; i < PBDGrideSize; i++)
 		{
@@ -568,6 +577,50 @@ void Game::CreateControlParticles()
 					cp.temp = 0.0f;					
 					//controlParticles.push_back(cp);
 					controlParticles[i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k] = (cp);
+				}
+			}
+		}
+	}
+	*/
+	if (controlParticlePlacement == PBD) {
+		cpuDefPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
+
+		for (int n = 0; n < 2; n++)
+		{
+			for (int i = 0; i < PBDGrideSize; i++)
+			{
+				for (int j = 0; j < PBDGrideSize; j++)
+				{
+					for (int k = 0; k < PBDGrideSize; k++)
+					{
+						ControlParticle cp;
+						memset(&cp, 0, sizeof(ControlParticle));
+						//cp.position.x = k * 0.01;
+						//cp.position.y = j * 0.01;
+						//cp.position.z = i * 0.01;
+						//cp.position += PBDGrideTrans;
+						const float GridDist = 0.05;
+						float4 defaultPos(k * GridDist, j * GridDist, i * GridDist, 1.0);
+
+						if (n == 1) {
+							defaultPos += float4(GridDist / 2.0, GridDist / 2.0, GridDist / 2.0, 0.0);
+							//defaultPos += float4(0.3, 0.3, 0.3, 0.0);
+						}
+
+						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
+						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						defaultPos = defaultPos * PBDGrideTrans;
+						cp.position = defaultPos.xyz;
+
+
+						cp.controlPressureRatio = 1.0;
+						cp.temp = 0.0f;
+						//controlParticles.push_back(cp);
+						uint32_t arrayIndex = n * PBDGrideSize * PBDGrideSize * PBDGrideSize + i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k;
+						controlParticles[arrayIndex] = (cp);
+						cpuDefPos[arrayIndex] = cp.position;
+					}
 				}
 			}
 		}
@@ -884,6 +937,42 @@ void Game::CreateControlParticles()
 			particleBufferDesc.StructureByteStride = sizeof(float4);
 			particleBufferDesc.ByteWidth = controlParticleCount * sizeof(float4);
 
+			Egg::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleBufferDesc, NULL, controlParticleDefPosDataBuffer.GetAddressOf());
+
+
+			// Shader Resource View
+			D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+			particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleSRVDesc.Buffer.FirstElement = 0;
+			particleSRVDesc.Buffer.NumElements = controlParticles.size();
+
+			Egg::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(controlParticleDefPosDataBuffer.Get(), &particleSRVDesc, &controlParticleDefPosSRV);
+
+
+			// Unordered Access View
+			D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+			particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			particleUAVDesc.Buffer.FirstElement = 0;
+			particleUAVDesc.Buffer.NumElements = controlParticles.size();
+			particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+			Egg::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(controlParticleDefPosDataBuffer.Get(), &particleUAVDesc, &controlParticleDefPosUAV);
+		}
+		{
+			// Data Buffer
+			D3D11_BUFFER_DESC particleBufferDesc;
+			particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+			particleBufferDesc.CPUAccessFlags = 0;
+			particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+			particleBufferDesc.StructureByteStride = sizeof(float4);
+			particleBufferDesc.ByteWidth = controlParticleCount * sizeof(float4);
+
 			std::vector<float4> initVelocioty (controlParticleCount);
 			D3D11_SUBRESOURCE_DATA initialParticleData;
 			initialParticleData.pSysMem = &initVelocioty.at(0);
@@ -916,6 +1005,19 @@ void Game::CreateControlParticles()
 		}
 
 		{
+			// CmatCB
+			D3D11_BUFFER_DESC CmatCBDesc;
+			CmatCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			CmatCBDesc.ByteWidth = sizeof(float4x4);
+			CmatCBDesc.CPUAccessFlags = 0;
+			CmatCBDesc.MiscFlags = 0;
+			CmatCBDesc.StructureByteStride = 0;
+			CmatCBDesc.Usage = D3D11_USAGE_DEFAULT;
+			Egg::ThrowOnFail("Failed to create metaballFunctionCB.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&CmatCBDesc, nullptr, CmatCB.GetAddressOf());
+		}
+
+		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDGravity.cso");
 			PBDShaderGravity = Egg::Mesh::Shader::create("csPBDGravity.cso", device, shaderByteCode);
 		}
@@ -928,8 +1030,17 @@ void Game::CreateControlParticles()
 			PBDShaderDistance = Egg::Mesh::Shader::create("csPBDDistance.cso", device, shaderByteCode);
 		}
 		{
-			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDBending.cso");
-			PBDShaderBending = Egg::Mesh::Shader::create("csPBDBending.cso", device, shaderByteCode);
+			for (uint32_t i = 0; i < 24; i++) {
+				char c[2];
+				sprintf(c, "%d", i);
+				std::string shaderName = std::string("csPBDTetrahedron") + c + std::string(".cso");
+				ComPtr<ID3DBlob> shaderByteCode = loadShaderCode(shaderName);
+				PBDShaderTetrahedron[i] = Egg::Mesh::Shader::create(shaderName, device, shaderByteCode);
+			}			
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSetDefPos.cso");
+			PBDShaderSetDefPos = Egg::Mesh::Shader::create("csPBDSetDefPos.cso", device, shaderByteCode);
 		}
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
@@ -1317,6 +1428,386 @@ void Game::CreateBillboardForControlParticles() {
 	ComPtr<ID3D11InputLayout> billboardInputLayout = inputBinder->getCompatibleInputLayout(billboardVertexShaderByteCode, cpBillboardNothing);
 	cpBillboards = Egg::Mesh::Shaded::create(cpBillboardNothing, billboardMaterial, billboardInputLayout);
 
+
+}
+
+void Game::CreateSpongeMesh() {
+	using namespace Microsoft::WRL;
+
+	D3D11_INPUT_ELEMENT_DESC elements[64];
+	unsigned int cElements = 0;
+	unsigned int cOffset = 0;
+	unsigned int positionOffset = 0;
+	unsigned int particleIdOffset = 0;
+	unsigned int normalOffset = 0;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = positionOffset = cOffset;
+	cOffset += sizeof(float) * 3;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "POSITION";//semanticName;
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32_UINT;
+	elements[cElements].AlignedByteOffset = particleIdOffset = cOffset;
+	cOffset += sizeof(uint);
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "PARTICLEID";//semanticName;
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = normalOffset = cOffset;
+	cOffset += sizeof(float) * 3;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "NORMAL";//semanticName;
+	cElements++;
+
+	int gridSize = PBDGrideSize;
+	unsigned int vertexStride = cOffset;
+	unsigned int nElements = cElements;
+
+	std::vector<float3> positions;
+	std::vector<float3> normals;
+	std::map<int, int> particleIdMap;
+
+	int originalId = 0, newId = 0;
+	for (int dim = 0; dim < gridSize; dim++) {
+		for (int col = 0; col < gridSize; col++) {
+			for (int row = 0; row < gridSize; row++) {
+				if (particleIdMap.find(newId) != particleIdMap.end()) {
+					particleIdMap.at(newId) = originalId;
+				}
+				else {
+					particleIdMap.insert(std::pair<int, int>(newId, originalId));
+				}
+				if (!(col > 0 && col < gridSize - 1 &&
+					dim > 0 && dim < gridSize - 1 &&
+					row > 0 && row < gridSize - 1))
+				{
+					positions.push_back(float3(col*0.1, row*0.1, dim*0.1));
+					newId++; originalId++;
+				}
+				else {
+					originalId++;
+				}
+			}
+		}
+	}
+
+	char* sysMemVertices = new char[positions.size() * vertexStride];
+
+	for (int i = 0; i < positions.size(); i++) {
+		memcpy(sysMemVertices + i * vertexStride + positionOffset, &positions.at(i), sizeof(float) * 3);
+		memcpy(sysMemVertices + i * vertexStride + particleIdOffset, &particleIdMap.at(i), sizeof(unsigned int));
+		//memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(unsigned int) * 3);
+	}
+
+	unsigned int nPrimitives = (gridSize - 1) * (gridSize - 1) * 2 * 6;
+	bool wideIndexBuffer = positions.size() > USHRT_MAX;
+
+	Egg::Mesh::IndexBufferDesc indexBufferDesc;
+	indexBufferDesc.nIndices = nPrimitives * 3;
+	indexBufferDesc.nPrimitives = nPrimitives;
+	indexBufferDesc.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	unsigned short* sysMemIndices = new unsigned short[nPrimitives * 3];
+
+	int faceIdx = 0;
+	int vertexNum = positions.size() - (gridSize * gridSize);
+
+	std::vector<int> faceIndices;
+
+	// front
+	for (int col = 0; col < gridSize - 1; col++) {
+		for (int row = 0; row < gridSize - 1; row++) {
+			int p0 = col * gridSize + row + 1;
+			int p1 = col * gridSize + row;
+			int p2 = (col + 1) * gridSize + row;
+			int p3 = (col + 1) * gridSize + row + 1;
+
+			sysMemIndices[faceIdx++] = p0;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+
+			sysMemIndices[faceIdx++] = p0;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+
+			faceIndices.push_back(p0);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+
+			faceIndices.push_back(p0);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+		}
+	}
+
+	// back 
+	for (int col = 0; col < gridSize - 1; col++) {
+		for (int row = 0; row < gridSize - 1; row++) {
+			int p0 = vertexNum + ((col + 1) * gridSize + row + 1);
+			int p1 = vertexNum + ((col + 1) * gridSize + row);
+			int p2 = vertexNum + (col * gridSize + row);
+			int p3 = vertexNum + (col * gridSize + row + 1);
+
+			sysMemIndices[faceIdx++] = p0;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p0;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+
+			faceIndices.push_back(p0);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+
+			faceIndices.push_back(p0);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+		}
+	}
+
+	// top
+	int removedNum = 0;
+	int nextRemovedNum = 0;
+	for (int dim = 0; dim < gridSize - 1; dim++) {
+		for (int col = 0; col < gridSize - 1; col++) {
+			if (dim > 0) {
+				if (col != 0) {
+					removedNum += (gridSize - 2);
+				}
+			}
+			if (col < gridSize - 1 && dim < gridSize - 2) {
+				nextRemovedNum = col * (gridSize - 2) + dim * ((gridSize - 2) * (gridSize - 2));
+			}
+
+			int p1, p2, p3, p4;
+
+			p1 = (gridSize - 1 + col * gridSize + dim * gridSize * gridSize) - removedNum;
+			if (dim > 0 && col < gridSize - 2) {
+				p2 = (gridSize - 1 + (col + 1) * gridSize + dim * gridSize * gridSize) - (removedNum + (gridSize - 2));
+			}
+			else {
+				p2 = (gridSize - 1 + (col + 1) * gridSize + dim * gridSize * gridSize) - removedNum;
+			}
+			if (col < gridSize - 2 && dim < gridSize - 2) {
+				p3 = (gridSize - 1 + (col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - (nextRemovedNum + (gridSize - 2));
+			}
+			else {
+				p3 = (gridSize - 1 + (col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
+			}
+
+			p4 = (gridSize - 1 + (col)* gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
+
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p4;
+
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p4);
+
+		}
+	}
+
+	removedNum = 0;
+	nextRemovedNum = 0;
+	//bottom
+	for (int dim = 0; dim < gridSize - 1; dim++) {
+		for (int col = 0; col < gridSize - 1; col++) {
+			int p1, p2, p3, p4;
+			p1 = (col * gridSize + dim * gridSize * gridSize) - removedNum;
+			p2 = ((col)* gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
+			if (col < gridSize - 1 && dim < gridSize - 2 && col > 0) {
+				p3 = ((col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - (nextRemovedNum + (gridSize - 2));
+			}
+			else {
+				p3 = ((col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
+			}
+			if (dim > 0 && col < gridSize - 1 && col > 0) {
+				p4 = ((col + 1) * gridSize + dim * gridSize * gridSize) - (removedNum + (gridSize - 2));
+			}
+			else {
+				p4 = ((col + 1) * gridSize + dim * gridSize * gridSize) - removedNum;
+			}
+
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p4;
+
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p4);
+
+			if (dim > 0) {
+				if (col != 0) {
+					removedNum += (gridSize - 2);
+				}
+			}
+			if (col < gridSize - 1 && dim < gridSize - 2) {
+				nextRemovedNum = col * (gridSize - 2) + dim * ((gridSize - 2) * (gridSize - 2));
+			}
+		}
+	}
+
+	// left
+	removedNum = 0;
+	for (int dim = 0; dim < gridSize - 1; dim++) {
+		for (int row = 0; row < gridSize - 1; row++) {
+			if (dim > 0 && dim < gridSize - 1) {
+				removedNum = dim * ((gridSize - 2) * (gridSize - 2));
+			}
+			if (dim < gridSize - 2) {
+				nextRemovedNum = (dim + 1) *  ((gridSize - 2) * (gridSize - 2));
+			}
+
+			int p1 = gridSize * (gridSize - 1) + (row + 1) + dim * gridSize * gridSize - removedNum;
+			int p2 = gridSize * (gridSize - 1) + row + dim * gridSize * gridSize - removedNum;
+			int p3 = gridSize * (gridSize - 1) + row + (dim + 1) * gridSize * gridSize - nextRemovedNum;
+			int p4 = gridSize * (gridSize - 1) + (row + 1) + (dim + 1) * gridSize * gridSize - nextRemovedNum;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p4;
+
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p4);
+		}
+	}
+
+	// right
+	removedNum = 0;
+	nextRemovedNum = 0;
+	for (int dim = 0; dim < gridSize - 1; dim++) {
+		for (int row = 0; row < gridSize - 1; row++) {
+			if (dim > 0 && dim < gridSize - 1) {
+				removedNum = (dim - 1) * ((gridSize - 2) * (gridSize - 2));
+				nextRemovedNum = dim * ((gridSize - 2) * (gridSize - 2));
+			}
+
+			int p1 = (row + 1) + (dim + 1) * gridSize * gridSize - nextRemovedNum;
+			int p2 = row + (dim + 1) * gridSize * gridSize - nextRemovedNum;
+			int p3 = row + dim * gridSize * gridSize - removedNum;
+			int p4 = (row + 1) + dim * gridSize * gridSize - removedNum;
+
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p2;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p1;
+			sysMemIndices[faceIdx++] = p3;
+			sysMemIndices[faceIdx++] = p4;
+
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p2);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p1);
+			faceIndices.push_back(p3);
+			faceIndices.push_back(p4);
+		}
+	}
+
+	for (int i = 0; i < faceIndices.size(); i += 3) {
+		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
+		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
+		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
+	}
+
+	int pSize = positions.size();
+	int nSize = normals.size();
+
+	for (int i = 0; i < positions.size(); i++) {
+		//if (i < normals.size()) {
+			memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(unsigned int) * 3);
+	 //}
+		//else {
+		//	memcpy(sysMemVertices + i * vertexStride + normalOffset, &float3(0.0,0.0,0.0), sizeof(unsigned int) * 3);
+		////}
+	}
+
+	Egg::Mesh::VertexStreamDesc vertexStreamDesc;
+	vertexStreamDesc.elements = elements;
+	vertexStreamDesc.nElements = nElements;
+	vertexStreamDesc.nVertices = positions.size();
+	vertexStreamDesc.vertexData = sysMemVertices;
+	vertexStreamDesc.vertexStride = vertexStride;
+
+	Egg::Mesh::VertexStream::P vertexStream = Egg::Mesh::VertexStream::create(device, vertexStreamDesc);
+
+	indexBufferDesc.indexData = sysMemIndices;
+	indexBufferDesc.indexFormat = DXGI_FORMAT_R16_UINT;
+
+	Egg::Mesh::Indexed::P geometry = Egg::Mesh::Indexed::createFromSingleStream(device, indexBufferDesc, vertexStream);
+
+	//Egg::Mesh::Indexed::P geometry = Egg::Mesh::Importer::fromAiMesh(device, assScene->mMeshes[meshIdxInFile]);
+
+	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSponge.cso");
+	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSponge.cso", device, vertexShaderByteCode);
+
+	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psSponge.cso");
+	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psSponge.cso", device, pixelShaderByteCode);
+
+	Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+	material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+	material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	material->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
+	//material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+
+	ComPtr<ID3D11InputLayout> inputLayoutDebug = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+	animatedControlMeshFlat = Egg::Mesh::Shaded::create(geometry, material, inputLayoutDebug);
+
+	// Depth settings
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+	D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+	/// Raster settings
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+
+	D3D11_RASTERIZER_DESC RasterizerDesc;
+	RasterizerDesc.CullMode = D3D11_CULL_NONE;
+	RasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	RasterizerDesc.FrontCounterClockwise = FALSE;
+	RasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+	RasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+	RasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+	RasterizerDesc.DepthClipEnable = TRUE;
+	RasterizerDesc.ScissorEnable = FALSE;
+	RasterizerDesc.MultisampleEnable = FALSE;
+	RasterizerDesc.AntialiasedLineEnable = FALSE;
+
+	device->CreateRasterizerState(&RasterizerDesc, RasterizerState.GetAddressOf());
+	material->rasterizerState = RasterizerState;
+
+	ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
+	spongeMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
 
 }
 
@@ -2761,6 +3252,74 @@ void Game::stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	delete[] boneTrafos;
 }
 
+float4x4 GetC(uint32_t x, uint32_t y, uint32_t z, uint32_t tatraheadronType) {
+	std::array<uint32_t, 4> pIdx;
+
+	switch (tatraheadronType) {
+		case 0: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y - 1,z,1) };
+			break;
+		}
+		case 1: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z - 1,1), changeToArrayIndex(x,y - 1,z - 1,1) };
+			break;
+		}
+		case 2: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z - 1,1) };
+			break;
+		}
+		case 3: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y - 1,z,1), changeToArrayIndex(x,y - 1,z - 1,1) };
+			break;
+		}
+		case 4: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x - 1,y,z,1) };
+			break;
+		}
+		case 5: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z - 1,1), changeToArrayIndex(x - 1,y,z - 1,1) };
+			break;
+		}
+		case 6: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z - 1,1) };
+			break;
+		}
+		case 7: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x - 1,y,z,1), changeToArrayIndex(x - 1,y,z - 1,1) };
+			break;
+		}
+		case 8: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x - 1,y,z,1) };
+			break;
+		}
+		case 9: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y - 1,z,1), changeToArrayIndex(x - 1,y - 1,z,1) };
+			break;
+		}
+		case 10: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y - 1,z,1) };
+			break;
+		}
+		case 11: {
+			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x - 1,y,z,1), changeToArrayIndex(x - 1,y - 1,z,1) };
+			break;
+		}
+		default: {
+			assert(false);
+		}
+	};
+
+	float4x4 Q
+	(
+		cpuDefPos[pIdx[1]].x - cpuDefPos[pIdx[0]].x, cpuDefPos[pIdx[2]].x - cpuDefPos[pIdx[0]].x, cpuDefPos[pIdx[3]].x - cpuDefPos[pIdx[0]].x, 0.0f,
+		cpuDefPos[pIdx[1]].y - cpuDefPos[pIdx[0]].y, cpuDefPos[pIdx[2]].y - cpuDefPos[pIdx[0]].y, cpuDefPos[pIdx[3]].y - cpuDefPos[pIdx[0]].y, 0.0f,
+		cpuDefPos[pIdx[1]].z - cpuDefPos[pIdx[0]].z, cpuDefPos[pIdx[2]].z - cpuDefPos[pIdx[0]].z, cpuDefPos[pIdx[3]].z - cpuDefPos[pIdx[0]].z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+
+	return Q.invert();
+}
+
 void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	const UINT zeros[4] = { 0,0,0,0 };
 	
@@ -2773,7 +3332,18 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	
 	clearContext(context);
 
-	const int NITER = 50;
+	static bool first = true;
+	if (first) {
+		first = false;
+
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSetDefPos->getShader().Get()), nullptr, 0);
+		context->CSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+		context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
+		context->CSSetUnorderedAccessViews(0, 1, controlParticleDefPosUAV.GetAddressOf(), zeros);
+		context->Dispatch(controlParticleCount, 1, 1);
+	}
+
+	const int NITER = 5;
 	for (int i = 0; i < NITER; ++i)
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
@@ -2781,10 +3351,28 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
 
+		/*
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderDistance->getShader().Get()), nullptr, 0);
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
+		*/
+
+		for (uint32_t thIdx = 0; thIdx < 24; thIdx++) {
+			context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderTetrahedron[thIdx]->getShader().Get()), nullptr, 0);
+			//context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+			context->CSSetShaderResources(0, 1, controlParticleDefPosSRV.GetAddressOf());
+			context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+
+			float4x4 C = GetC(PBDGrideSize/2, PBDGrideSize/2, PBDGrideSize/2, thIdx % 12);
+			context->UpdateSubresource(CmatCB.Get(), 0, nullptr, &C, 0, 0);
+			context->CSSetConstantBuffers(0, 1, CmatCB.GetAddressOf());
+
+			//context->Dispatch(1, 3, 1);
+			context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
+		}
+		
+		//context->Dispatch(1, 1, 1);
 	}
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
@@ -3052,9 +3640,7 @@ void executeFrictionOnAllVertices() {
 	}
 }
 
-uint32_t changeToArrayIndex (uint32_t x, uint32_t y, uint32_t z, uint32_t n) {
-	return n * PBDGrideSize * PBDGrideSize * PBDGrideSize + z  * PBDGrideSize * PBDGrideSize + y * PBDGrideSize + x;
-};
+
 
 void forAllXYZ(std::function<void(uint32_t, uint32_t, uint32_t)> f) {
 	for (int i = 0; i < PBDGrideSize; i++)
@@ -3067,6 +3653,24 @@ void forAllXYZ(std::function<void(uint32_t, uint32_t, uint32_t)> f) {
 			}
 		}
 	}
+}
+
+void Game::renderSpongeMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
+	float scale = 1.0;
+
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
+	matrices[2] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
+	//matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
+	matrices[3] = float4x4::identity;// fillCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	spongeMesh->draw(context);
 }
 
 void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
@@ -3090,7 +3694,7 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x+1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y-1,z,1) });
 			}
 		});
-
+		
 		// 1stCube: X edge; 2ndCube: Y edge;
 		forAllXYZ([](uint32_t x, uint32_t y, uint32_t z) {
 			if (x < PBDGrideSize - 1 && y > 0 && z > 0) {
@@ -3173,7 +3777,7 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 				executeConstraintsOnVertices({ changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z+1,0), changeToArrayIndex(x-1,y,z,1), changeToArrayIndex(x-1,y-1,z,1) });
 			}
 		});
-
+		
 		
 		//Bound
 		executeBoundaryOnAllVertices();
@@ -3404,6 +4008,9 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		//renderControlBalls(context);
 		clearContext(context);
 	}
+
+	renderSpongeMesh(context);
+	clearContext(context);
 
 	// Animation
 	renderAnimation(context);
@@ -3671,4 +4278,16 @@ bool Game::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	return false;
+}
+
+float3 Game::calculateNormal(float3 p0, float3 p1, float3 p2) {
+	float3 v1 = p1 - p0;
+	float3 w1 = p2 - p0;
+
+	float3 normal;
+	normal.x = v1.y * w1.z - v1.z * w1.y;
+	normal.y = v1.z * w1.x - v1.x * w1.z;
+	normal.z = v1.x * w1.y - v1.y * w1.x;
+
+	return normal;
 }
