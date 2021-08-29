@@ -97,7 +97,7 @@ private:
 	Egg::Mesh::Shader::P PBDShaderDistance;
 	Egg::Mesh::Shader::P PBDShaderBending;
 	Egg::Mesh::Shader::P PBDShaderFinalUpdate;
-	std::array<Egg::Mesh::Shader::P, 24> PBDShaderTetrahedron;
+	std::array<Egg::Mesh::Shader::P, 26> PBDShaderTetrahedron;
 	Egg::Mesh::Shader::P PBDShaderSetDefPos;
 
 	// Hashtables

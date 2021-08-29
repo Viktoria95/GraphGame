@@ -68,7 +68,7 @@ void csPBDCollision(uint3 DTid : SV_GroupID) {
 		{
 			newPos[tid].z = -boundarySide + boundaryEps;
 		}
-
+		
 		if (newPos[tid].x > boundarySide)
 		{
 			newPos[tid].x = boundarySide - boundaryEps;
@@ -78,5 +78,6 @@ void csPBDCollision(uint3 DTid : SV_GroupID) {
 		{
 			newPos[tid].x = -boundarySide + boundaryEps;
 		}
+		
 	}
 }

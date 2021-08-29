@@ -227,7 +227,7 @@ float4x4 inverse(float4x4 m) {
 
 
 cbuffer PBDTetrahedronCB {
-	float4x4 C2;
+	float4x4 C;
 };
 
 
@@ -249,7 +249,7 @@ void executeConstraintsOnVertices(uint4 pIdx) {
 			0.0f, 0.0f, 0.0f, 1.0f
 			);
 	
-	float4x4 C = inverse(Q);
+	//float4x4 C = inverse(Q);
 	//float4x4 C = float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 	//P = C;
 	//Q = C;

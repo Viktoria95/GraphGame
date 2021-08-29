@@ -583,6 +583,7 @@ void Game::CreateControlParticles()
 	}
 	*/
 	if (controlParticlePlacement == PBD) {
+		
 		cpuDefPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
 
 		for (int n = 0; n < 2; n++)
@@ -625,7 +626,7 @@ void Game::CreateControlParticles()
 			}
 		}
 	}
-
+	
 	if (controlParticlePlacement == CPU) {
 		cpuDefPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
 		cpuPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
@@ -1030,8 +1031,8 @@ void Game::CreateControlParticles()
 			PBDShaderDistance = Egg::Mesh::Shader::create("csPBDDistance.cso", device, shaderByteCode);
 		}
 		{
-			for (uint32_t i = 0; i < 24; i++) {
-				char c[2];
+			for (uint32_t i = 0; i < 26; i++) {
+				char c[3];
 				sprintf(c, "%d", i);
 				std::string shaderName = std::string("csPBDTetrahedron") + c + std::string(".cso");
 				ComPtr<ID3DBlob> shaderByteCode = loadShaderCode(shaderName);
@@ -3256,52 +3257,73 @@ float4x4 GetC(uint32_t x, uint32_t y, uint32_t z, uint32_t tatraheadronType) {
 	std::array<uint32_t, 4> pIdx;
 
 	switch (tatraheadronType) {
-		case 0: {
+		case 0:
+		case 12: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y - 1,z,1) };
 			break;
 		}
-		case 1: {
+		case 1:
+		case 13: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z - 1,1), changeToArrayIndex(x,y - 1,z - 1,1) };
 			break;
 		}
-		case 2: {
+		case 2:
+		case 14: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z - 1,1) };
 			break;
 		}
-		case 3: {
+		case 3:
+		case 15: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x + 1,y,z,0), changeToArrayIndex(x,y - 1,z,1), changeToArrayIndex(x,y - 1,z - 1,1) };
 			break;
 		}
-		case 4: {
+		case 4:
+		case 16: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x - 1,y,z,1) };
 			break;
 		}
-		case 5: {
+		case 5: 
+		case 17: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z - 1,1), changeToArrayIndex(x - 1,y,z - 1,1) };
 			break;
 		}
-		case 6: {
+		case 6: 
+		case 18: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y,z - 1,1) };
 			break;
 		}
-		case 7: {
+		case 7: 
+		case 19: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y + 1,z,0), changeToArrayIndex(x - 1,y,z,1), changeToArrayIndex(x - 1,y,z - 1,1) };
 			break;
 		}
-		case 8: {
+		case 8:
+		case 20: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x - 1,y,z,1) };
 			break;
 		}
-		case 9: {
+		case 9: 
+		case 21: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y - 1,z,1), changeToArrayIndex(x - 1,y - 1,z,1) };
 			break;
 		}
-		case 10: {
+		case 10: 
+		case 22: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x,y,z,1), changeToArrayIndex(x,y - 1,z,1) };
 			break;
 		}
-		case 11: {
+		case 11: 
+		case 23: {
 			pIdx = { changeToArrayIndex(x,y,z,0), changeToArrayIndex(x,y,z + 1,0), changeToArrayIndex(x - 1,y,z,1), changeToArrayIndex(x - 1,y - 1,z,1) };
+			break;
+		}
+		case 24: {
+			pIdx = { changeToArrayIndex(0,0,0,0), changeToArrayIndex(1,0,0,0), changeToArrayIndex(0,1,0,0), changeToArrayIndex(0,0,1,0) };
+			break;
+		}
+		case 25: {
+			uint32_t maxIdx = PBDGrideSize - 1;
+			pIdx = { changeToArrayIndex(maxIdx,maxIdx,maxIdx,1), changeToArrayIndex(maxIdx-1,maxIdx,maxIdx,1), changeToArrayIndex(maxIdx,maxIdx-1,maxIdx,1), changeToArrayIndex(maxIdx,maxIdx,maxIdx-1,1) };
 			break;
 		}
 		default: {
@@ -3342,8 +3364,8 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleDefPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
-
-	const int NITER = 5;
+	
+	const int NITER = 10;
 	for (int i = 0; i < NITER; ++i)
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
@@ -3358,21 +3380,25 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
 		*/
 
-		for (uint32_t thIdx = 0; thIdx < 24; thIdx++) {
+		for (uint32_t thIdx = 0; thIdx < 26; thIdx++) {
 			context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderTetrahedron[thIdx]->getShader().Get()), nullptr, 0);
 			//context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 			context->CSSetShaderResources(0, 1, controlParticleDefPosSRV.GetAddressOf());
 			context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 
-			float4x4 C = GetC(PBDGrideSize/2, PBDGrideSize/2, PBDGrideSize/2, thIdx % 12);
+			float4x4 C = GetC(PBDGrideSize/2, PBDGrideSize/2, PBDGrideSize/2, thIdx).transpose ();
 			context->UpdateSubresource(CmatCB.Get(), 0, nullptr, &C, 0, 0);
 			context->CSSetConstantBuffers(0, 1, CmatCB.GetAddressOf());
 
 			//context->Dispatch(1, 3, 1);
-			context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
+			if (thIdx < 24) {
+				context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
+			}
+			else {
+				context->Dispatch(1, 1, 1);
+			}
 		}
-		
-		//context->Dispatch(1, 1, 1);
+
 	}
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);

@@ -10,7 +10,7 @@
 //#define controlParticleCount 512
 
 
-#define boundarySide 0.3
+#define boundarySide 0.5
 #define boundaryBottom 0.0
 #define boundaryTop 1.0
 
