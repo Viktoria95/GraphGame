@@ -164,6 +164,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> counterSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> counterUAV;
 
+	// Sponge
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeDiffuseSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeHeightSRV;
 
 	// Prefix sum
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scanBucketSizeCB;
@@ -327,5 +331,6 @@ public:
 	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	Egg::Math::float3 calculateNormal(Egg::Math::float3 p0, Egg::Math::float3 p1, Egg::Math::float3 p2);
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> loadTexture(std::string name);
 
 GG_ENDCLASS

@@ -22,12 +22,12 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
 //const unsigned int controlParticleCount = 4*4*4 * 2;
-const unsigned int controlParticleCount = 6 * 6 * 6 * 2;
+const unsigned int controlParticleCount = 3 * 3 * 3 * 2;
 //const unsigned int controlParticleCount = 16*16*16;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-constexpr unsigned int PBDGrideSize = 6;
+constexpr unsigned int PBDGrideSize = 3;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -1440,7 +1440,9 @@ void Game::CreateSpongeMesh() {
 	unsigned int cOffset = 0;
 	unsigned int positionOffset = 0;
 	unsigned int particleIdOffset = 0;
-	unsigned int normalOffset = 0;
+	unsigned int texCoordOffset = 0;
+	unsigned int neighbourOffset = 0;
+	unsigned int neighbourTexOffset = 0;
 
 	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	elements[cElements].AlignedByteOffset = positionOffset = cOffset;
@@ -1449,7 +1451,7 @@ void Game::CreateSpongeMesh() {
 	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	elements[cElements].InstanceDataStepRate = 0;
 	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "POSITION";//semanticName;
+	elements[cElements].SemanticName = "POSITION";
 	cElements++;
 
 	elements[cElements].Format = DXGI_FORMAT_R32_UINT;
@@ -1459,17 +1461,37 @@ void Game::CreateSpongeMesh() {
 	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	elements[cElements].InstanceDataStepRate = 0;
 	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "PARTICLEID";//semanticName;
+	elements[cElements].SemanticName = "PARTICLEID";
 	cElements++;
 
 	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	elements[cElements].AlignedByteOffset = normalOffset = cOffset;
-	cOffset += sizeof(float) * 3;
+	elements[cElements].AlignedByteOffset = texCoordOffset = cOffset;
+	cOffset += sizeof(float) * 2;
 	elements[cElements].InputSlot = 0;
 	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	elements[cElements].InstanceDataStepRate = 0;
 	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "NORMAL";//semanticName;
+	elements[cElements].SemanticName = "TEXCOORDS";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = neighbourOffset = cOffset;
+	cOffset += sizeof(float) * 2;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "NEIGHBOUR";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = neighbourTexOffset = cOffset;
+	cOffset += sizeof(float) * 4;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "NEIGHBOURTEX";
 	cElements++;
 
 	int gridSize = PBDGrideSize;
@@ -1477,7 +1499,9 @@ void Game::CreateSpongeMesh() {
 	unsigned int nElements = cElements;
 
 	std::vector<float3> positions;
-	std::vector<float3> normals;
+	std::vector<float2> texcoords;
+	std::map<int, float2> neighbours;
+	std::map<int, float4> neighbourTexs;
 	std::map<int, int> particleIdMap;
 
 	int originalId = 0, newId = 0;
@@ -1494,7 +1518,7 @@ void Game::CreateSpongeMesh() {
 					dim > 0 && dim < gridSize - 1 &&
 					row > 0 && row < gridSize - 1))
 				{
-					positions.push_back(float3(col*0.1, row*0.1, dim*0.1));
+					positions.push_back(float3(col, row, dim));
 					newId++; originalId++;
 				}
 				else {
@@ -1504,16 +1528,77 @@ void Game::CreateSpongeMesh() {
 		}
 	}
 
-	char* sysMemVertices = new char[positions.size() * vertexStride];
+	std::map<int, int> positionMap;
+	std::vector<float3> vertices;
+	originalId = 0;
+	for (int col = 0; col < gridSize; col++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(col, row, 0);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.xy / (gridSize - 1));
+		}
+	}
+	for (int col = 0; col < gridSize; col++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(col, row, 2);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.xy / (gridSize - 1));
+		}
+	}
+	for (int col = 0; col < gridSize; col++) {
+		for (int dim = 0; dim < gridSize; dim++) {
+			float3 pos = float3(col, 2, dim);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.xz / (gridSize - 1));
+		}
+	}
+	for (int col = 0; col < gridSize; col++) {
+		for (int dim = 0; dim < gridSize; dim++) {
+			float3 pos = float3(col, 0, dim);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.xz / (gridSize - 1));
+		}
+	}
+	for (int dim = 0; dim < gridSize; dim++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(0, row, dim);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.yz / (gridSize - 1));
+		}
+	}
+	for (int dim = 0; dim < gridSize; dim++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(2, row, dim);
+			vertices.push_back(pos);
+			texcoords.push_back(pos.yz / (gridSize - 1));
+		}
+	}
 
-	for (int i = 0; i < positions.size(); i++) {
-		memcpy(sysMemVertices + i * vertexStride + positionOffset, &positions.at(i), sizeof(float) * 3);
-		memcpy(sysMemVertices + i * vertexStride + particleIdOffset, &particleIdMap.at(i), sizeof(unsigned int));
-		//memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(unsigned int) * 3);
+	for (int i = 0; i < vertices.size(); i++) {
+		int idx;
+		auto pos = vertices.at(i);
+		for (int i = 0; i < positions.size(); i++) {
+			auto pos2 = positions.at(i);
+			int tmp;
+			if (pos2.x == pos.x && pos2.y == pos.y && pos2.z == pos.z) {
+				tmp = i;
+				idx = particleIdMap.at(tmp);
+				break;
+			}
+		}
+		positionMap.insert(std::pair<int, int>(i, idx));
+	}
+
+	char* sysMemVertices = new char[vertices.size() * vertexStride];
+
+	for (int i = 0; i < vertices.size(); i++) {
+		memcpy(sysMemVertices + i * vertexStride + positionOffset, &vertices.at(i), sizeof(float) * 3);
+		memcpy(sysMemVertices + i * vertexStride + particleIdOffset, &positionMap.at(i), sizeof(unsigned int));
+		memcpy(sysMemVertices + i * vertexStride + texCoordOffset, &texcoords.at(i), sizeof(float) * 2);
 	}
 
 	unsigned int nPrimitives = (gridSize - 1) * (gridSize - 1) * 2 * 6;
-	bool wideIndexBuffer = positions.size() > USHRT_MAX;
+	bool wideIndexBuffer = vertices.size() > USHRT_MAX;
 
 	Egg::Mesh::IndexBufferDesc indexBufferDesc;
 	indexBufferDesc.nIndices = nPrimitives * 3;
@@ -1523,7 +1608,6 @@ void Game::CreateSpongeMesh() {
 	unsigned short* sysMemIndices = new unsigned short[nPrimitives * 3];
 
 	int faceIdx = 0;
-	int vertexNum = positions.size() - (gridSize * gridSize);
 
 	std::vector<int> faceIndices;
 
@@ -1543,23 +1627,25 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
 
-			faceIndices.push_back(p0);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
+			neighbours.insert(std::pair<int, float2>(p0, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p0), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p0), positionMap.at(p1))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p0), positionMap.at(p2))));
 
-			faceIndices.push_back(p0);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
+			neighbourTexs.insert(std::pair<int, float4>(p0, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p0), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p0), texcoords.at(p1))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
 		}
 	}
 
 	// back 
 	for (int col = 0; col < gridSize - 1; col++) {
 		for (int row = 0; row < gridSize - 1; row++) {
-			int p0 = vertexNum + ((col + 1) * gridSize + row + 1);
-			int p1 = vertexNum + ((col + 1) * gridSize + row);
-			int p2 = vertexNum + (col * gridSize + row);
-			int p3 = vertexNum + (col * gridSize + row + 1);
+			int p0 = (gridSize*gridSize) + ((col + 1) * gridSize + row + 1);
+			int p1 = (gridSize*gridSize) + ((col + 1) * gridSize + row);
+			int p2 = (gridSize*gridSize) + (col * gridSize + row);
+			int p3 = (gridSize*gridSize) + (col * gridSize + row + 1);
 
 			sysMemIndices[faceIdx++] = p0;
 			sysMemIndices[faceIdx++] = p1;
@@ -1568,13 +1654,15 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
 
-			faceIndices.push_back(p0);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
+			neighbours.insert(std::pair<int, float2>(p0, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p0), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p0), positionMap.at(p1))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p0), positionMap.at(p2))));
 
-			faceIndices.push_back(p0);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
+			neighbourTexs.insert(std::pair<int, float4>(p0, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p0), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p0), texcoords.at(p1))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
 		}
 	}
 
@@ -1583,32 +1671,10 @@ void Game::CreateSpongeMesh() {
 	int nextRemovedNum = 0;
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int col = 0; col < gridSize - 1; col++) {
-			if (dim > 0) {
-				if (col != 0) {
-					removedNum += (gridSize - 2);
-				}
-			}
-			if (col < gridSize - 1 && dim < gridSize - 2) {
-				nextRemovedNum = col * (gridSize - 2) + dim * ((gridSize - 2) * (gridSize - 2));
-			}
-
-			int p1, p2, p3, p4;
-
-			p1 = (gridSize - 1 + col * gridSize + dim * gridSize * gridSize) - removedNum;
-			if (dim > 0 && col < gridSize - 2) {
-				p2 = (gridSize - 1 + (col + 1) * gridSize + dim * gridSize * gridSize) - (removedNum + (gridSize - 2));
-			}
-			else {
-				p2 = (gridSize - 1 + (col + 1) * gridSize + dim * gridSize * gridSize) - removedNum;
-			}
-			if (col < gridSize - 2 && dim < gridSize - 2) {
-				p3 = (gridSize - 1 + (col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - (nextRemovedNum + (gridSize - 2));
-			}
-			else {
-				p3 = (gridSize - 1 + (col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
-			}
-
-			p4 = (gridSize - 1 + (col)* gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
+			int p3 = 2 * (gridSize*gridSize) + ((col + 1) * gridSize + dim + 1);
+			int p2 = 2 * (gridSize*gridSize) + ((col + 1) * gridSize + dim);
+			int p1 = 2 * (gridSize*gridSize) + (col * gridSize + dim);
+			int p4 = 2 * (gridSize*gridSize) + (col * gridSize + dim + 1);
 
 			sysMemIndices[faceIdx++] = p1;
 			sysMemIndices[faceIdx++] = p2;
@@ -1617,36 +1683,25 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p4);
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
 
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
 		}
 	}
 
-	removedNum = 0;
-	nextRemovedNum = 0;
 	//bottom
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int col = 0; col < gridSize - 1; col++) {
-			int p1, p2, p3, p4;
-			p1 = (col * gridSize + dim * gridSize * gridSize) - removedNum;
-			p2 = ((col)* gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
-			if (col < gridSize - 1 && dim < gridSize - 2 && col > 0) {
-				p3 = ((col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - (nextRemovedNum + (gridSize - 2));
-			}
-			else {
-				p3 = ((col + 1) * gridSize + (dim + 1) * gridSize * gridSize) - nextRemovedNum;
-			}
-			if (dim > 0 && col < gridSize - 1 && col > 0) {
-				p4 = ((col + 1) * gridSize + dim * gridSize * gridSize) - (removedNum + (gridSize - 2));
-			}
-			else {
-				p4 = ((col + 1) * gridSize + dim * gridSize * gridSize) - removedNum;
-			}
+			int p1 = 3 * (gridSize*gridSize) + (col * gridSize + dim);
+			int p2 = 3 * (gridSize*gridSize) + ((col + 1) * gridSize + dim);
+			int p3 = 3 * (gridSize*gridSize) + ((col + 1) * gridSize + dim + 1);
+			int p4 = 3 * (gridSize*gridSize) + (col * gridSize + dim + 1);
 
 			sysMemIndices[faceIdx++] = p1;
 			sysMemIndices[faceIdx++] = p2;
@@ -1655,39 +1710,26 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p4);
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
 
-			if (dim > 0) {
-				if (col != 0) {
-					removedNum += (gridSize - 2);
-				}
-			}
-			if (col < gridSize - 1 && dim < gridSize - 2) {
-				nextRemovedNum = col * (gridSize - 2) + dim * ((gridSize - 2) * (gridSize - 2));
-			}
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
 		}
 	}
 
 	// left
-	removedNum = 0;
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int row = 0; row < gridSize - 1; row++) {
-			if (dim > 0 && dim < gridSize - 1) {
-				removedNum = dim * ((gridSize - 2) * (gridSize - 2));
-			}
-			if (dim < gridSize - 2) {
-				nextRemovedNum = (dim + 1) *  ((gridSize - 2) * (gridSize - 2));
-			}
+			int p1 = 4 * (gridSize*gridSize) + ((dim + 1) * gridSize + row + 1);
+			int p2 = 4 * (gridSize*gridSize) + ((dim + 1) * gridSize + row);
+			int p3 = 4 * (gridSize*gridSize) + (dim * gridSize + row);
+			int p4 = 4 * (gridSize*gridSize) + (dim * gridSize + row + 1);
 
-			int p1 = gridSize * (gridSize - 1) + (row + 1) + dim * gridSize * gridSize - removedNum;
-			int p2 = gridSize * (gridSize - 1) + row + dim * gridSize * gridSize - removedNum;
-			int p3 = gridSize * (gridSize - 1) + row + (dim + 1) * gridSize * gridSize - nextRemovedNum;
-			int p4 = gridSize * (gridSize - 1) + (row + 1) + (dim + 1) * gridSize * gridSize - nextRemovedNum;
 			sysMemIndices[faceIdx++] = p1;
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
@@ -1695,29 +1737,25 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p4);
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
 		}
 	}
 
 	// right
-	removedNum = 0;
-	nextRemovedNum = 0;
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int row = 0; row < gridSize - 1; row++) {
-			if (dim > 0 && dim < gridSize - 1) {
-				removedNum = (dim - 1) * ((gridSize - 2) * (gridSize - 2));
-				nextRemovedNum = dim * ((gridSize - 2) * (gridSize - 2));
-			}
-
-			int p1 = (row + 1) + (dim + 1) * gridSize * gridSize - nextRemovedNum;
-			int p2 = row + (dim + 1) * gridSize * gridSize - nextRemovedNum;
-			int p3 = row + dim * gridSize * gridSize - removedNum;
-			int p4 = (row + 1) + dim * gridSize * gridSize - removedNum;
+			int p3 = 5 * (gridSize*gridSize) + ((dim + 1) * gridSize + row + 1);
+			int p2 = 5 * (gridSize*gridSize) + ((dim + 1) * gridSize + row);
+			int p1 = 5 * (gridSize*gridSize) + (dim * gridSize + row);
+			int p4 = 5 * (gridSize*gridSize) + (dim * gridSize + row + 1);
 
 			sysMemIndices[faceIdx++] = p1;
 			sysMemIndices[faceIdx++] = p2;
@@ -1726,37 +1764,29 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p2);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p1);
-			faceIndices.push_back(p3);
-			faceIndices.push_back(p4);
+			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+
+			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
+			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
 		}
 	}
 
-	for (int i = 0; i < faceIndices.size(); i += 3) {
-		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
-		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
-		normals.push_back(calculateNormal(positions.at(faceIndices.at(i)), positions.at(faceIndices.at(i + 1)), positions.at(faceIndices.at(i + 2))));
-	}
+	int pSize = vertices.size();
 
-	int pSize = positions.size();
-	int nSize = normals.size();
-
-	for (int i = 0; i < positions.size(); i++) {
-		//if (i < normals.size()) {
-			memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(unsigned int) * 3);
-	 //}
-		//else {
-		//	memcpy(sysMemVertices + i * vertexStride + normalOffset, &float3(0.0,0.0,0.0), sizeof(unsigned int) * 3);
-		////}
+	for (int i = 0; i < neighbours.size(); i++) {
+		memcpy(sysMemVertices + i * vertexStride + neighbourOffset, &neighbours.at(i), sizeof(float) * 2);
+		memcpy(sysMemVertices + i * vertexStride + neighbourTexOffset, &neighbourTexs.at(i), sizeof(float) * 4);
 	}
 
 	Egg::Mesh::VertexStreamDesc vertexStreamDesc;
 	vertexStreamDesc.elements = elements;
 	vertexStreamDesc.nElements = nElements;
-	vertexStreamDesc.nVertices = positions.size();
+	vertexStreamDesc.nVertices = vertices.size();
 	vertexStreamDesc.vertexData = sysMemVertices;
 	vertexStreamDesc.vertexStride = vertexStride;
 
@@ -1772,11 +1802,15 @@ void Game::CreateSpongeMesh() {
 	ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsSponge.cso");
 	Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsSponge.cso", device, vertexShaderByteCode);
 
+	//ComPtr<ID3DBlob> geometryShaderByteCode = loadShaderCode("gsSponge.cso");
+	//Egg::Mesh::Shader::P geometryShader = Egg::Mesh::Shader::create("gsSponge.cso", device, geometryShaderByteCode);
+
 	ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psSponge.cso");
 	Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psSponge.cso", device, pixelShaderByteCode);
 
 	Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
 	material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+	//material->setShader(Egg::Mesh::ShaderStageFlag::Geometry, geometryShader);
 	material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
 	material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
 	material->setCb("boneCB", boneBuffer, Egg::Mesh::ShaderStageFlag::Vertex);
@@ -1810,6 +1844,10 @@ void Game::CreateSpongeMesh() {
 	ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, geometry);
 	spongeMesh = Egg::Mesh::Shaded::create(geometry, material, inputLayout);
 
+	// Texture
+	spongeDiffuseSRV = loadTexture("sponge-diffuse.jpg");
+	spongeNormalSRV = loadTexture("sponge-normal.jpg");
+	spongeHeightSRV = loadTexture("sponge-height.jpg");
 }
 
 void Game::CreatePrefixSum() {
@@ -3689,12 +3727,22 @@ void Game::renderSpongeMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
 	matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
-	matrices[2] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
-	//matrices[2] = float4x4::scaling(float3(animatedControlMeshScale,animatedControlMeshScale,animatedControlMeshScale)) * (fillCam->getViewMatrix() * fillCam->getProjMatrix());
-	matrices[3] = float4x4::identity;// fillCam->getViewDirMatrix();
+	//matrices[2] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
+	matrices[2] = (float4x4::identity).invert();
+	matrices[3] = firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
 	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	spongeMesh->getMaterial()->setCb("spongeCB", eyePosCB, Egg::Mesh::ShaderStageFlag::Vertex);
+	context->PSSetShaderResources(0, 1, spongeDiffuseSRV.GetAddressOf());
+	context->PSSetShaderResources(1, 1, spongeNormalSRV.GetAddressOf());
+	context->PSSetShaderResources(2, 1, spongeHeightSRV.GetAddressOf());
+	spongeMesh->getMaterial()->setSamplerState("ss", samplerState, Egg::Mesh::ShaderStageFlag::Pixel);
 
 	spongeMesh->draw(context);
 }
@@ -4316,4 +4364,48 @@ float3 Game::calculateNormal(float3 p0, float3 p1, float3 p2) {
 	normal.z = v1.x * w1.y - v1.y * w1.x;
 
 	return normal;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Game::loadTexture(std::string name) {
+	std::string filepath = App::getSystemEnvironment().resolveMediaPath(name);
+	std::wstring file = Egg::UtfConverter::utf8to16(filepath);
+	DirectX::ScratchImage si;
+	DirectX::ScratchImage simipmap;
+	DirectX::TexMetadata metadata;
+
+	Egg::ThrowOnFail("Failed to load texture.", __FILE__, __LINE__) ^
+		DirectX::LoadFromWICFile(file.c_str(), 0, &metadata, si);
+
+	Egg::ThrowOnFail("Failed generating mipmaps.", __FILE__, __LINE__) ^
+		DirectX::GenerateMipMaps(si.GetImage(0, 0, 0), 1, metadata, (DWORD)DirectX::TEX_FILTER_DEFAULT, 0, simipmap);
+
+	Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+
+	Egg::ThrowOnFail("Could not create 2D texture.", __FILE__, __LINE__) ^
+		DirectX::CreateTextureEx(
+			device.Get(),
+			simipmap.GetImages(), simipmap.GetImageCount(), metadata,
+			D3D11_USAGE_DEFAULT,
+			D3D11_BIND_SHADER_RESOURCE,
+			0,
+			0,
+			false, resource.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+	resource.As<ID3D11Texture2D>(&texture);
+
+	D3D11_TEXTURE2D_DESC tdesc;
+	texture->GetDesc(&tdesc);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC desc;
+	desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	desc.Format = tdesc.Format;
+	desc.Texture2D.MipLevels = tdesc.MipLevels;
+	desc.Texture2D.MostDetailedMip = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tsrv;
+	Egg::ThrowOnFail((std::string("Could not load texture file: ") + filepath).c_str(), __FILE__, __LINE__) =
+		device->CreateShaderResourceView(texture.Get(), &desc, tsrv.GetAddressOf());
+
+	return tsrv;
 }
