@@ -22,12 +22,12 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
 //const unsigned int controlParticleCount = 4*4*4 * 2;
-const unsigned int controlParticleCount = 3 * 3 * 3 * 2;
+const unsigned int controlParticleCount = 6 * 6 * 6 * 2;
 //const unsigned int controlParticleCount = 16*16*16;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-constexpr unsigned int PBDGrideSize = 3;
+constexpr unsigned int PBDGrideSize = 6;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -1540,14 +1540,14 @@ void Game::CreateSpongeMesh() {
 	}
 	for (int col = 0; col < gridSize; col++) {
 		for (int row = 0; row < gridSize; row++) {
-			float3 pos = float3(col, row, 2);
+			float3 pos = float3(col, row, (gridSize - 1));
 			vertices.push_back(pos);
 			texcoords.push_back(pos.xy / (gridSize - 1));
 		}
 	}
 	for (int col = 0; col < gridSize; col++) {
 		for (int dim = 0; dim < gridSize; dim++) {
-			float3 pos = float3(col, 2, dim);
+			float3 pos = float3(col, (gridSize - 1), dim);
 			vertices.push_back(pos);
 			texcoords.push_back(pos.xz / (gridSize - 1));
 		}
@@ -1568,7 +1568,7 @@ void Game::CreateSpongeMesh() {
 	}
 	for (int dim = 0; dim < gridSize; dim++) {
 		for (int row = 0; row < gridSize; row++) {
-			float3 pos = float3(2, row, dim);
+			float3 pos = float3((gridSize - 1), row, dim);
 			vertices.push_back(pos);
 			texcoords.push_back(pos.yz / (gridSize - 1));
 		}
@@ -1577,6 +1577,9 @@ void Game::CreateSpongeMesh() {
 	for (int i = 0; i < vertices.size(); i++) {
 		int idx;
 		auto pos = vertices.at(i);
+		if (i == 16) {
+			auto a = 1;
+		}
 		for (int i = 0; i < positions.size(); i++) {
 			auto pos2 = positions.at(i);
 			int tmp;
@@ -1638,7 +1641,7 @@ void Game::CreateSpongeMesh() {
 			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
 		}
 	}
-
+	
 	// back 
 	for (int col = 0; col < gridSize - 1; col++) {
 		for (int row = 0; row < gridSize - 1; row++) {
@@ -1665,7 +1668,7 @@ void Game::CreateSpongeMesh() {
 			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
 		}
 	}
-
+	
 	// top
 	int removedNum = 0;
 	int nextRemovedNum = 0;

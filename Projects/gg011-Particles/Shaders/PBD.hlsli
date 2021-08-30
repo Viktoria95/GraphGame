@@ -1,4 +1,4 @@
 
-#define gridSize 3
+#define gridSize 6
 #define dt 0.005
 
