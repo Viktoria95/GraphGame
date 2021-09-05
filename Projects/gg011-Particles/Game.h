@@ -99,6 +99,7 @@ private:
 	Egg::Mesh::Shader::P PBDShaderFinalUpdate;
 	std::array<Egg::Mesh::Shader::P, 26> PBDShaderTetrahedron;
 	Egg::Mesh::Shader::P PBDShaderSetDefPos;
+	Egg::Mesh::Shader::P PBDShaderSphereCollision;
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;

@@ -331,6 +331,12 @@
     <FxCompile Include="Shaders\csPBDTetrahedron25.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csPBDSphereAnimate.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDSphereCollision.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli">
@@ -364,6 +370,9 @@
       <Filter>Shaders\PBD</Filter>
     </None>
     <None Include="Shaders\PBDTetrahedron.hlsli">
+      <Filter>Shaders\PBD</Filter>
+    </None>
+    <None Include="Shaders\PBDSphere.hlsli">
       <Filter>Shaders\PBD</Filter>
     </None>
   </ItemGroup>

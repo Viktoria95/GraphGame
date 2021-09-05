@@ -49,6 +49,6 @@ void csPBDFinalUpdate(uint3 DTid : SV_GroupID) {
 
 		velocity[tid].xyz = (newPos[tid].xyz - controlParticles[tid].position.xyz) / dt;
 		controlParticles[tid].position.xyz = newPos[tid].xyz;
-		//velocity[tid].xyz *= 0.99;
+		velocity[tid].xyz *= 0.99;
 	}
 }

@@ -22,12 +22,12 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
 //const unsigned int controlParticleCount = 4*4*4 * 2;
-const unsigned int controlParticleCount = 3 * 3 * 3 * 2;
+const unsigned int controlParticleCount = 6 * 6 * 6 * 2;
 //const unsigned int controlParticleCount = 16*16*16;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-constexpr unsigned int PBDGrideSize = 3;
+constexpr unsigned int PBDGrideSize = 6;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -611,7 +611,7 @@ void Game::CreateControlParticles()
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
 						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-						defaultPos = defaultPos/* * PBDGrideTrans*/;
+						defaultPos = defaultPos * PBDGrideTrans;
 						cp.position = defaultPos.xyz;
 
 
@@ -1042,6 +1042,10 @@ void Game::CreateControlParticles()
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSetDefPos.cso");
 			PBDShaderSetDefPos = Egg::Mesh::Shader::create("csPBDSetDefPos.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereCollision.cso");
+			PBDShaderSphereCollision = Egg::Mesh::Shader::create("csPBDSphereCollision.cso", device, shaderByteCode);
 		}
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
@@ -3599,14 +3603,14 @@ float4x4 GetC(uint32_t x, uint32_t y, uint32_t z, uint32_t tatraheadronType) {
 
 void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	const UINT zeros[4] = { 0,0,0,0 };
-	
+
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderGravity->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
 	context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
-	
+
 	clearContext(context);
 
 	static bool first = true;
@@ -3619,11 +3623,16 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleDefPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
-	
+
 	const int NITER = 10;
 	for (int i = 0; i < NITER; ++i)
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
+		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+		context->Dispatch(controlParticleCount, 1, 1);
+
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereCollision->getShader().Get()), nullptr, 0);
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
@@ -3641,7 +3650,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 			context->CSSetShaderResources(0, 1, controlParticleDefPosSRV.GetAddressOf());
 			context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 
-			float4x4 C = GetC(PBDGrideSize/2, PBDGrideSize/2, PBDGrideSize/2, thIdx).transpose ();
+			float4x4 C = GetC(PBDGrideSize / 2, PBDGrideSize / 2, PBDGrideSize / 2, thIdx).transpose();
 			context->UpdateSubresource(CmatCB.Get(), 0, nullptr, &C, 0, 0);
 			context->CSSetConstantBuffers(0, 1, CmatCB.GetAddressOf());
 
@@ -3658,7 +3667,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
-	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());	
+	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
 }
