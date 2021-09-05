@@ -8,7 +8,7 @@ float4 psBillboard(GsosBillboard input) : SV_Target
 
 	float s = step(length(coord), 0.1);
 
-	if (s < 0.01)
+	//if (s < 0.01)
 		discard;
 
 	float3 normal = float3(input.tex.x - 0.5, input.tex.y - 0.5, 0.0);

@@ -22,12 +22,12 @@ const unsigned int defaultParticleCount = 1024 * 2;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
 //const unsigned int controlParticleCount = 4*4*4 * 2;
-const unsigned int controlParticleCount = 6 * 6 * 6 * 2;
+const unsigned int controlParticleCount = 3 * 3 * 3 * 2;
 //const unsigned int controlParticleCount = 16*16*16;
 const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
-constexpr unsigned int PBDGrideSize = 6;
+constexpr unsigned int PBDGrideSize = 3;
 //const Egg::Math::float3 PBDGrideTrans = Egg::Math::float3(0.0, 0.5, 0.0);
 //const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -611,7 +611,7 @@ void Game::CreateControlParticles()
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
 						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-						defaultPos = defaultPos * PBDGrideTrans;
+						defaultPos = defaultPos/* * PBDGrideTrans*/;
 						cp.position = defaultPos.xyz;
 
 
@@ -1442,7 +1442,12 @@ void Game::CreateSpongeMesh() {
 	unsigned int particleIdOffset = 0;
 	unsigned int texCoordOffset = 0;
 	unsigned int neighbourOffset = 0;
-	unsigned int neighbourTexOffset = 0;
+	unsigned int neighbourTex0Offset = 0;
+	unsigned int neighbourTex1Offset = 0;
+	unsigned int neighbourTex2Offset = 0;
+	unsigned int normalOffset = 0;
+	unsigned int binormalOffset = 0;
+	unsigned int tangentOffset = 0;
 
 	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	elements[cElements].AlignedByteOffset = positionOffset = cOffset;
@@ -1476,7 +1481,7 @@ void Game::CreateSpongeMesh() {
 
 	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	elements[cElements].AlignedByteOffset = neighbourOffset = cOffset;
-	cOffset += sizeof(float) * 2;
+	cOffset += sizeof(float) * 3;
 	elements[cElements].InputSlot = 0;
 	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	elements[cElements].InstanceDataStepRate = 0;
@@ -1485,13 +1490,63 @@ void Game::CreateSpongeMesh() {
 	cElements++;
 
 	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	elements[cElements].AlignedByteOffset = neighbourTexOffset = cOffset;
-	cOffset += sizeof(float) * 4;
+	elements[cElements].AlignedByteOffset = neighbourTex0Offset = cOffset;
+	cOffset += sizeof(float) * 2;
 	elements[cElements].InputSlot = 0;
 	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	elements[cElements].InstanceDataStepRate = 0;
 	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "NEIGHBOURTEX";
+	elements[cElements].SemanticName = "FIRSTTEX";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = neighbourTex1Offset = cOffset;
+	cOffset += sizeof(float) * 2;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "SECONDTEX";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = neighbourTex2Offset = cOffset;
+	cOffset += sizeof(float) * 2;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "THIRDTEX";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = normalOffset = cOffset;
+	cOffset += sizeof(float) * 3;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "NORMAL";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = binormalOffset = cOffset;
+	cOffset += sizeof(float) * 3;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "BINORMAL";
+	cElements++;
+
+	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	elements[cElements].AlignedByteOffset = tangentOffset = cOffset;
+	cOffset += sizeof(float) * 3;
+	elements[cElements].InputSlot = 0;
+	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	elements[cElements].InstanceDataStepRate = 0;
+	elements[cElements].SemanticIndex = 0;
+	elements[cElements].SemanticName = "TANGENT";
 	cElements++;
 
 	int gridSize = PBDGrideSize;
@@ -1500,8 +1555,13 @@ void Game::CreateSpongeMesh() {
 
 	std::vector<float3> positions;
 	std::vector<float2> texcoords;
-	std::map<int, float2> neighbours;
-	std::map<int, float4> neighbourTexs;
+	std::map<int, float3> neighbours;
+	std::map<int, float2> neighbourTex0;
+	std::map<int, float2> neighbourTex1;
+	std::map<int, float2> neighbourTex2;
+	std::map<int, float3> normals;
+	std::map<int, float3> binormals;
+	std::map<int, float3> tangents;
 	std::map<int, int> particleIdMap;
 
 	int originalId = 0, newId = 0;
@@ -1630,15 +1690,40 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
 
-			neighbours.insert(std::pair<int, float2>(p0, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p0), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p0), positionMap.at(p1))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p0), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p0, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p0), positionMap.at(p2), positionMap.at(p3))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p0, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p0), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p0), texcoords.at(p1))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
+			neighbourTex0.insert(std::pair<int, float2>(p0, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p0)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p0, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p0, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+
+			normals.insert(std::pair<int, float3>(p0, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p0), vertices.at(p2), vertices.at(p3))));
+
+			binormals.insert(std::pair<int, float3>(p0, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
+
+			tangents.insert(std::pair<int, float3>(p0, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
 		}
 	}
 	
@@ -1657,23 +1742,46 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
 
-			neighbours.insert(std::pair<int, float2>(p0, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p0), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p0), positionMap.at(p1))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p0), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p0, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p0), positionMap.at(p2), positionMap.at(p3))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p0, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p0), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p0), texcoords.at(p1))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p0), texcoords.at(p2))));
+			neighbourTex0.insert(std::pair<int, float2>(p0, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p0)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p0)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p0, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p0, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+
+			normals.insert(std::pair<int, float3>(p0, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p0), vertices.at(p2), vertices.at(p3))));
+
+			binormals.insert(std::pair<int, float3>(p0, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
+
+			tangents.insert(std::pair<int, float3>(p0, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
 		}
 	}
 	
 	// top
-	int removedNum = 0;
-	int nextRemovedNum = 0;
-	for (int dim = 0; dim < gridSize - 1; dim++) {
-		for (int col = 0; col < gridSize - 1; col++) {
+	for (int col = 0; col < gridSize - 1; col++) {
+		for (int dim = 0; dim < gridSize - 1; dim++) {
 			int p3 = 2 * (gridSize*gridSize) + ((col + 1) * gridSize + dim + 1);
 			int p2 = 2 * (gridSize*gridSize) + ((col + 1) * gridSize + dim);
 			int p1 = 2 * (gridSize*gridSize) + (col * gridSize + dim);
@@ -1686,18 +1794,44 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p1), positionMap.at(p3), positionMap.at(p4))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
+
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
+
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
+
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
+
 		}
 	}
-
+	
 	//bottom
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int col = 0; col < gridSize - 1; col++) {
@@ -1713,18 +1847,43 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p1), positionMap.at(p3), positionMap.at(p4))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
+
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
+
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
+
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
-
+	
 	// left
 	for (int dim = 0; dim < gridSize - 1; dim++) {
 		for (int row = 0; row < gridSize - 1; row++) {
@@ -1740,15 +1899,40 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p1), positionMap.at(p3), positionMap.at(p4))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
+
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
+
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
+
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
 
@@ -1767,23 +1951,53 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			neighbours.insert(std::pair<int, float2>(p1, float2(positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p2, float2(positionMap.at(p1), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float2>(p3, float2(positionMap.at(p1), positionMap.at(p2))));
-			neighbours.insert(std::pair<int, float2>(p4, float2(positionMap.at(p1), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
+			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p1), positionMap.at(p3), positionMap.at(p4))));
 
-			neighbourTexs.insert(std::pair<int, float4>(p1, float4(texcoords.at(p2), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p2, float4(texcoords.at(p1), texcoords.at(p3))));
-			neighbourTexs.insert(std::pair<int, float4>(p3, float4(texcoords.at(p1), texcoords.at(p2))));
-			neighbourTexs.insert(std::pair<int, float4>(p4, float4(texcoords.at(p1), texcoords.at(p3))));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
+
+			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
+			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
+
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
+
+			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
+			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
+
+			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
+
+			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
+			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
 
 	int pSize = vertices.size();
 
 	for (int i = 0; i < neighbours.size(); i++) {
-		memcpy(sysMemVertices + i * vertexStride + neighbourOffset, &neighbours.at(i), sizeof(float) * 2);
-		memcpy(sysMemVertices + i * vertexStride + neighbourTexOffset, &neighbourTexs.at(i), sizeof(float) * 4);
+		memcpy(sysMemVertices + i * vertexStride + neighbourOffset, &neighbours.at(i), sizeof(float) * 3);
+		memcpy(sysMemVertices + i * vertexStride + neighbourTex0Offset, &neighbourTex0.at(i), sizeof(float) * 2);
+		memcpy(sysMemVertices + i * vertexStride + neighbourTex1Offset, &neighbourTex1.at(i), sizeof(float) * 2);
+		memcpy(sysMemVertices + i * vertexStride + neighbourTex2Offset, &neighbourTex2.at(i), sizeof(float) * 2);
+		memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(float) * 3);
+		memcpy(sysMemVertices + i * vertexStride + binormalOffset, &binormals.at(i), sizeof(float) * 3);
+		memcpy(sysMemVertices + i * vertexStride + tangentOffset, &tangents.at(i), sizeof(float) * 3);
 	}
 
 	Egg::Mesh::VertexStreamDesc vertexStreamDesc;
@@ -4367,6 +4581,44 @@ float3 Game::calculateNormal(float3 p0, float3 p1, float3 p2) {
 	normal.z = v1.x * w1.y - v1.y * w1.x;
 
 	return normal;
+}
+
+float3 Game::calculateBinormal(float3 p0, float3 p1, float3 p2, float2 t0, float2 t1, float2 t2) {
+	float3 edge1 = p1 - p0;
+	float3 edge2 = p2 - p0;
+	float2 edge1uv = t1 - t0;
+	float2 edge2uv = t2 - t0;
+
+	float3 binormal;
+
+	float cp = edge1uv.y * edge2uv.x - edge1uv.x * edge2uv.y;
+
+	if (cp != 0.0f) {
+		float mul = 1.0f / cp;
+		binormal = (edge1 * -edge2uv.y + edge2 * edge1uv.y) * mul;
+
+		binormal = binormal.normalize();
+	}
+	return binormal;
+}
+
+float3 Game::calculateTangent(float3 p0, float3 p1, float3 p2, float2 t0, float2 t1, float2 t2) {
+	float3 edge1 = p1 - p0;
+	float3 edge2 = p2 - p0;
+	float2 edge1uv = t1 - t0;
+	float2 edge2uv = t2 - t0;
+
+	float3 tangent;
+
+	float cp = edge1uv.y * edge2uv.x - edge1uv.x * edge2uv.y;
+
+	if (cp != 0.0f) {
+		float mul = 1.0f / cp;
+		tangent = (edge1 * -edge2uv.x + edge2 * edge1uv.x) * mul;
+
+		tangent = tangent.normalize();
+	}
+	return -tangent;
 }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Game::loadTexture(std::string name) {

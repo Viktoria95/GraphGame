@@ -331,6 +331,8 @@ public:
 	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	Egg::Math::float3 calculateNormal(Egg::Math::float3 p0, Egg::Math::float3 p1, Egg::Math::float3 p2);
+	Egg::Math::float3 calculateBinormal(Egg::Math::float3 p0, Egg::Math::float3 p1, Egg::Math::float3 p2, Egg::Math::float2 t0, Egg::Math::float2 t1, Egg::Math::float2 t2);
+	Egg::Math::float3 calculateTangent(Egg::Math::float3 p0, Egg::Math::float3 p1, Egg::Math::float3 p2, Egg::Math::float2 t0, Egg::Math::float2 t1, Egg::Math::float2 t2);
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> loadTexture(std::string name);
 
 GG_ENDCLASS

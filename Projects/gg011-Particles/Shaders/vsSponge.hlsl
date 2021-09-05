@@ -21,8 +21,13 @@ struct IaosTrafo
 	float4 pos : POSITION;
 	float2 tex : TEXCOORDS;
 	uint particleId: PARTICLEID;
-	float2 neighbourIds : NEIGHBOUR;
-	float4 neighbourTexs: NEIGHBOURTEX;
+	float3 neighbourIds : NEIGHBOUR;
+	float2 neighbourTex0: FIRSTTEX;
+	float2 neighbourTex1: SECONDTEX;
+	float2 neighbourTex2: THIRDTEX;
+	float3 normal: NORMAL;
+	float3 binormal: BINORMAL;
+	float3 tangent: TANGENT;
 };
 
 struct VsosTrafo
@@ -41,6 +46,57 @@ struct VsosTrafo
 	float3 viewDirTS: VIEWDIRTS;
 };
 
+float3 calculateNormal(float3 p0, float3 p1, float3 p2) {
+	float3 v1 = p1 - p0;
+	float3 w1 = p2 - p0;
+
+	float3 normal;
+	normal.x = v1.y * w1.z - v1.z * w1.y;
+	normal.y = v1.z * w1.x - v1.x * w1.z;
+	normal.z = v1.x * w1.y - v1.y * w1.x;
+
+	float3 normalizedNormal = normalize(normal);
+	return normalizedNormal;
+}
+
+float3 calculateBinormal(float3 p0, float3 p1, float3 p2, float2 t0, float2 t1, float2 t2) {
+	float3 edge1 = p1 - p0;
+	float3 edge2 = p2 - p0;
+	float2 edge1uv = t1 - t0;
+	float2 edge2uv = t2 - t0;
+
+	float3 binormal, normalizedBinormal;
+
+	float cp = edge1uv.y * edge2uv.x - edge1uv.x * edge2uv.y;
+
+	if (cp != 0.0f) {
+		float mul = 1.0f / cp;
+		binormal = (edge1 * -edge2uv.y + edge2 * edge1uv.y) * mul;
+
+		normalizedBinormal = normalize(binormal);
+	}
+	return normalizedBinormal;
+}
+
+float3 calculateTangent(float3 p0, float3 p1, float3 p2, float2 t0, float2 t1, float2 t2) {
+	float3 edge1 = p1 - p0;
+	float3 edge2 = p2 - p0;
+	float2 edge1uv = t1 - t0;
+	float2 edge2uv = t2 - t0;
+
+	float3 tangent, normalizedTangent;
+
+	float cp = edge1uv.y * edge2uv.x - edge1uv.x * edge2uv.y;
+
+	if (cp != 0.0f) {
+		float mul = 1.0f / cp;
+		tangent = (edge1 * -edge2uv.x + edge2 * edge1uv.x) * mul;
+
+		normalizedTangent = normalize(tangent);
+	}
+	return -normalizedTangent;
+}
+
 VsosTrafo vsSponge(IaosTrafo input, uint vid : SV_VertexID)
 {
 	VsosTrafo output = (VsosTrafo)0;
@@ -48,35 +104,24 @@ VsosTrafo vsSponge(IaosTrafo input, uint vid : SV_VertexID)
 	float4 worldPos = mul(modelMatrix, float4(controlParticles[input.particleId].position.xyz, 1.0f));
 	float3 descartesPos = worldPos.xyz / worldPos.w;
 
-	float4 lightPos = (0.0, 2.0, 0.5, 1.0);
+	float4 lightPos = (0.0, 0.0, 0.0, 1.0);
 
-	float3 lightDir = normalize(lightPos.xyz - descartesPos * lightPos.w);
+	float3 lightDir = float3(1.0, 1.0, 1.0); 
+	//normalize(lightPos.xyz - descartesPos * lightPos.w);
 	float3 viewDir = normalize(eyePos.xyz - descartesPos);
 
-	float3 p0 = controlParticles[input.particleId].position.xyz;
-	float3 p1 = controlParticles[(uint)input.neighbourIds.x].position.xyz;
-	float3 p2 = controlParticles[(uint)input.neighbourIds.y].position.xyz;
-	float3 v1 = (p1 - p0).xyz;
-	float3 v2 = (p2 - p0).xyz;
-	float3 N = normalize(cross(v2, v1));
+	float3 normal = calculateNormal(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz);
+	float3 binormal = calculateBinormal(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz,
+										input.neighbourTex0, input.neighbourTex1, input.neighbourTex2);
+	float3 tangent = calculateTangent(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz,
+		input.neighbourTex0, input.neighbourTex1, input.neighbourTex2);
 
-	float2 tex0 = input.tex;
-	float2 tex1 = input.neighbourTexs.xy;
-	float2 tex2 = input.neighbourTexs.zw;
-
-	float c2c1t = tex1.x - tex0.x;
-	float c2c1b = tex1.y - tex0.y;
-	float c3c1t = tex2.x - tex0.x;
-	float c3c1b = tex2.y - tex0.y;
-
-	float3 T = float3(c3c1b * v1.x - c2c1b * v2.x, c3c1b * v1.y - c2c1b * v2.y, c3c1b * v1.z - c2c1b * v2.z);
-	float3 B = float3(-c3c1t * v1.x + c2c1t * v2.x, -c3c1t * v1.y + c2c1t * v2.y, -c3c1t * v1.z + c2c1t * v2.z);
-
-	float3 t = normalize(mul(float4(T, 0.0), modelMatrixInverse).xyz);
-	float3 b = normalize(mul(float4(B, 0.0), modelMatrixInverse).xyz);
-	float3 n = normalize(mul(float4(N, 0.0), modelMatrixInverse).xyz);
+	float3 t = normalize(mul(float4(tangent, 0.0f), modelMatrixInverse).xyz);
+	float3 b = normalize(mul(float4(binormal, 0.0f), modelMatrixInverse).xyz);
+	float3 n = normalize(mul(float4(normal, 0.0f), modelMatrixInverse).xyz);
 
 	float3x3 tbn = { t, -b, n };
+	float3 lightDir2 = max(dot(n, lightPos.xyz), 0.0);
 
 	output.pos = mul(worldPos, viewProjMatrix);
 	output.id = vid;
@@ -85,10 +130,10 @@ VsosTrafo vsSponge(IaosTrafo input, uint vid : SV_VertexID)
 	output.worldPos = worldPos;
 	output.viewDir = viewDir;
 	output.lightDir = lightDir;
-	output.normal = n;
+	output.normal = n;// mul(tbn, n);
 	output.tangent = t;
 	output.binormal = -b;
-	output.lightDirTS = mul(tbn, lightDir);
+	output.lightDirTS = mul(tbn, n);// mul(tbn, lightDir);
 	output.viewDirTS = mul(tbn, viewDir);
 	return output;
 }
