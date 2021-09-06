@@ -551,37 +551,7 @@ void Game::CreateControlParticles()
 			controlParticles.push_back(cp);
 		}
 	}
-	/*
-	if (controlParticlePlacement == PBD) {
-		for (int i = 0; i < PBDGrideSize; i++)
-		{
-			for (int j = 0; j < PBDGrideSize; j++)
-			{
-				for (int k = 0; k < PBDGrideSize; k++)
-				{
-					ControlParticle cp;
-					memset(&cp, 0, sizeof (ControlParticle));
-					//cp.position.x = k * 0.01;
-					//cp.position.y = j * 0.01;
-					//cp.position.z = i * 0.01;
-					//cp.position += PBDGrideTrans;
-					float4 defaultPos (k * 0.01, j * 0.01, i * 0.01, 1.0);
-					//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
-					const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(),  3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-					//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-					defaultPos = defaultPos * PBDGrideTrans;
-					cp.position = defaultPos.xyz;
 
-
-					cp.controlPressureRatio = 1.0;
-					cp.temp = 0.0f;					
-					//controlParticles.push_back(cp);
-					controlParticles[i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k] = (cp);
-				}
-			}
-		}
-	}
-	*/
 	if (controlParticlePlacement == PBD) {
 		
 		cpuDefPos.resize(PBDGrideSize*PBDGrideSize*PBDGrideSize * 2);
@@ -649,7 +619,7 @@ void Game::CreateControlParticles()
 						//cp.position += PBDGrideTrans;
 						const float GridDist = 0.05;
 						float4 defaultPos(k * GridDist, j * GridDist, i * GridDist, 1.0);
-						
+
 						if (n == 1) {
 							defaultPos += float4(GridDist / 2.0, GridDist / 2.0, GridDist / 2.0, 0.0);
 							//defaultPos += float4(0.3, 0.3, 0.3, 0.0);
@@ -673,31 +643,123 @@ void Game::CreateControlParticles()
 				}
 			}
 		}
-
-		/*
-		for (int i = 0; i < cpuPos.size (); i++) {
-			ControlParticle cp;
-			memset(&cp, 0, sizeof(ControlParticle));
-
-			
-			float4 transformed(cpuDefPos[i].x, cpuDefPos[i].y, cpuDefPos[i].z, 1.0);
-			
-				
-			const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-			//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
-			//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
-			transformed = transformed * PBDGrideTrans;
-			transformed /= transformed.w;
-
-			cpuPos[i] = transformed.xyz;
-
-			cp.position = transformed.xyz;
-			cp.controlPressureRatio = 1.0;
-			cp.temp = 0.0f;
-			controlParticles[i] = (cp);
-		}
-		*/
 	}
+
+	{
+		// PBDTestMesh
+		const aiScene* testMeshScene = importer.ReadFile(App::getSystemEnvironment().resolveMediaPath("sphere.obj"), 0);
+		Egg::Mesh::Geometry::P testMeshGeometry = Egg::Mesh::Importer::fromAiMesh(device, testMeshScene->mMeshes[0]);
+
+		ComPtr<ID3DBlob> vertexShaderByteCode = loadShaderCode("vsTestMesh.cso");
+		Egg::Mesh::Shader::P vertexShader = Egg::Mesh::Shader::create("vsTestMesh.cso", device, vertexShaderByteCode);
+
+		ComPtr<ID3DBlob> pixelShaderByteCode = loadShaderCode("psTestMesh.cso");
+		Egg::Mesh::Shader::P pixelShader = Egg::Mesh::Shader::create("psTestMesh.cso", device, pixelShaderByteCode);
+
+		Egg::Mesh::Material::P material = Egg::Mesh::Material::create();
+		material->setShader(Egg::Mesh::ShaderStageFlag::Vertex, vertexShader);
+		material->setShader(Egg::Mesh::ShaderStageFlag::Pixel, pixelShader);
+		material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Vertex);
+		//material->setCb("modelViewProjCB", modelViewProjCB, Egg::Mesh::ShaderStageFlag::Pixel);
+		/*
+		// Depth settings
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DSState;
+		D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+		// Depth test parameters
+		dsDesc.DepthEnable = false;
+		dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+		// Stencil test parameters
+		dsDesc.StencilEnable = false;
+		dsDesc.StencilReadMask = 0xFF;
+		dsDesc.StencilWriteMask = 0xFF;
+
+		// Stencil operations if pixel is front-facing
+		dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		// Stencil operations if pixel is back-facing
+		dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		// Create depth stencil state
+		device->CreateDepthStencilState(&dsDesc, DSState.GetAddressOf());
+		material->depthStencilState = DSState;
+
+		/// Raster settings
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+
+		D3D11_RASTERIZER_DESC RasterizerDesc;
+		RasterizerDesc.CullMode = D3D11_CULL_NONE;
+		RasterizerDesc.FillMode = D3D11_FILL_SOLID;
+		RasterizerDesc.FrontCounterClockwise = FALSE;
+		RasterizerDesc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+		RasterizerDesc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+		RasterizerDesc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+		RasterizerDesc.DepthClipEnable = TRUE;
+		RasterizerDesc.ScissorEnable = FALSE;
+		RasterizerDesc.MultisampleEnable = FALSE;
+		RasterizerDesc.AntialiasedLineEnable = FALSE;
+
+		device->CreateRasterizerState(&RasterizerDesc, RasterizerState.GetAddressOf());
+		material->rasterizerState = RasterizerState;
+		*/
+
+		ComPtr<ID3D11InputLayout> inputLayout = inputBinder->getCompatibleInputLayout(vertexShaderByteCode, testMeshGeometry);
+		PBDTestMesh = Egg::Mesh::Shaded::create(testMeshGeometry, material, inputLayout);
+
+		{
+			// PBDTestMeshPos
+
+			// Data Buffer
+			D3D11_BUFFER_DESC bufferDesc;
+			bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+			bufferDesc.CPUAccessFlags = 0;
+			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;;
+			bufferDesc.StructureByteStride = sizeof(float) * 4;
+			bufferDesc.ByteWidth = sizeof(float) * 4;
+
+
+			float4 posData = float4 (0.0, 0.0, 0.0, 1.0);
+			D3D11_SUBRESOURCE_DATA initialData;
+			initialData.pSysMem = &posData;
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&bufferDesc, &initialData, PBDTestMeshPosDataBuffer.GetAddressOf());
+
+
+
+			// Shader Resource View
+			D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			SRVDesc.Buffer.FirstElement = 0;
+			SRVDesc.Buffer.NumElements = 1;
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos SRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(PBDTestMeshPosDataBuffer.Get(), &SRVDesc, &PBDTestMeshPosSRV);
+
+
+			// Unordered Access View
+			D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
+			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			UAVDesc.Buffer.FirstElement = 0;
+			UAVDesc.Buffer.NumElements = 1;
+			UAVDesc.Buffer.Flags = 0; // WHY????
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos UAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(PBDTestMeshPosDataBuffer.Get(), &UAVDesc, &PBDTestMeshPosUAV);
+		}
+	}
+
 
 	//else 
 	if (controlParticlePlacement == Render || controlParticlePlacement == Animated)
@@ -3624,7 +3686,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
 
-	const int NITER = 10;
+	const int NITER = 20;
 	for (int i = 0; i < NITER; ++i)
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
@@ -3634,6 +3696,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereCollision->getShader().Get()), nullptr, 0);
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+		context->CSSetShaderResources(1, 1, PBDTestMeshPosSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
 
@@ -3670,6 +3733,22 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
+
+	clearContext(context);
+
+	// TestMesh
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
+
+	PBDTestMesh->draw(context);
+
+	clearContext(context);
 }
 
 std::array<float3,4> get_nabla_p_Sij(const float4x4& F, const float4x4& C, uint32_t i, uint32_t j) {
@@ -4129,7 +4208,7 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg::Math;
-
+	
 	// Hash
 	if (billboardsLoadAlgorithm == HashSimple)
 	{

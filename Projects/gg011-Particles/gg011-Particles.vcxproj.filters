@@ -46,6 +46,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shaders\PBD\TetrahedronXY">
+      <UniqueIdentifier>{773a3715-cc04-4a66-ad59-ff810ea39634}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -247,95 +250,101 @@
     <FxCompile Include="Shaders\csPBDSetDefPos.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron0.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron1.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron2.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron3.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron4.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron5.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron6.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron7.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron8.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron9.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron10.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron11.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron12.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron13.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron14.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron15.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron16.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron17.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron18.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron19.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron20.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron21.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron22.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron23.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\psSponge.hlsl">
       <Filter>Shaders\Sponge</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\vsSponge.hlsl">
       <Filter>Shaders\Sponge</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron24.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csPBDTetrahedron25.hlsl">
-      <Filter>Shaders\PBD</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csPBDSphereAnimate.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csPBDSphereCollision.hlsl">
       <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\psTestMesh.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\vsTestMesh.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron0.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron1.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron2.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron3.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron4.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron5.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron6.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron7.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron8.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron9.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron10.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron11.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron12.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron13.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron14.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron15.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron16.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron17.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron18.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron19.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron20.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron21.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron22.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron23.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron24.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDTetrahedron25.hlsl">
+      <Filter>Shaders\PBD\TetrahedronXY</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

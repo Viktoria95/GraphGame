@@ -1,6 +1,6 @@
 
 
-Buffer<float4> sphereCenter;
+Buffer<float4> testMeshPos;
 
 [numthreads(1, 1, 1)]
 void csPBDSphereAnimate() {

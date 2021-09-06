@@ -274,7 +274,7 @@ void executeConstraintsOnVertices(uint4 pIdx) {
 	//Volume
 	PosDeltas4 deltaPforVolume = get_delta_p_for_volume(P, Q);
 	for (uint k = 0; k < 4; k++) {
-		newPos[pIdx[k]].xyz += deltaPforVolume.d[k] * 0.002;
+		newPos[pIdx[k]].xyz += deltaPforVolume.d[k] * 0.001;
 	}
 }
 

@@ -92,6 +92,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleVelocitySRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleVelocityUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> CmatCB;
+	Egg::Mesh::Shaded::P PBDTestMesh;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> PBDTestMeshPosDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  PBDTestMeshPosSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>  PBDTestMeshPosUAV;
 	Egg::Mesh::Shader::P PBDShaderGravity;
 	Egg::Mesh::Shader::P PBDShaderCollision;
 	Egg::Mesh::Shader::P PBDShaderDistance;
@@ -100,6 +104,7 @@ private:
 	std::array<Egg::Mesh::Shader::P, 26> PBDShaderTetrahedron;
 	Egg::Mesh::Shader::P PBDShaderSetDefPos;
 	Egg::Mesh::Shader::P PBDShaderSphereCollision;
+	
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
