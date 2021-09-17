@@ -4,7 +4,7 @@ namespace Egg
 {
 	namespace Mesh
 	{
-		enum ShaderStageFlag
+		enum class ShaderStageFlag
 		{
 			Vertex,
 			Hull,

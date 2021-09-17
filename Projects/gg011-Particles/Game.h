@@ -96,6 +96,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> PBDTestMeshPosDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  PBDTestMeshPosSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>  PBDTestMeshPosUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> PBDTestMeshTransDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  PBDTestMeshTransSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>  PBDTestMeshTransUAV;
 	Egg::Mesh::Shader::P PBDShaderGravity;
 	Egg::Mesh::Shader::P PBDShaderCollision;
 	Egg::Mesh::Shader::P PBDShaderDistance;
@@ -104,6 +107,7 @@ private:
 	std::array<Egg::Mesh::Shader::P, 26> PBDShaderTetrahedron;
 	Egg::Mesh::Shader::P PBDShaderSetDefPos;
 	Egg::Mesh::Shader::P PBDShaderSphereCollision;
+	Egg::Mesh::Shader::P PBDShaderSphereAnimate;
 	
 
 	// Hashtables

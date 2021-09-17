@@ -579,7 +579,8 @@ void Game::CreateControlParticles()
 						}
 
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::identity;
-						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize(), 3.14 / 2.0) * Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
+						const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.0, 0.0));
 						//const Egg::Math::float4x4 PBDGrideTrans = Egg::Math::float4x4::translation(float3(0.0, 0.5, 0.0));
 						defaultPos = defaultPos * PBDGrideTrans;
 						cp.position = defaultPos.xyz;
@@ -724,10 +725,10 @@ void Game::CreateControlParticles()
 			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 			bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;;
 			bufferDesc.StructureByteStride = sizeof(float) * 4;
-			bufferDesc.ByteWidth = sizeof(float) * 4;
+			bufferDesc.ByteWidth = 2 * sizeof(float) * 4;
 
 
-			float4 posData = float4 (0.0, 0.0, 0.0, 1.0);
+			float4 posData[2] = { float4(0.2, 1.0, 0.2, 1.0), float4(0.0, 0.0, 0.0, 0.0) };
 			D3D11_SUBRESOURCE_DATA initialData;
 			initialData.pSysMem = &posData;
 
@@ -741,7 +742,7 @@ void Game::CreateControlParticles()
 			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 			SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			SRVDesc.Buffer.FirstElement = 0;
-			SRVDesc.Buffer.NumElements = 1;
+			SRVDesc.Buffer.NumElements = 2;
 
 			Egg::ThrowOnFail("Could not create PBDTestMeshPos SRV.", __FILE__, __LINE__) ^
 				device->CreateShaderResourceView(PBDTestMeshPosDataBuffer.Get(), &SRVDesc, &PBDTestMeshPosSRV);
@@ -752,11 +753,51 @@ void Game::CreateControlParticles()
 			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 			UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			UAVDesc.Buffer.FirstElement = 0;
-			UAVDesc.Buffer.NumElements = 1;
+			UAVDesc.Buffer.NumElements = 2;
 			UAVDesc.Buffer.Flags = 0; // WHY????
 
 			Egg::ThrowOnFail("Could not create PBDTestMeshPos UAV.", __FILE__, __LINE__) ^
 				device->CreateUnorderedAccessView(PBDTestMeshPosDataBuffer.Get(), &UAVDesc, &PBDTestMeshPosUAV);
+		}
+
+		{
+			// PBDTestMeshPos
+
+			// Data Buffer
+			D3D11_BUFFER_DESC bufferDesc;
+			bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+			bufferDesc.CPUAccessFlags = 0;
+			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;;
+			bufferDesc.StructureByteStride = sizeof(float) * 4;
+			bufferDesc.ByteWidth = controlParticleCount * sizeof(float) * 4;
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&bufferDesc, NULL, PBDTestMeshTransDataBuffer.GetAddressOf());
+
+
+
+			// Shader Resource View
+			D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			SRVDesc.Buffer.FirstElement = 0;
+			SRVDesc.Buffer.NumElements = controlParticleCount;
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos SRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(PBDTestMeshTransDataBuffer.Get(), &SRVDesc, &PBDTestMeshTransSRV);
+
+
+			// Unordered Access View
+			D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
+			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+			UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+			UAVDesc.Buffer.FirstElement = 0;
+			UAVDesc.Buffer.NumElements = controlParticleCount;
+			UAVDesc.Buffer.Flags = 0; // WHY????
+
+			Egg::ThrowOnFail("Could not create PBDTestMeshPos UAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(PBDTestMeshTransDataBuffer.Get(), &UAVDesc, &PBDTestMeshTransUAV);
 		}
 	}
 
@@ -1108,6 +1149,10 @@ void Game::CreateControlParticles()
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereCollision.cso");
 			PBDShaderSphereCollision = Egg::Mesh::Shader::create("csPBDSphereCollision.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereAnimate.cso");
+			PBDShaderSphereAnimate = Egg::Mesh::Shader::create("csPBDSphereAnimate.cso", device, shaderByteCode);
 		}
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
@@ -3686,6 +3731,9 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
 
+	uint values[4] = { 0,0,0,0 };
+	context->ClearUnorderedAccessViewUint(PBDTestMeshTransUAV.Get(), values);
+
 	const int NITER = 20;
 	for (int i = 0; i < NITER; ++i)
 	{
@@ -3698,6 +3746,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 		context->CSSetShaderResources(1, 1, PBDTestMeshPosSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
+		context->CSSetUnorderedAccessViews(1, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
 
 		/*
@@ -3717,7 +3766,6 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 			context->UpdateSubresource(CmatCB.Get(), 0, nullptr, &C, 0, 0);
 			context->CSSetConstantBuffers(0, 1, CmatCB.GetAddressOf());
 
-			//context->Dispatch(1, 3, 1);
 			if (thIdx < 24) {
 				context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
 			}
@@ -3727,6 +3775,14 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		}
 
 	}
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereAnimate->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+	//context->CSSetShaderResources(1, 1, PBDTestMeshTransSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, PBDTestMeshPosUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
+	context->Dispatch(1, 1, 1);
+
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
