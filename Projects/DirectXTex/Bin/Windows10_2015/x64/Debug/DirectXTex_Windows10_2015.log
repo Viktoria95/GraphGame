@@ -1,8 +1,0 @@
-﻿Build started 10/13/2017 11:41:18 AM.
-     1>Project "D:\Education\GraphGame17\GraphGame\Projects\DirectXTex\DirectXTex_Windows10_2015.vcxproj" on node 2 (Build target(s)).
-     1>C:\Program Files (x86)\MSBuild\14.0\bin\Microsoft.Common.CurrentVersion.targets(2048,5): error MSB3774: Could not find SDK "Microsoft.VCLibs, Version=14.0".
-     1>Done Building Project "D:\Education\GraphGame17\GraphGame\Projects\DirectXTex\DirectXTex_Windows10_2015.vcxproj" (Build target(s)) -- FAILED.
-
-Build FAILED.
-
-Time Elapsed 00:00:00.74

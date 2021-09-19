@@ -1,0 +1,371 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{f3cf27d1-9fc3-4b06-aa81-70867789ae4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{c76fb140-ceaa-4268-b77f-2406ec79c7ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mesh">
+      <UniqueIdentifier>{3975ca39-e5c6-4edb-ad6d-5072b939714f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{3df7c362-51c2-4b63-811a-11b2c177b11f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cam">
+      <UniqueIdentifier>{05b29fdf-d853-404e-ac79-906643457b7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{3b036388-a45d-413e-8b1b-77b4161060c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Script">
+      <UniqueIdentifier>{8d080526-a66a-4497-bd7c-c44339c63164}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physics">
+      <UniqueIdentifier>{18154dd7-d2a9-4f2f-b42c-0148977c7db6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Control">
+      <UniqueIdentifier>{98413d43-ae3f-4fd8-b68d-94a21f3e0cc4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="App.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PsoManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool1.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool2Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool3Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Bool4Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float1.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float2Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float3Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float4Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Float4x4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int1.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int2Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int3Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Int4Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Math.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt1.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt2Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt3Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\UInt4Swizzle.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Shaded.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Material.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Geometry.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Prefabs.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Importer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cam\Base.h">
+      <Filter>Cam</Filter>
+    </ClInclude>
+    <ClInclude Include="Cam\FirstPerson.h">
+      <Filter>Cam</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureCube.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\ControlParameters.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\ControlState.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Entity.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\FixedRigidBody.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\PerObjectData.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\RigidBody.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Flip.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\Multi.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\ManagerApp.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\ConstantBufferTypes.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\AiEnumReflections.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\EnumReflectionMap.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\luabindGetPointer.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\LuaTable.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\ScriptedApp.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\Shader.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\Material.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\Model.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\PhysicsApp.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\PhysicsMathConversions.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\PhysicsRigidBody.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\PxEnumReflections.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Control\ControlApp.h">
+      <Filter>Control</Filter>
+    </ClInclude>
+    <ClInclude Include="Control\LuaControlState.h">
+      <Filter>Control</Filter>
+    </ClInclude>
+    <ClInclude Include="Cam\Fixed.h">
+      <Filter>Cam</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Math\Bool1.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Bool2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Bool3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Bool4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Float1.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Float2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Float3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Float4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Float4x4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Int1.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Int2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Int3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Int4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\UInt1.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\UInt2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\UInt3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\UInt4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Internal.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="PsoManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Importer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture2D.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cam\FirstPerson.cpp">
+      <Filter>Cam</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureCube.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Entity.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\ManagerApp.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\AiEnumReflections.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\ScriptedApp.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics\PhysicsApp.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics\PhysicsRigidBody.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics\PxEnumReflections.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Control\ControlApp.cpp">
+      <Filter>Control</Filter>
+    </ClCompile>
+    <ClCompile Include="Cam\Fixed.cpp">
+      <Filter>Cam</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="cbBasicPS.hlsl" />
+  </ItemGroup>
+</Project>
