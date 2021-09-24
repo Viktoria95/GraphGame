@@ -420,7 +420,13 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 	return envTexture.Sample(ss, d);
 }
 
-float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
+struct RaytraceResult {
+	float3 color;
+	float depth;
+	bool discarded;
+};
+
+RaytraceResult CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
@@ -537,11 +543,16 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 		}
 	}
 
-	if (killer == 0)
+	RaytraceResult result;
+	result.color = color;
+	result.depth = 0.0;
+	result.discarded = (killer == 9);
+
+	if (killer == 9)
 	{
 		//return float4 (1.0, 0.0, 0.0, 1.0);
 	}
 
-	return float4 (color, 1.0);
+	return result;
 
 }

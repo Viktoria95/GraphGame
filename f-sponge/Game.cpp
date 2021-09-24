@@ -124,7 +124,7 @@ void Game::CreateCommon()
 	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
 
-	billboardsLoadAlgorithm = Normal;
+	billboardsLoadAlgorithm = SBuffer;
 	renderMode = ControlParticles;
 
 	drawFlatControlMesh = false;
@@ -2832,7 +2832,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
 	uint t[1] = { 0 };
-	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, NULL, 0, 1, ppUnorderedAccessViews, t);
 
 	billboards->getMaterial()->setShader(Egg11::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderS1);
 
@@ -2879,7 +2879,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	ppUnorderedAccessViews[1] = countUAV.Get();
 	ppUnorderedAccessViews[2] = idUAV.Get();
 	uint t[3] = { 0,0,0 };
-	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 3, ppUnorderedAccessViews, t);
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, NULL, 0, 3, ppUnorderedAccessViews, t);
 
 	billboards->getMaterial()->setShader(Egg11::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderS2);
 
@@ -3822,20 +3822,6 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(controlParticleCount, 1, 1);
 
 	clearContext(context);
-
-	// TestMesh
-	float4x4 matrices[4];
-	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
-	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-
-	PBDTestMesh->draw(context);
-
-	clearContext(context);
 }
 
 std::array<float3, 4> get_nabla_p_Sij(const float4x4& F, const float4x4& C, uint32_t i, uint32_t j) {
@@ -4502,9 +4488,23 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		}
 	}
 
+	clearContext(context);
+
+	// TestMesh
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
+
+	PBDTestMesh->draw(context);
+
 	context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
 
-
+	
 	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
 	//context->Unmap(uavCounterReadback.Get(), 0);
 	//auto b = 1;
