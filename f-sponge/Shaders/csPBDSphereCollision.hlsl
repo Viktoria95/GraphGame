@@ -3,7 +3,7 @@
 #include "PBDSphere.hlsli"
 
 Buffer<uint> controlParticleCounter;
-Buffer<float4> testMeshPos;
+StructuredBuffer<Sphere> testMesh;
 
 RWStructuredBuffer<float4> newPos;
 RWStructuredBuffer<float4> tesMeshTrans;
@@ -16,7 +16,7 @@ void csPBDSphereCollision(uint3 DTid : SV_GroupID) {
 
 		const float boundaryEps = 0.0001;
 
-		float4 center = testMeshPos[0];
+		float4 center = testMesh[0].pos;
 		float radius = sphereRadius;
 
 		float3 radDis = newPos[tid].xyz - center.xyz;
