@@ -757,7 +757,7 @@ void Game::CreateControlParticles()
 			bufferDesc.CPUAccessFlags = 0;
 			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 			bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;;
-			bufferDesc.StructureByteStride = sizeof(float) * 4;
+			bufferDesc.StructureByteStride = 2 * sizeof(float) * 4;
 			bufferDesc.ByteWidth = 2 * sizeof(float) * 4;
 
 
@@ -775,7 +775,7 @@ void Game::CreateControlParticles()
 			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 			SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			SRVDesc.Buffer.FirstElement = 0;
-			SRVDesc.Buffer.NumElements = 2;
+			SRVDesc.Buffer.NumElements = 1;
 
 			Egg11::ThrowOnFail("Could not create PBDTestMeshPos SRV.", __FILE__, __LINE__) ^
 				device->CreateShaderResourceView(PBDTestMeshPosDataBuffer.Get(), &SRVDesc, &PBDTestMeshPosSRV);
@@ -786,7 +786,7 @@ void Game::CreateControlParticles()
 			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 			UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			UAVDesc.Buffer.FirstElement = 0;
-			UAVDesc.Buffer.NumElements = 2;
+			UAVDesc.Buffer.NumElements = 1;
 			UAVDesc.Buffer.Flags = 0; // WHY????
 
 			Egg11::ThrowOnFail("Could not create PBDTestMeshPos UAV.", __FILE__, __LINE__) ^
@@ -3804,6 +3804,8 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		}
 
 	}
+
+	clearContext(context);
 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereAnimate->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
