@@ -1,7 +1,7 @@
 
 #include "PBDSphere.hlsli"
 
-Buffer<float4> testMeshPos;
+StructuredBuffer<Sphere> testMeshPos;
 
 cbuffer modelViewProjCB {
 	row_major float4x4 modelMatrix;
@@ -25,7 +25,7 @@ struct VsosTrafo
 VsosTrafo vsTestMesh(IaosTrafo input)
 {
 	VsosTrafo output = (VsosTrafo)0;
-	output.pos = mul(float4(input.pos.xyz * sphereRadius + testMeshPos[0].xyz, 1.0), modelViewProjMatrix);
+	output.pos = mul(float4(input.pos.xyz * sphereRadius + testMeshPos[0].pos.xyz, 1.0), modelViewProjMatrix);
 	output.norm = input.norm;
 	//output.pos = input.pos;
 	return output;

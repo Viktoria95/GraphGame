@@ -724,7 +724,7 @@ void Game::CreateControlParticles()
 			bufferDesc.CPUAccessFlags = 0;
 			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 			bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;;
-			bufferDesc.StructureByteStride = sizeof(float) * 4;
+			bufferDesc.StructureByteStride = 2* sizeof(float) * 4;
 			bufferDesc.ByteWidth = 2 * sizeof(float) * 4;
 
 
@@ -742,7 +742,7 @@ void Game::CreateControlParticles()
 			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 			SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			SRVDesc.Buffer.FirstElement = 0;
-			SRVDesc.Buffer.NumElements = 2;
+			SRVDesc.Buffer.NumElements = 1;
 
 			Egg::ThrowOnFail("Could not create PBDTestMeshPos SRV.", __FILE__, __LINE__) ^
 				device->CreateShaderResourceView(PBDTestMeshPosDataBuffer.Get(), &SRVDesc, &PBDTestMeshPosSRV);
@@ -753,7 +753,7 @@ void Game::CreateControlParticles()
 			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 			UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 			UAVDesc.Buffer.FirstElement = 0;
-			UAVDesc.Buffer.NumElements = 2;
+			UAVDesc.Buffer.NumElements = 1;
 			UAVDesc.Buffer.Flags = 0; // WHY????
 
 			Egg::ThrowOnFail("Could not create PBDTestMeshPos UAV.", __FILE__, __LINE__) ^
@@ -3737,25 +3737,19 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	const int NITER = 20;
 	for (int i = 0; i < NITER; ++i)
 	{
+		
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderCollision->getShader().Get()), nullptr, 0);
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
-
+		
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereCollision->getShader().Get()), nullptr, 0);
 		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 		context->CSSetShaderResources(1, 1, PBDTestMeshPosSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
 		context->CSSetUnorderedAccessViews(1, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
 		context->Dispatch(controlParticleCount, 1, 1);
-
-		/*
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderDistance->getShader().Get()), nullptr, 0);
-		context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
-		context->CSSetUnorderedAccessViews(0, 1, controlParticleNewPosUAV.GetAddressOf(), zeros);
-		context->Dispatch(PBDGrideSize, PBDGrideSize, PBDGrideSize);
-		*/
-
+		
 		for (uint32_t thIdx = 0; thIdx < 26; thIdx++) {
 			context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderTetrahedron[thIdx]->getShader().Get()), nullptr, 0);
 			//context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
@@ -3773,8 +3767,9 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 				context->Dispatch(1, 1, 1);
 			}
 		}
-
 	}
+	
+	clearContext(context);
 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereAnimate->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
@@ -3782,16 +3777,16 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetUnorderedAccessViews(0, 1, PBDTestMeshPosUAV.GetAddressOf(), zeros);
 	context->CSSetUnorderedAccessViews(1, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
 	context->Dispatch(1, 1, 1);
-
+	
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleUAV.GetAddressOf(), zeros);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
-
+	
 	clearContext(context);
-
+	
 	// TestMesh
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
@@ -3799,11 +3794,11 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
+	
 	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-
+	
 	PBDTestMesh->draw(context);
-
+	
 	clearContext(context);
 }
 
