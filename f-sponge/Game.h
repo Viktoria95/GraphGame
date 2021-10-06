@@ -108,6 +108,7 @@ private:
 	Egg11::Mesh::Shader::P PBDShaderSetDefPos;
 	Egg11::Mesh::Shader::P PBDShaderSphereCollision;
 	Egg11::Mesh::Shader::P PBDShaderSphereAnimate;
+	Egg11::Mesh::Shader::P PBDShaderSphereTransClear;
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;

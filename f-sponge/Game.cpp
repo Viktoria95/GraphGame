@@ -1188,6 +1188,10 @@ void Game::CreateControlParticles()
 			PBDShaderSphereAnimate = Egg11::Mesh::Shader::create("csPBDSphereAnimate.cso", device, shaderByteCode);
 		}
 		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereTransClear.cso");
+			PBDShaderSphereTransClear = Egg11::Mesh::Shader::create("csPBDSphereTransClear.cso", device, shaderByteCode);
+		}
+		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
 			PBDShaderFinalUpdate = Egg11::Mesh::Shader::create("csPBDFinalUpdate.cso", device, shaderByteCode);
 		}
@@ -3760,8 +3764,13 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
 
-	uint values[4] = { 0,0,0,0 };
-	context->ClearUnorderedAccessViewUint(PBDTestMeshTransUAV.Get(), values);
+	//uint values[4] = { 0,0,0,0 };
+	//context->ClearUnorderedAccessViewUint(PBDTestMeshTransUAV.Get(), values);
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereTransClear->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
+	context->Dispatch(controlParticleCount, 1, 1);
 
 	const int NITER = 20;
 	for (int i = 0; i < NITER; ++i)
