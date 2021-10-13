@@ -79,33 +79,6 @@ HRESULT Game::createResources()
 	return S_OK;
 }
 
-HRESULT Game::createDepthStencilView(uint w, uint h) {
-	// Create a depth stencil view for use with 3D rendering if needed.
-	CD3D11_TEXTURE2D_DESC depthStencilDesc(
-		DXGI_FORMAT_D24_UNORM_S8_UINT,
-		static_cast<UINT>(w),
-		static_cast<UINT>(h),
-		1, // This depth stencil view has only one texture.
-		1, // Use a single mipmap level.
-		D3D11_BIND_DEPTH_STENCIL
-	);
-
-	auto hr = device->CreateTexture2D(
-		&depthStencilDesc,
-		nullptr,
-		&depthStencil
-	);
-
-	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-	hr = device->CreateDepthStencilView(
-		depthStencil.Get(),
-		&depthStencilViewDesc,
-		defaultDepthStencilView.GetAddressOf()
-	);
-
-	return S_OK;
-}
-
 void Game::CreateCommon()
 {
 	inputBinder = Egg11::Mesh::InputBinder::create(device);
