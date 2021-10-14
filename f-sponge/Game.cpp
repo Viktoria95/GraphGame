@@ -21,8 +21,8 @@
 
 using namespace Egg11::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
-//const unsigned int defaultParticleCount = 256;
+//const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int defaultParticleCount = 256;
 //const unsigned int controlParticleCount = 1024 * 8;
 //const unsigned int controlParticleCount = 4096;
 //const unsigned int controlParticleCount = 4;
@@ -87,7 +87,8 @@ void Game::CreateCommon()
 
 	firstPersonCam->setAspect(windowWidth / windowHeight);
 
-	billboardsLoadAlgorithm = SBuffer;
+	//billboardsLoadAlgorithm = SBuffer;
+	billboardsLoadAlgorithm = HashSimple;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = PBD;
@@ -97,8 +98,9 @@ void Game::CreateCommon()
 	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
 
-	billboardsLoadAlgorithm = SBuffer;
-	renderMode = ControlParticles;
+	//billboardsLoadAlgorithm = SBuffer;
+	//renderMode = ControlParticles;
+	renderMode = Realistic;
 
 	drawFlatControlMesh = false;
 	animtedIsActive = true;
@@ -4298,7 +4300,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	static bool first = true;
 
-	
+	/*
 	if (controlParticlePlacement == PBD)
 	{
 		renderPBD(context);
@@ -4308,7 +4310,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	{
 		renderPBDOnCPU(context);
 	}
-	
+	*/
 	//currentKey = 45;
 	//if (first) stepAnimationKey(context);
 
@@ -4430,8 +4432,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		clearContext(context);
 	}
 
-	renderSpongeMesh(context);
-	clearContext(context);
+	//renderSpongeMesh(context);
+	//clearContext(context);
 
 	// Animation
 	renderAnimation(context);
@@ -4469,7 +4471,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
 
-	PBDTestMesh->draw(context);
+	//PBDTestMesh->draw(context);
 
 	context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
 
