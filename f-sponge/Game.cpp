@@ -2715,7 +2715,7 @@ HRESULT Game::releaseResources()
 void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 
-	float clearColor[4] = { 0.9f, 0.7f, 0.1f, 0.0f };
+	float clearColor[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
 	context->ClearRenderTargetView(defaultRenderTargetView.Get(), clearColor);
 	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
 }
