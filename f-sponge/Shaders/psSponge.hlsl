@@ -22,7 +22,6 @@ Texture2D bumpTex : register(t2);
 
 float4 psSponge(VsosTrafo input) : SV_Target
 {
-
 	float3 l = normalize(input.lightDirTS);
 	float3 v = normalize(input.viewDirTS);
 	float3 h = normalize(l + v);

@@ -6,11 +6,11 @@ Only allow 1024 character long mesasges, if your message get cropped consider in
 #define OUTPUT_BUFFER_SIZE 1024
 
 void Egg::Utility::DebugPrintBlob(com_ptr<ID3DBlob> blob) {
-	if(blob != nullptr) {
-		OutputDebugString(reinterpret_cast<const char*>(blob->GetBufferPointer()));
-	} else {
-		OutputDebugString("Blob was NULL");
-	}
+	//if(blob != nullptr) {
+	//	OutputDebugString(reinterpret_cast<const char*>(blob->GetBufferPointer()));
+	//} else {
+	//	OutputDebugString("Blob was NULL");
+	//}
 }
 
 std::wstring Egg::Utility::WFormat(const wchar_t * format, ...) {
@@ -49,7 +49,7 @@ void Egg::Utility::Debugf(const char * format, ...) {
 
 	vsprintf_s(&(str.at(0)), OUTPUT_BUFFER_SIZE, format, va);
 
-	OutputDebugString(str.c_str());
+	//OutputDebugString(str.c_str());
 
 	va_end(va);
 }
