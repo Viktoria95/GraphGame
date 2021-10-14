@@ -20,6 +20,8 @@ protected:
 	com_ptr<ID3D11DeviceContext> context11;
 	std::vector<com_ptr<ID3D11Resource>> renderTargets11;
 	std::vector<com_ptr<ID3D11RenderTargetView>> defaultRtv11;
+	com_ptr<ID3D11Resource> depthStencil11;
+	com_ptr<ID3D11DepthStencilView> defaultDsv11;
 
 	com_ptr<ID3D12DescriptorHeap> uavHeap;
 
@@ -144,8 +146,10 @@ public:
 		device11on12->AcquireWrappedResources(renderTargets11[frameIndex].GetAddressOf(), 1);
 		//		float bg[] = { 1.0f, 0.0f, 0.0f, 0.0f };
 		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
-		app11->setDefaultViews(defaultRtv11[frameIndex], /*defaultDsv11*/nullptr);
+		app11->setDefaultViews(defaultRtv11[frameIndex], defaultDsv11);
 		app11->render(context11);
+		app11->releaseDefaultViews();
+
 		device11on12->ReleaseWrappedResources(renderTargets11[frameIndex].GetAddressOf(), 1);
 
 		context11->Flush();
@@ -193,6 +197,7 @@ public:
 
 	virtual void CreateSwapChainResources() override {
 		__super::CreateSwapChainResources();
+
 		renderTargets11.resize(2);
 		D3D11_RESOURCE_FLAGS d3d11Flags = { D3D11_BIND_RENDER_TARGET };
 		DX_API("Failed to wrap 12 back buffer for d3d11")
@@ -211,6 +216,17 @@ public:
 				D3D12_RESOURCE_STATE_PRESENT,
 				IID_PPV_ARGS(renderTargets11[1].GetAddressOf())
 			);
+		
+		D3D11_RESOURCE_FLAGS d3d11DepthFlags = { D3D11_BIND_DEPTH_STENCIL };
+		DX_API("Failed to wrap 12 depth buffer for d3d11")
+			device11on12->CreateWrappedResource(
+				depthStencilBuffer.Get(),
+				&d3d11DepthFlags,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				D3D12_RESOURCE_STATE_DEPTH_READ,
+				IID_PPV_ARGS(depthStencil11.GetAddressOf())
+			);
+		
 
 		defaultRtv11.resize(2);
 
@@ -225,9 +241,12 @@ public:
 		device11->CreateRenderTargetView(renderTargets11[0].Get(), &desc, defaultRtv11[0].GetAddressOf());
 		device11->CreateRenderTargetView(renderTargets11[1].Get(), &desc, defaultRtv11[1].GetAddressOf());
 
-		//TODO pass swap chain desc
-		app11->createSwapChainResources();
-		app11->createDepthStencilView(texdesc.Width, texdesc.Height);
+		CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+		device11->CreateDepthStencilView(
+			depthStencil11.Get(),
+			&depthStencilViewDesc,
+			defaultDsv11.GetAddressOf()
+		);
 	}
 
 	virtual void CreateResources() override {
@@ -468,14 +487,20 @@ public:
 
 	virtual void ReleaseSwapChainResources() {
 		app11->releaseSwapChainResources();
+
 		for (com_ptr<ID3D11Resource>& i : renderTargets11) {
 			i.Reset();
 		}
 		renderTargets11.clear();
+
 		for (com_ptr<ID3D11RenderTargetView>& i : defaultRtv11) {
 			i.Reset();
 		}
 		defaultRtv11.clear();
+
+		depthStencil11.Reset();
+		defaultDsv11.Reset();
+
 		context11->Flush();
 
 		__super::ReleaseSwapChainResources();
@@ -490,6 +515,13 @@ public:
 		uavHeap.Reset();
 
 		Egg::SimpleApp::ReleaseResources();
+	}
+
+	virtual void Resize(int width, int height) override {
+		SimpleApp::Resize(width, height);
+
+		CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
+		context11->RSSetViewports(1, &screenViewport);
 	}
 
 	virtual void LoadAssets() override {

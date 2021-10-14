@@ -79,33 +79,6 @@ HRESULT Game::createResources()
 	return S_OK;
 }
 
-HRESULT Game::createDepthStencilView(uint w, uint h) {
-	// Create a depth stencil view for use with 3D rendering if needed.
-	CD3D11_TEXTURE2D_DESC depthStencilDesc(
-		DXGI_FORMAT_D24_UNORM_S8_UINT,
-		static_cast<UINT>(w),
-		static_cast<UINT>(h),
-		1, // This depth stencil view has only one texture.
-		1, // Use a single mipmap level.
-		D3D11_BIND_DEPTH_STENCIL
-	);
-
-	auto hr = device->CreateTexture2D(
-		&depthStencilDesc,
-		nullptr,
-		&depthStencil
-	);
-
-	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-	hr = device->CreateDepthStencilView(
-		depthStencil.Get(),
-		&depthStencilViewDesc,
-		defaultDepthStencilView.GetAddressOf()
-	);
-
-	return S_OK;
-}
-
 void Game::CreateCommon()
 {
 	inputBinder = Egg11::Mesh::InputBinder::create(device);
@@ -124,7 +97,7 @@ void Game::CreateCommon()
 	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
 
-	billboardsLoadAlgorithm = Normal;
+	billboardsLoadAlgorithm = SBuffer;
 	renderMode = ControlParticles;
 
 	drawFlatControlMesh = false;
@@ -1186,6 +1159,10 @@ void Game::CreateControlParticles()
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereAnimate.cso");
 			PBDShaderSphereAnimate = Egg11::Mesh::Shader::create("csPBDSphereAnimate.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDSphereTransClear.cso");
+			PBDShaderSphereTransClear = Egg11::Mesh::Shader::create("csPBDSphereTransClear.cso", device, shaderByteCode);
 		}
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
@@ -2722,27 +2699,14 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
-	// new code from skeleton branch 
-	/*UINT pNumViewports = 1;
+	UINT pNumViewports = 1;
 	D3D11_VIEWPORT pViewports[1];
 	context->RSGetViewports(&pNumViewports, pViewports);
-	context->ClearState();
-	context->RSSetViewports(pNumViewports, pViewports);
-	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());*/
 
 	context->ClearState();
 
-	D3D11_VIEWPORT pViewports[1];
-	pViewports->Height = windowHeight;
-	pViewports->Width = windowWidth;
-	pViewports->TopLeftX = 0;
-	pViewports->TopLeftY = 0;
-	pViewports->MaxDepth = 1.0;
-	pViewports->MinDepth = 0.0;
 	context->RSSetViewports(1, pViewports);
-
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
-
 }
 
 void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
@@ -2832,7 +2796,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
 	uint t[1] = { 0 };
-	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 1, ppUnorderedAccessViews, t);
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, NULL, 0, 1, ppUnorderedAccessViews, t);
 
 	billboards->getMaterial()->setShader(Egg11::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderS1);
 
@@ -2879,7 +2843,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	ppUnorderedAccessViews[1] = countUAV.Get();
 	ppUnorderedAccessViews[2] = idUAV.Get();
 	uint t[3] = { 0,0,0 };
-	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, defaultDepthStencilView.Get(), 0, 3, ppUnorderedAccessViews, t);
+	context->OMSetRenderTargetsAndUnorderedAccessViews(0, NULL, NULL, 0, 3, ppUnorderedAccessViews, t);
 
 	billboards->getMaterial()->setShader(Egg11::Mesh::ShaderStageFlag::Pixel, billboardsPixelShaderS2);
 
@@ -3760,8 +3724,13 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 		context->Dispatch(controlParticleCount, 1, 1);
 	}
 
-	uint values[4] = { 0,0,0,0 };
-	context->ClearUnorderedAccessViewUint(PBDTestMeshTransUAV.Get(), values);
+	//uint values[4] = { 0,0,0,0 };
+	//context->ClearUnorderedAccessViewUint(PBDTestMeshTransUAV.Get(), values);
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereTransClear->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
+	context->Dispatch(controlParticleCount, 1, 1);
 
 	const int NITER = 20;
 	for (int i = 0; i < NITER; ++i)
@@ -3820,20 +3789,6 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetShaderResources(1, 1, controlParticleNewPosSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(1, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
-
-	clearContext(context);
-
-	// TestMesh
-	float4x4 matrices[4];
-	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
-	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-
-	PBDTestMesh->draw(context);
 
 	clearContext(context);
 }
@@ -4502,9 +4457,23 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		}
 	}
 
+	clearContext(context);
+
+	// TestMesh
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
+
+	PBDTestMesh->draw(context);
+
 	context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
 
-
+	
 	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
 	//context->Unmap(uavCounterReadback.Get(), 0);
 	//auto b = 1;

@@ -108,6 +108,7 @@ private:
 	Egg11::Mesh::Shader::P PBDShaderSetDefPos;
 	Egg11::Mesh::Shader::P PBDShaderSphereCollision;
 	Egg11::Mesh::Shader::P PBDShaderSphereAnimate;
+	Egg11::Mesh::Shader::P PBDShaderSphereTransClear;
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
@@ -268,17 +269,12 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> bonePositionsBufferCB;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencil;
-
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> defaultDepthStencilView;
-
 
 public:
 	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
 	~Game(void);
 
 	HRESULT createResources();
-	HRESULT createDepthStencilView(uint w, uint h);
 	HRESULT releaseResources();
 
 	void render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
