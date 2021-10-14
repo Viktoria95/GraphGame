@@ -3,6 +3,7 @@
 #include <Egg/Utility.h>
 #include <chrono>
 #include "ggl004App.h"
+#include "Game.h"
 
 std::unique_ptr<Egg::App> app{ nullptr };
 
@@ -63,8 +64,8 @@ HWND InitWindow(HINSTANCE hInstance) {
 							   WS_OVERLAPPEDWINDOW,
 							   CW_USEDEFAULT,
 							   CW_USEDEFAULT,
-							   CW_USEDEFAULT,
-							   CW_USEDEFAULT,
+							   Game::windowWidth,
+							   Game::windowHeight,
 							   NULL,
 							   NULL,
 							   hInstance,

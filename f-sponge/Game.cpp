@@ -2699,27 +2699,14 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 
 void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
-	// new code from skeleton branch 
-	/*UINT pNumViewports = 1;
+	UINT pNumViewports = 1;
 	D3D11_VIEWPORT pViewports[1];
 	context->RSGetViewports(&pNumViewports, pViewports);
-	context->ClearState();
-	context->RSSetViewports(pNumViewports, pViewports);
-	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());*/
 
 	context->ClearState();
 
-	D3D11_VIEWPORT pViewports[1];
-	pViewports->Height = windowHeight;
-	pViewports->Width = windowWidth;
-	pViewports->TopLeftX = 0;
-	pViewports->TopLeftY = 0;
-	pViewports->MaxDepth = 1.0;
-	pViewports->MinDepth = 0.0;
 	context->RSSetViewports(1, pViewports);
-
 	context->OMSetRenderTargets(1, defaultRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
-
 }
 
 void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)

@@ -148,6 +148,8 @@ public:
 		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
 		app11->setDefaultViews(defaultRtv11[frameIndex], defaultDsv11);
 		app11->render(context11);
+		app11->releaseDefaultViews();
+
 		device11on12->ReleaseWrappedResources(renderTargets11[frameIndex].GetAddressOf(), 1);
 
 		context11->Flush();
@@ -485,14 +487,20 @@ public:
 
 	virtual void ReleaseSwapChainResources() {
 		app11->releaseSwapChainResources();
+
 		for (com_ptr<ID3D11Resource>& i : renderTargets11) {
 			i.Reset();
 		}
 		renderTargets11.clear();
+
 		for (com_ptr<ID3D11RenderTargetView>& i : defaultRtv11) {
 			i.Reset();
 		}
 		defaultRtv11.clear();
+
+		depthStencil11.Reset();
+		defaultDsv11.Reset();
+
 		context11->Flush();
 
 		__super::ReleaseSwapChainResources();
@@ -507,6 +515,13 @@ public:
 		uavHeap.Reset();
 
 		Egg::SimpleApp::ReleaseResources();
+	}
+
+	virtual void Resize(int width, int height) override {
+		SimpleApp::Resize(width, height);
+
+		CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
+		context11->RSSetViewports(1, &screenViewport);
 	}
 
 	virtual void LoadAssets() override {
