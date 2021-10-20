@@ -98,7 +98,7 @@ public:
 					m_resourceState[0] = ResourceState_Switching;
 		//			SwapRenderComputeIndex();
 				}*/
-
+		
 		commandAllocator->Reset();
 		commandList->Reset(commandAllocator.Get(), nullptr);
 
@@ -127,7 +127,7 @@ public:
 		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 		commandList->ClearRenderTargetView(rHandle, clearColor, 0, nullptr);
 		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
+		
 		//		ID3D12DescriptorHeap* descriptorHeaps[] = { uavHeap.Get() };
 		//		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 		//
@@ -136,22 +136,25 @@ public:
 
 		//		this will be done by d3d11 now
 		//11	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
+		
 		DX_API("Failed to close command list")
 			commandList->Close();
 
 		ID3D12CommandList* cLists[] = { commandList.Get() };
 		commandQueue->ExecuteCommandLists(_countof(cLists), cLists);
-
+		
 		device11on12->AcquireWrappedResources(renderTargets11[frameIndex].GetAddressOf(), 1);
+		device11on12->AcquireWrappedResources(depthStencil11.GetAddressOf(), 1);
+
 		//		float bg[] = { 1.0f, 0.0f, 0.0f, 0.0f };
 		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
 		app11->setDefaultViews(defaultRtv11[frameIndex], defaultDsv11);
 		app11->render(context11);
 		app11->releaseDefaultViews();
-
+		
+		device11on12->ReleaseWrappedResources(depthStencil11.GetAddressOf(), 1);
 		device11on12->ReleaseWrappedResources(renderTargets11[frameIndex].GetAddressOf(), 1);
-
+		
 		context11->Flush();
 
 		WaitForPreviousFrame();
