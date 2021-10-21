@@ -340,6 +340,7 @@ public:
 	void rigControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void animateControlParticles(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void renderTestMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	Egg11::Math::float3 calculateNormal(Egg11::Math::float3 p0, Egg11::Math::float3 p1, Egg11::Math::float3 p2);
 	Egg11::Math::float3 calculateBinormal(Egg11::Math::float3 p0, Egg11::Math::float3 p1, Egg11::Math::float3 p2, Egg11::Math::float2 t0, Egg11::Math::float2 t1, Egg11::Math::float2 t2);

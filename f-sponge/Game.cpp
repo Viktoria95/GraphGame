@@ -3614,6 +3614,21 @@ void Game::stepAnimationKey(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	delete[] boneTrafos;
 }
 
+void Game::renderTestMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+{
+	// TestMesh
+	float4x4 matrices[4];
+	matrices[0] = float4x4::identity;
+	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
+	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	matrices[3] = firstPersonCam->getViewDirMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
+
+	PBDTestMesh->draw(context);
+}
+
 float4x4 GetC(uint32_t x, uint32_t y, uint32_t z, uint32_t tatraheadronType) {
 	std::array<uint32_t, 4> pIdx;
 
@@ -4249,10 +4264,30 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(controlParticleDataBuffer.Get(), 0, nullptr, &controlParticles[0], 0, 0);
 }
 
+
+
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg11::Math;
 	
+	clearRenderTarget(context);
+
+	if (controlParticlePlacement == PBD)
+	{
+		renderPBD(context);
+	}
+
+	if (controlParticlePlacement == CPU)
+	{
+		renderPBDOnCPU(context);
+	}
+
+	renderSpongeMesh(context);
+	clearContext(context);
+
+	renderTestMesh(context);
+	clearContext(context);
+
 
 	// Hash
 	if (billboardsLoadAlgorithm == HashSimple)
@@ -4289,7 +4324,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	
 	//return;
 
-	clearRenderTarget(context);
+	
 
 	stepAnimationKey(context);
 
@@ -4301,15 +4336,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	static bool first = true;
 
 	
-	if (controlParticlePlacement == PBD)
-	{
-		renderPBD(context);
-	}
-
-	if (controlParticlePlacement == CPU)
-	{
-		renderPBDOnCPU(context);
-	}
+	
 	
 	//currentKey = 45;
 	//if (first) stepAnimationKey(context);
@@ -4414,7 +4441,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		}
 
 		// Metaball
-		renderMetaball(context);
+		//renderMetaball(context);
 		clearContext(context);
 
 	}
@@ -4431,9 +4458,6 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		//renderControlBalls(context);
 		clearContext(context);
 	}
-
-	renderSpongeMesh(context);
-	clearContext(context);
 
 	// Animation
 	renderAnimation(context);
@@ -4461,17 +4485,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearContext(context);
 
-	// TestMesh
-	float4x4 matrices[4];
-	matrices[0] = float4x4::identity;
-	matrices[1] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()).invert();
-	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
-	matrices[3] = firstPersonCam->getViewDirMatrix();
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-
-	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-
-	PBDTestMesh->draw(context);
+	
 
 	context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
 

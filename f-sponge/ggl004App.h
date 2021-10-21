@@ -226,7 +226,7 @@ public:
 				depthStencilBuffer.Get(),
 				&d3d11DepthFlags,
 				D3D12_RESOURCE_STATE_DEPTH_WRITE,
-				D3D12_RESOURCE_STATE_DEPTH_READ,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
 				IID_PPV_ARGS(depthStencil11.GetAddressOf())
 			);
 		
