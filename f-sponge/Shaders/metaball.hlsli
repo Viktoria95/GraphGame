@@ -87,9 +87,9 @@ class SimpleMetaballTester : IMetaballTester
 	{
 		float3 diff = p - position;
 		float r = sqrt(dot(diff, diff)) * radius;
-		float res = (1.0 / (r*r * metaBallRadius * metaBallRadius));
+		float res = (1.0 / (r * r * metaBallRadius * metaBallRadius));
 		if (r < 0.16)
-			accOut = acc + 1.1*res;
+			accOut = acc + 1.1 * res;
 		if (accOut > metaBallMinToHit.x)
 		{
 			return true;
@@ -109,10 +109,10 @@ class WyvillMetaballTester : IMetaballTester
 		float3 diff = p - position;
 		r = sqrt(dot(diff, diff)) * radius;
 
-		float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0)*pow(r / b, 4) - (22.0 / 9.0)*pow(r / b, 2) + 1;
+		float res = (-4.0 / 9.0) * pow(r / b, 6) + (17.0 / 9.0) * pow(r / b, 4) - (22.0 / 9.0) * pow(r / b, 2) + 1;
 
 		if (r < b) {
-			accOut = acc + a*res;
+			accOut = acc + a * res;
 		}
 
 		if (accOut > metaBallMinToHit.x)
@@ -136,7 +136,7 @@ class NishimuraMetaballTester : IMetaballTester
 		r = sqrt(dot(diff, diff)) * radius;
 
 		float res = 0.0;
-		
+
 		if (r <= b / 3.0 && r >= 0.0)
 		{
 			res = 1.0 - (3.0 * pow(r / b, 2));
@@ -147,7 +147,7 @@ class NishimuraMetaballTester : IMetaballTester
 		}
 
 		if (r < b) {
-			accOut = acc + a*res;
+			accOut = acc + a * res;
 		}
 
 		if (accOut > metaBallMinToHit.x)
@@ -173,7 +173,7 @@ class MurakamiMetaballTester : IMetaballTester
 		float res = pow(1.0 - pow(r / b, 2), 2);
 
 		if (r < b) {
-			accOut = acc + a*res;
+			accOut = acc + a * res;
 		}
 
 		if (accOut > metaBallMinToHit.x)
@@ -210,7 +210,7 @@ float Fresnel(float3 inDir, float3 normal, float n)
 {
 	float cosa = abs(dot(-inDir, normal));	// 1
 	float sina = sqrt(1 - cosa * cosa);		// 0
-	float disc = 1 - sina * sina / (n*n);	// 1
+	float disc = 1 - sina * sina / (n * n);	// 1
 	if (disc < 0) return 1;
 	float cosd = sqrt(disc);				// 1
 	float Rs = (cosa - n * cosd) / (cosa + n * cosd); // -0.2/2.2
@@ -226,7 +226,7 @@ float3 FresnelForMetals(float3 inDir, float3 normal, float3 n, float3 k)
 	float cosTheta = abs(dot(-inDir, normal));
 	float3 one = float3(1.0, 1.0, 1.0);
 
-	return ((n-one*n-one) + 4.0*n*pow(1.0 - cosTheta, 5.0) + k*k) / ((n+one)*(n+one) + k*k);
+	return ((n - one * n - one) + 4.0 * n * pow(1.0 - cosTheta, 5.0) + k * k) / ((n + one) * (n + one) + k * k);
 }
 
 float2 WorldToNDC(float3 wp)
@@ -234,8 +234,8 @@ float2 WorldToNDC(float3 wp)
 	float4 worldPos = mul(float4(wp, 1.0), modelViewProjMatrix);
 	worldPos /= worldPos.w;
 	float2 screenPos = float2(0.0, 0.0);
-	screenPos.x = ((worldPos.x + 1.0)*windowWidth) / 2.0;
-	screenPos.y = ((worldPos.y - 1.0)*windowHeight) / -2.0;
+	screenPos.x = ((worldPos.x + 1.0) * windowWidth) / 2.0;
+	screenPos.y = ((worldPos.y - 1.0) * windowHeight) / -2.0;
 	return screenPos;
 }
 
@@ -259,7 +259,7 @@ bool MetaBallTest(float3 p, IMetaballTester metaballTester)
 float3 calculateGrad(float3 p, float3 position, float3 grad)
 {
 	float3 gradOut = grad;
-	float weight = (pow((-2.0*metaBallRadius), 2.0) / pow(length(p - float3(position)), 3.0)) * ((-1.0) / (2.0*length(p - float3(position))));
+	float weight = (pow((-2.0 * metaBallRadius), 2.0) / pow(length(p - float3(position)), 3.0)) * ((-1.0) / (2.0 * length(p - float3(position))));
 	gradOut.x += (weight * (p.x - position.x));
 	gradOut.y += (weight * (p.y - position.y));
 	gradOut.z += (weight * (p.z - position.z));
@@ -338,7 +338,7 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 		float3 ambient = ambientIntensity * lightColor;
 		float3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
 		float3 specular = specularIntensity * pow(max(dot(viewDir, reflectDir), 0.0), shininess) * lightColor;
-		return ( ambient + diffuse + specular) * surfaceColor;
+		return (ambient + diffuse + specular) * surfaceColor;
 	}
 
 	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
@@ -353,7 +353,7 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 {
 	float ambientIntensity2 = 0.7;
 	float3 lightDir2 = float3(1.0, 0.0, 0.0);
-	float3 surfaceColor2 = float3(0.22745,  0.20000,  0.20000);
+	float3 surfaceColor2 = float3(0.22745, 0.20000, 0.20000);
 	float3 lightColor2 = float3(1.0, 1.0, 1.0);
 
 	float tStart, tEnd;
@@ -381,7 +381,7 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 		float3 step = d * (tEnd - tStart) / float(marchCount);
 		p += d * tStart;
 
-		for (int i = 0; i<marchCount; i++)
+		for (int i = 0; i < marchCount; i++)
 		{
 			if (metaballVisualizer.callMetaballTestFunction(p, pos))
 			{
@@ -420,13 +420,7 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 	return envTexture.Sample(ss, d);
 }
 
-struct RaytraceResult {
-	float3 color;
-	float depth;
-	bool discarded;
-};
-
-RaytraceResult CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
+float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
@@ -476,7 +470,7 @@ RaytraceResult CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisu
 			marchPos += marchDir * tStart;
 
 			bool marchHit = false;
-			for (int i = 0; i<marchCount && !marchHit; i++)
+			for (int i = 0; i < marchCount && !marchHit; i++)
 			{
 				bool inside = metaballVisualizer.callMetaballTestFunction(marchPos, pos);
 				if (inside && !startedInside || !inside && startedInside)
@@ -543,16 +537,11 @@ RaytraceResult CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisu
 		}
 	}
 
-	RaytraceResult result;
-	result.color = color;
-	result.depth = 0.0;
-	result.discarded = (killer == 9);
-
-	if (killer == 9)
+	if (killer == 0)
 	{
 		//return float4 (1.0, 0.0, 0.0, 1.0);
 	}
 
-	return result;
+	return float4 (color, 1.0);
 
 }
