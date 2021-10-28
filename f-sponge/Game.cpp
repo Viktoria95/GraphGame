@@ -21,7 +21,7 @@
 
 using namespace Egg11::Math;
 
-const unsigned int defaultParticleCount = 1024 * 2;
+const unsigned int defaultParticleCount = 1024 * 4;
 //const unsigned int defaultParticleCount = 256;
 //const unsigned int controlParticleCount = 1024 * 8;
 //const unsigned int controlParticleCount = 4096;
@@ -100,7 +100,8 @@ void Game::CreateCommon()
 
 	billboardsLoadAlgorithm = SBuffer;
 	//renderMode = ControlParticles;
-	renderMode = Realistic;
+	//renderMode = Realistic;
+	renderMode = Gradient;
 
 	drawFlatControlMesh = false;
 	animtedIsActive = true;
@@ -2184,6 +2185,61 @@ void Game::CreateSpongeMesh() {
 	spongeDiffuseSRV = loadTexture("sponge-diffuse.jpg");
 	spongeNormalSRV = loadTexture("sponge-normal.jpg");
 	spongeHeightSRV = loadTexture("sponge-height.jpg");
+
+	// SolidRenderTarget
+	D3D11_TEXTURE2D_DESC textureDesc;
+	HRESULT result;
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+
+
+	// Initialize the render target texture description.
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+
+	// Setup the render target texture description.
+	textureDesc.Width = windowWidth;
+	textureDesc.Height = windowHeight;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+
+	// Create the render target texture.
+	result = device->CreateTexture2D(&textureDesc, NULL, solidRenderTargetTexture.GetAddressOf ());
+	if (FAILED(result))
+	{
+		//return false;
+	}
+
+	// Setup the description of the render target view.
+	renderTargetViewDesc.Format = textureDesc.Format;
+	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	renderTargetViewDesc.Texture2D.MipSlice = 0;
+
+	// Create the render target view.
+	result = device->CreateRenderTargetView(solidRenderTargetTexture.Get (), &renderTargetViewDesc, solidRenderTargetView.GetAddressOf ());
+	if (FAILED(result))
+	{
+		//return false;
+	}
+
+	// Setup the description of the shader resource view.
+	shaderResourceViewDesc.Format = textureDesc.Format;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+	shaderResourceViewDesc.Texture2D.MipLevels = 1;
+
+	// Create the shader resource view.
+	result = device->CreateShaderResourceView(solidRenderTargetTexture.Get(), &shaderResourceViewDesc, solidShaderResourceView.GetAddressOf());
+	if (FAILED(result))
+	{
+		//return false;
+	}
+
 }
 
 void Game::CreatePrefixSum() {
@@ -2699,6 +2755,14 @@ void Game::clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
 }
 
+void Game::clearSolidRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+	context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+
+	float clearColor[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+	context->ClearRenderTargetView(solidRenderTargetView.Get(), clearColor);
+	context->ClearDepthStencilView(defaultDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0, 0);
+}
+
 void Game::clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	UINT pNumViewports = 1;
@@ -2941,13 +3005,14 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(metaballFunctionCB.Get(), 0, nullptr, mfunctionType, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
-	context->PSSetShaderResources(1, 1, particleSRV.GetAddressOf());
+	context->PSSetShaderResources(1, 1, solidShaderResourceView.GetAddressOf());
+	context->PSSetShaderResources(2, 1, particleSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer || billboardsLoadAlgorithm == SBufferV2)
-		context->PSSetShaderResources(2, 1, offsetSRV.GetAddressOf());
+		context->PSSetShaderResources(3, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
-		context->PSSetShaderResources(3, 1, linkSRV.GetAddressOf());
+		context->PSSetShaderResources(4, 1, linkSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == SBuffer || billboardsLoadAlgorithm == SBufferV2)
-		context->PSSetShaderResources(3, 1, idSRV.GetAddressOf());
+		context->PSSetShaderResources(4, 1, idSRV.GetAddressOf());
 
 	if (billboardsLoadAlgorithm == HashSimple) {
 		//uint values[4] = { 0,0,0,0 };
@@ -3085,6 +3150,7 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 		uint zeros[2] = { 0, 0 };
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+		context->CSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
 		context->Dispatch(defaultParticleCount, 1, 1);
 	}
 	else if (flowControl == ControlledFlow)
@@ -3094,6 +3160,7 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 		ID3D11ShaderResourceView* ppShaderResourceViews[2] = { controlParticleSRV.Get(), controlParticleCounterSRV.Get() };
 		context->CSSetShaderResources(0, 2, ppShaderResourceViews);
+		context->CSSetShaderResources(2, 1, PBDTestMeshPosSRV.GetAddressOf());
 		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
 		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
 		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
@@ -3623,6 +3690,12 @@ void Game::renderTestMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
+	float4 perFrameVectors[1];
+	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
+	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
+
+	PBDTestMesh->getMaterial()->setCb("testMeshCB", eyePosCB, Egg11::Mesh::ShaderStageFlag::Pixel);
 
 	context->VSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
 
@@ -4270,8 +4343,10 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg11::Math;
 	
-	clearRenderTarget(context);
+	context->OMSetRenderTargets(0, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 
+	clearSolidRenderTarget(context);
+	//clearRenderTarget(context);
 	if (controlParticlePlacement == PBD)
 	{
 		renderPBD(context);
@@ -4282,12 +4357,15 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		renderPBDOnCPU(context);
 	}
 
+	context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 	renderSpongeMesh(context);
 	clearContext(context);
 
+	context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 	renderTestMesh(context);
 	clearContext(context);
 
+	clearRenderTarget(context);
 
 	// Hash
 	if (billboardsLoadAlgorithm == HashSimple)
@@ -4441,7 +4519,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 		}
 
 		// Metaball
-		//renderMetaball(context);
+		renderMetaball(context);
 		clearContext(context);
 
 	}

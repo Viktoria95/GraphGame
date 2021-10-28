@@ -57,10 +57,11 @@ float4 psSponge(VsosTrafo input) : SV_Target
 	float3x3 tbn = { input.tangent, input.binormal, input.normal };
 	float3 worldNormal = normalize(mul(n, tbn));
 
+	float eyeDistance = distance(input.worldPos.xyz, input.eyePos.xyz);
 	return float4(
 		(kd * ndotl + float3(1, 1, 1) * ndoth) * 0.7 +
 		float3(0.1f, 0.1f, 0.1f) * 0.3
-		, 1);
+		, eyeDistance);
 
-	return float4((kd + ndoth) * ndotl, 1);
+	return float4((kd + ndoth) * ndotl, eyeDistance);
 }

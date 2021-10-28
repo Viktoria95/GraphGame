@@ -19,6 +19,7 @@ struct IaosTrafo
 struct VsosTrafo
 {
 	float4 pos : SV_POSITION;
+	float4 worldPos : WORLDPOS;
 	float3 norm: NORMAL;
 };
 
@@ -26,6 +27,7 @@ VsosTrafo vsTestMesh(IaosTrafo input)
 {
 	VsosTrafo output = (VsosTrafo)0;
 	output.pos = mul(float4(input.pos.xyz * sphereRadius + testMesh[0].pos.xyz, 1.0), modelViewProjMatrix);
+	output.worldPos = mul(float4(input.pos.xyz * sphereRadius + testMesh[0].pos.xyz, 1.0), modelMatrix);
 	output.norm = input.norm;
 	//output.pos = input.pos;
 	return output;

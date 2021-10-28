@@ -109,6 +109,9 @@ private:
 	Egg11::Mesh::Shader::P PBDShaderSphereCollision;
 	Egg11::Mesh::Shader::P PBDShaderSphereAnimate;
 	Egg11::Mesh::Shader::P PBDShaderSphereTransClear;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> solidRenderTargetTexture;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>solidRenderTargetView;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidShaderResourceView;
 
 	// Hashtables
 	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
@@ -298,6 +301,7 @@ public:
 	void CreateDebug();
 
 	void clearRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	void clearSolidRenderTarget(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void clearContext(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
