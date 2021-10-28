@@ -393,5 +393,11 @@
     <None Include="Shaders\PBD.hlsli">
       <Filter>Shaders\PBD</Filter>
     </None>
+    <None Include="Shaders\PBDSphere.hlsli">
+      <Filter>Shaders\PBD</Filter>
+    </None>
+    <None Include="Shaders\PBDTetrahedron.hlsli">
+      <Filter>Shaders\PBD</Filter>
+    </None>
   </ItemGroup>
 </Project>

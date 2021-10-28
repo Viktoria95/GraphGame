@@ -4,4 +4,4 @@ struct Sphere {
 	float4 vel;
 };
 
-#define sphereRadius 0.2
+#define sphereRadius 0.25

@@ -1,10 +1,13 @@
 
 
 #include "particle.hlsli"
+#include "PBDSphere.hlsli"
+
 
 RWStructuredBuffer<Particle> particles;
 StructuredBuffer<ControlParticle> controlParticles;
 Buffer<uint> controlParticleCounter;
+StructuredBuffer<Sphere> testMesh;
 
 cbuffer controlParamsCB
 {
@@ -206,7 +209,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
 					//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
-					controlForce += controlParticles[i].controlPressureRatio * 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
+					controlForce += controlParticles[i].controlPressureRatio * 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius * 1.2);
 				}
 			}
 		}
@@ -218,9 +221,10 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 			//controlForce *=  1.0 / length(controlForce);
 		}
 
-		if (controlAmplitude > 50000.0)
+		const float maxConrtolForce = 50000.0;
+		if (controlAmplitude > maxConrtolForce)
 		{
-			controlForce *= 50000.0 / controlAmplitude;
+			controlForce *= maxConrtolForce / controlAmplitude;
 			particles[tid].velocity *= 0.9;
 		}
 
@@ -286,6 +290,13 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 
 	const float boundaryEps = 0.0001;
 	const float boundaryVelDec = 0.3;
+
+	float3 radDis = particles[tid].position - testMesh[0].pos.xyz;
+	float sphereDist = length(radDis);
+	radDis = normalize(radDis);
+	if (sphereDist < sphereRadius) {
+		particles[tid].position += radDis;
+	}
 
 	if (particles[tid].position.y < boundaryBottom)
 	{

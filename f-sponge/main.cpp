@@ -24,7 +24,7 @@ LRESULT CALLBACK WindowProcess(HWND windowHandle, UINT message, WPARAM wParam, L
 		if(app != nullptr) {
 			int height = HIWORD(lParam);
 			int width = LOWORD(lParam);
-			app->Resize(width, height);
+			app->Resize(Game::windowWidth, Game::windowHeight);
 		}
 		break;
 		/*
@@ -62,10 +62,10 @@ HWND InitWindow(HINSTANCE hInstance) {
 							   windowClassName,
 							   L"Textures",
 							   WS_OVERLAPPEDWINDOW,
-							   CW_USEDEFAULT,
-							   CW_USEDEFAULT,
-							   Game::windowWidth,
-							   Game::windowHeight,
+							   0,
+							   0,
+							   Game::windowWidth + 16, // Fast&dirty header bar compensation
+							   Game::windowHeight + 39,
 							   NULL,
 							   NULL,
 							   hInstance,

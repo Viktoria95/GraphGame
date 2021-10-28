@@ -1,8 +1,12 @@
 
 
 #include "particle.hlsli"
+#include "PBDSphere.hlsli"
+
 
 RWStructuredBuffer<Particle> particles;
+
+StructuredBuffer<Sphere> testMesh;
 
 #define pi 3.1415
 
@@ -250,6 +254,13 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 
 	const float boundaryEps = 0.0001;
 	const float boundaryVelDec = 0.2;
+
+	float3 radDis = particles[tid].position - testMesh[0].pos.xyz;
+	float sphereDist = length(radDis);
+	radDis = normalize(radDis);
+	if (sphereDist < sphereRadius) {
+		particles[tid].position += radDis;
+	}
 
 	if (particles[tid].position.y < boundaryBottom)
 	{

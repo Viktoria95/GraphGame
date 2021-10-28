@@ -677,6 +677,8 @@
     <None Include="Shaders\mortonHash.hlsli" />
     <None Include="Shaders\particle.hlsli" />
     <None Include="Shaders\PBD.hlsli" />
+    <None Include="Shaders\PBDSphere.hlsli" />
+    <None Include="Shaders\PBDTetrahedron.hlsli" />
     <None Include="Shaders\window.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

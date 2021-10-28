@@ -1,5 +1,5 @@
 
-#define particleCount 1024*2
+#define particleCount 1024*4
 //#define particleCount 256
 #define counterSize 3
 

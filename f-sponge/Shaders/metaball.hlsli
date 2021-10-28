@@ -10,6 +10,8 @@
 SamplerState ss;
 TextureCube envTexture;
 
+Texture2D solidRenderTarget;
+
 cbuffer metaballPSEyePosCB
 {
 	float4 eyePos;
@@ -356,6 +358,9 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 	float3 surfaceColor2 = float3(0.22745, 0.20000, 0.20000);
 	float3 lightColor2 = float3(1.0, 1.0, 1.0);
 
+	float2 uv = float2 (pos.x / windowWidth, pos.y / windowHeight);
+	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
+
 	float tStart, tEnd;
 	float3 p = eyePos;
 	float3 d = normalize(rayDir);
@@ -381,50 +386,61 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 		float3 step = d * (tEnd - tStart) / float(marchCount);
 		p += d * tStart;
 
+		[loop]
 		for (int i = 0; i < marchCount; i++)
 		{
-			if (metaballVisualizer.callMetaballTestFunction(p, pos))
+			if (eyeDistToSolid != 0.0 && distance(eyePos, p) > eyeDistToSolid)
 			{
-				//return float4(1.0, 1.0, 1.0, 1.0);
-				p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
-				float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
-
-				float3 ref = reflect(normalize(rayDir), normal);
-				return float4(abs(normal), 1.0);
-
-				if ((int)type == 1)
-				{
-					float specularIntensity = 0.9;
-					int shininess = 1;
-					float3 ambient = ambientIntensity * lightColor;
-					float3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
-					float3 specular = specularIntensity * pow(max(dot(normalize(rayDir), ref), 0.0), shininess) * lightColor;
-					return float4((ambient + diffuse + specular) * surfaceColor, 1.0);
-				}
-				if ((int)type == 2)
-				{
-					float3 fresnel = FresnelForMetals(normalize(rayDir), normal, eta.xyz, kappa.xyz);
-					float3 envColor = envTexture.SampleLevel(ss, ref, 0);
-					return float4(fresnel * envColor, 1.0);
-				}
-				return float4(normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
+				return float4(solidRenderTarget.Sample(ss, uv).xyz, 1.0);
 			}
+			//else
+			{
+				if (metaballVisualizer.callMetaballTestFunction(p, pos))
+				{
+					//return float4(1.0, 1.0, 1.0, 1.0);
+					p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
+					float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
 
-			p += step;
+					float3 ref = reflect(normalize(rayDir), normal);
+					return float4(abs(normal), 1.0);
+
+					if ((int)type == 1)
+					{
+						float specularIntensity = 0.9;
+						int shininess = 1;
+						float3 ambient = ambientIntensity * lightColor;
+						float3 diffuse = max(dot(normal, lightDir), 0.0) * lightColor;
+						float3 specular = specularIntensity * pow(max(dot(normalize(rayDir), ref), 0.0), shininess) * lightColor;
+						return float4((ambient + diffuse + specular) * surfaceColor, 1.0);
+					}
+					if ((int)type == 2)
+					{
+						float3 fresnel = FresnelForMetals(normalize(rayDir), normal, eta.xyz, kappa.xyz);
+						float3 envColor = envTexture.SampleLevel(ss, ref, 0);
+						return float4(fresnel * envColor, 1.0);
+					}
+					return float4(normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
+				}
+
+				p += step;
+			}
 		}
 	}
 	//if ((int)type == 1) 
 	//{
 	//	return float4(1.0, 1.0, 1.0, 1.0);
 	//}
-	return envTexture.Sample(ss, d);
+	return envTexture.Sample(ss, d) + solidRenderTarget.Sample(ss, uv);
 }
 
-float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
+float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisualizer metaballVisualizer)
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
+
+	float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
+	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
 
 	RayMarchHit firstElem;
 	firstElem.position = eyePos;
@@ -464,76 +480,110 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 pos, IMetaballVisualizer m
 
 		if (intersect && marchRecursionDepth < maxRecursion)
 		{
-			bool startedInside = metaballVisualizer.callMetaballTestFunction(marchPos, pos);
+			bool startedInside = metaballVisualizer.callMetaballTestFunction(marchPos, screenPos);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
 
 			bool marchHit = false;
-			for (int i = 0; i < marchCount && !marchHit; i++)
+			bool solidHit = false;
+			for (int i = 0; i < marchCount && !marchHit && !solidHit; i++)
 			{
-				bool inside = metaballVisualizer.callMetaballTestFunction(marchPos, pos);
-				if (inside && !startedInside || !inside && startedInside)
+				if (eyeDistToSolid != 0.0 && distance (eyePos, marchPos) > eyeDistToSolid)
 				{
-					marchHit = true;
-					marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, pos);
-
-					float distance = length(marchPos - stack[stackSize].position);
-					float i0 = 1.0f;
-					if ((int)deepWater == 1)
-					{
-						i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
-					}
-
-					float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, pos));
-					float refractiveIndex = 1.4;
-					if (dot(normal, marchDir) > 0) {
-						normal = -normal;
-						refractiveIndex = 1.0 / refractiveIndex;
-					}
-					float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
-					float reflectAlfa = fresnelAlfa * marchAlfa * (i0);
-					float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (i0);
-
-					float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
-
-					if (reflectAlfa > 0.01)
-					{
-						RayMarchHit reflectElem;
-						reflectElem.direction = reflect(marchDir, normal);
-						reflectElem.position = marchPos + normal * 0.1;
-						reflectElem.recursionDepth = marchRecursionDepth + 1;
-						reflectElem.alfa = reflectAlfa;
-
-						stack[stackSize] = reflectElem;
-						stackSize++;
-					}
-
-					if (refractAlfa > 0.01)
-					{
-						RayMarchHit refractElem;
-						refractElem.direction = refractDir;
-						refractElem.position = marchPos;
-						refractElem.recursionDepth = marchRecursionDepth + 1;
-						refractElem.alfa = refractAlfa;
-
-						stack[stackSize] = refractElem;
-						stackSize++;
-					}
+					solidHit = true;
 				}
+				else
+				{
+					bool inside = metaballVisualizer.callMetaballTestFunction(marchPos, screenPos);
+					if (inside && !startedInside || !inside && startedInside)
+					{
+						marchHit = true;
+						marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, screenPos);
 
-				marchPos += marchStep;
+						float distance = length(marchPos - stack[stackSize].position);
+						float i0 = 1.0f;
+						if ((int)deepWater == 1)
+						{
+							i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
+						}
+
+						float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, screenPos));
+						float refractiveIndex = 1.4;
+						if (dot(normal, marchDir) > 0) {
+							normal = -normal;
+							refractiveIndex = 1.0 / refractiveIndex;
+						}
+						float fresnelAlfa = Fresnel(normalize(marchDir), normalize(normal), refractiveIndex);
+						float reflectAlfa = fresnelAlfa * marchAlfa * (i0);
+						float refractAlfa = (1.0 - fresnelAlfa) * marchAlfa * (i0);
+
+						float3 refractDir = refract(marchDir, normal, 1.0 / refractiveIndex);
+
+						if (reflectAlfa > 0.01)
+						{
+							RayMarchHit reflectElem;
+							reflectElem.direction = reflect(marchDir, normal);
+							reflectElem.position = marchPos + normal * 0.1;
+							reflectElem.recursionDepth = marchRecursionDepth + 1;
+							reflectElem.alfa = reflectAlfa;
+
+							stack[stackSize] = reflectElem;
+							stackSize++;
+						}
+
+						if (refractAlfa > 0.01)
+						{
+							RayMarchHit refractElem;
+							refractElem.direction = refractDir;
+							refractElem.position = marchPos;
+							refractElem.recursionDepth = marchRecursionDepth + 1;
+							refractElem.alfa = refractAlfa;
+
+							stack[stackSize] = refractElem;
+							stackSize++;
+						}
+					}
+
+					marchPos += marchStep;
+				}
 			}
 
-			if (!marchHit)
+			if (solidHit)
 			{
+				color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
+			}
+			else if (!marchHit)
+			{
+				//if (eyeDistToSolid == 0.0)
+				//{
+					color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
+				//}
+				//else
+				//{
+				//	color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
+				//}
 				//color += float4(1, 1, 1, 1)/*envTexture.Sample(ss, marchDir)*/ * marchAlfa;
-				color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
+				//color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa * 0.1;
+				//color += solidRenderTarget.Sample(ss, uv) * marchAlfa * 0.9;
+				//float w_tex = solidRenderTarget.Sample(ss, uv).w;
+				//color += float4 (w_tex, w_tex, w_tex, 1.0) * marchAlfa;
 			}
 		}
 		else
 		{
-			color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
+			if (eyeDistToSolid == 0.0)
+			{
+				color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
+			}
+			else
+			{
+				color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
+			}
+
+			//color += solidRenderTarget.Sample(ss, uv) * marchAlfa * 0.9;
+			//float w_tex = solidRenderTarget.Sample(ss, uv).w;
+			//color += float4 (w_tex, w_tex, w_tex, 1.0) * marchAlfa;
 		}
 	}
 
