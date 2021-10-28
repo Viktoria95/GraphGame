@@ -36,12 +36,12 @@ protected:
 	unsigned int* m_arrayDataBegin;
 	unsigned int* m_arrayDataEnd;
 
-	com_ptr<ID3D12Resource>      m_arrayReadback;
-	com_ptr<ID3D12Resource>      m_array[2];
-	D3D12_RESOURCE_STATES		 m_stateArray[2];
-	com_ptr<ID3D12Resource>      m_bucketMatrix[2];
-	D3D12_RESOURCE_STATES		 m_stateBucket[2];
-	com_ptr<ID3D12Resource>      m_arrayData[2]; //upload and readback
+	com_ptr<ID3D12Resource>      m_arrayToBeSorted;
+	com_ptr<ID3D12Resource>      m_sortedArray;
+	com_ptr<ID3D12Resource>      m_indicesToBeSorted;
+	com_ptr<ID3D12Resource>      m_sortedIndices;
+	com_ptr<ID3D12Resource>      m_arrayForUpload;
+	com_ptr<ID3D12Resource>      m_arrayForReadback;
 	com_ptr<ID3D12Fence>         m_renderResourceFence;  // fence used by async compute to start once it's texture has changed to unordered access
 	uint64_t                     m_renderResourceFenceValue;
 
@@ -104,13 +104,13 @@ public:
 
 		if (m_resourceState[0] == ResourceState_Computed) {
 
-			//			ResourceBarrier(commandList.Get(), m_array[1].Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			//			ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-			commandList->CopyResource(m_arrayReadback.Get(), m_array[1].Get());
+			commandList->CopyResource(m_arrayForReadback.Get(), m_sortedArray.Get());
 
-			//			ResourceBarrier(commandList.Get(), m_array[1].Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			//			ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-			//			ResourceBarrier(commandList.Get(), m_arrayReadback.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			//			ResourceBarrier(commandList.Get(), m_arrayForReadback.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
 			m_resourceState[0] = ResourceState_ReadyCompute;
 		}
@@ -161,7 +161,7 @@ public:
 
 		D3D12_RANGE readbackBufferRange{ 0, 4 * 32 * 32 * 32 };
 		unsigned int* pReadbackBufferData;
-		m_arrayReadback->Map
+		m_arrayForReadback->Map
 		(
 			0,
 			&readbackBufferRange,
@@ -171,7 +171,7 @@ public:
 		// Code goes here to access the data via pReadbackBufferData.
 
 		D3D12_RANGE emptyRange{ 0, 0 };
-		m_arrayReadback->Unmap
+		m_arrayForReadback->Unmap
 		(
 			0,
 			&emptyRange
@@ -300,7 +300,7 @@ public:
 		D3D12_DESCRIPTOR_HEAP_DESC dhd;
 		dhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		dhd.NodeMask = 0;
-		dhd.NumDescriptors = 2;
+		dhd.NumDescriptors = 4;
 		dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
 		DX_API("Failed to create descriptor heap for uavs")
@@ -309,39 +309,45 @@ public:
 		const D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		const D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(4 * 32 * 32 * 32,
 			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, 0);
-		m_stateArray[0] = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		DX_API("commited resource")
 			device->CreateCommittedResource(
 				&defaultHeapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&bufferDesc,
-				m_stateArray[0],
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				nullptr,
-				IID_PPV_ARGS(m_array[0].ReleaseAndGetAddressOf()));
-		m_array[0]->SetName(L"Unsorted input");
+				IID_PPV_ARGS(m_arrayToBeSorted.ReleaseAndGetAddressOf()));
+		m_arrayToBeSorted->SetName(L"Unsorted input");
 
-		m_stateArray[1] = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		DX_API("commited resource")
 			device->CreateCommittedResource(
 				&defaultHeapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&bufferDesc,
-				m_stateArray[1],
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				nullptr,
-				IID_PPV_ARGS(m_array[1].ReleaseAndGetAddressOf()));
-		m_array[1]->SetName(L"Sorted output");
+				IID_PPV_ARGS(m_sortedArray.ReleaseAndGetAddressOf()));
+		m_sortedArray->SetName(L"Sorted output");
 
-		/*		const D3D12_RESOURCE_DESC bucketMatrixBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(4 * 16 * 32 * 32,
-					D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, 0);
-				DX_API("commited resource")
-					device->CreateCommittedResource(
-						&defaultHeapProperties,
-						D3D12_HEAP_FLAG_NONE,
-						&bucketMatrixBufferDesc,
-						D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-						nullptr,
-						IID_PPV_ARGS(m_bucketMatrix[0].ReleaseAndGetAddressOf()));
-				m_bucketMatrix[0]->SetName(L"Bucket size matrix.");*/
+		DX_API("commited resource")
+			device->CreateCommittedResource(
+				&defaultHeapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&bufferDesc,
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				nullptr,
+				IID_PPV_ARGS(m_indicesToBeSorted.ReleaseAndGetAddressOf()));
+		m_sortedArray->SetName(L"Unsorted indices");
+
+		DX_API("commited resource")
+			device->CreateCommittedResource(
+				&defaultHeapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&bufferDesc,
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				nullptr,
+				IID_PPV_ARGS(m_sortedIndices.ReleaseAndGetAddressOf()));
+		m_sortedArray->SetName(L"Sorted indices");
 
 		CD3DX12_HEAP_PROPERTIES rbheapProps(D3D12_HEAP_TYPE_READBACK);
 
@@ -356,7 +362,7 @@ public:
 				&tempBufferDesc,
 				D3D12_RESOURCE_STATE_COPY_DEST,
 				nullptr,
-				IID_PPV_ARGS(m_arrayReadback.ReleaseAndGetAddressOf()));
+				IID_PPV_ARGS(m_arrayForReadback.ReleaseAndGetAddressOf()));
 
 
 		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
@@ -368,11 +374,11 @@ public:
 				&tempBufferDesc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
-				IID_PPV_ARGS(m_arrayData[0].ReleaseAndGetAddressOf()));
+				IID_PPV_ARGS(m_arrayForUpload.ReleaseAndGetAddressOf()));
 
 		void* pData;
 		CD3DX12_RANGE range(0, info.SizeInBytes / 4);
-		m_arrayData[0]->Map(0, &range, &pData);
+		m_arrayForUpload->Map(0, &range, &pData);
 		m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
 		m_arrayDataEnd = m_arrayDataBegin + info.SizeInBytes / 4;
 
@@ -416,7 +422,7 @@ public:
 		m_arrayDataBegin[30] = 0x23844bc3;
 		m_arrayDataBegin[31] = 0x074156f2;
 
-		m_arrayData[0]->Unmap(0, &range);
+		m_arrayForUpload->Unmap(0, &range);
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 		uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -427,23 +433,14 @@ public:
 		uavDesc.Buffer.NumElements = 32 * 32 * 32;
 		uavDesc.Buffer.StructureByteStride = 0;
 		// create uav
-		device->CreateUnorderedAccessView(m_array[0].Get(), nullptr, &uavDesc, uavHeap->GetCPUDescriptorHandleForHeapStart());
-		device->CreateUnorderedAccessView(m_array[1].Get(), nullptr, &uavDesc,
+		device->CreateUnorderedAccessView(m_arrayToBeSorted.Get(), nullptr, &uavDesc, uavHeap->GetCPUDescriptorHandleForHeapStart());
+		device->CreateUnorderedAccessView(m_sortedArray.Get(), nullptr, &uavDesc,
 			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 1, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
+		device->CreateUnorderedAccessView(m_indicesToBeSorted.Get(), nullptr, &uavDesc,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 2, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
+		device->CreateUnorderedAccessView(m_sortedIndices.Get(), nullptr, &uavDesc,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 3, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
 
-		/*		D3D12_UNORDERED_ACCESS_VIEW_DESC bucketMatrixUavDesc;
-				bucketMatrixUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-				bucketMatrixUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-				bucketMatrixUavDesc.Buffer.CounterOffsetInBytes = 0;
-				bucketMatrixUavDesc.Buffer.FirstElement = 0;
-				bucketMatrixUavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-				bucketMatrixUavDesc.Buffer.NumElements = 16 * 32 * 32;
-				bucketMatrixUavDesc.Buffer.StructureByteStride = 0;
-				// create uav
-				device->CreateUnorderedAccessView(m_bucketMatrix[0].Get(), nullptr, &bucketMatrixUavDesc,
-					CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 1, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV))
-					);
-		*/
 		com_ptr<ID3DBlob> computeShader = Egg::Shader::LoadCso("Shaders/csLocalSort.cso");
 		com_ptr<ID3D12RootSignature> rootSig = Egg::Shader::LoadRootSignature(device.Get(), computeShader.Get());
 		m_computeRootSignature = rootSig;
@@ -534,13 +531,13 @@ public:
 		DX_API("Failed to reset command list (UploadResources)")
 			commandList->Reset(commandAllocator.Get(), nullptr);
 
-		ResourceBarrier(commandList.Get(), m_array[0].Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
-		ResourceBarrier(commandList.Get(), m_array[1].Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+		ResourceBarrier(commandList.Get(), m_arrayToBeSorted.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+		ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
 
-		commandList->CopyResource(m_array[0].Get(), m_arrayData[0].Get());
+		commandList->CopyResource(m_arrayToBeSorted.Get(), m_arrayForUpload.Get());
 
-		ResourceBarrier(commandList.Get(), m_array[0].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		ResourceBarrier(commandList.Get(), m_array[1].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(commandList.Get(), m_arrayToBeSorted.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		DX_API("Failed to close command list (UploadResources)")
 			commandList->Close();
@@ -608,8 +605,19 @@ public:
 						(void)WaitForSingleObject(m_computeResumeSignal.Get(), INFINITE);
 					}
 
-					//UpdateFractalData();
-
+					// input is mortons [dont wanna deal with Particles here really]
+					// sort mortons [output: sortedIndex]
+					// prefix sum on clist
+					//  - also output: hlist (hashes of clist codes)
+					//	- where clist : (1 if Morton code differs from previous particle, 0 otherwise)
+					//  - include a flag bit in the output for starting entries
+					// compact: scatter starting's index to to prefixsum position, also write cbegin (prefixsum position -> original location)
+					// get clength by subtracting neighbors in cbegin
+					// compute hlist (hashes of clist codes)
+					// sort hlist, sort cstart and clength along
+					// get hstart ( hashcode -> where it begins in hlist ) 
+					// get hlength by subtracting neighbors in hstart
+						
 					ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
 					m_computeCommandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
@@ -618,16 +626,16 @@ public:
 					m_computeCommandList->SetComputeRootSignature(m_computeRootSignature.Get());
 
 					m_computeCommandList->SetComputeRootDescriptorTable(1, uavHeap->GetGPUDescriptorHandleForHeapStart());
-
+					
 					D3D12_RESOURCE_BARRIER uavBarrier;
 					uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 					uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					uavBarrier.UAV.pResource = m_array[0].Get();
+					uavBarrier.UAV.pResource = m_arrayToBeSorted.Get();
 
 					D3D12_RESOURCE_BARRIER uav1Barrier;
 					uav1Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 					uav1Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					uav1Barrier.UAV.pResource = m_array[1].Get();
+					uav1Barrier.UAV.pResource = m_sortedArray.Get();
 
 					m_computeCommandList->SetPipelineState(m_computePSO.Get());
 					m_computeCommandList->SetComputeRoot32BitConstant(0, 0, 0);

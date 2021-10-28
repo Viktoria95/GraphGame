@@ -1,18 +1,21 @@
 #define SortSig "RootFlags( 0 )," \
 				"RootConstants(num32BitConstants=1, b0)," \
-                "DescriptorTable(UAV(u0, numDescriptors=2))" 
+                "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1))" 
 
 //SRV(t0, numDescriptors=1), 
 RWByteAddressBuffer input : register(u0);
-//RWByteAddressBuffer outputs : register(u1);
-RWByteAddressBuffer bucketCounts : register(u1);
+RWByteAddressBuffer output : register(u1);
+RWByteAddressBuffer inputIndices : register(u2);
+RWByteAddressBuffer outputIndices : register(u3);
 uint maskOffset : register(b0);
 
 #define groupSize 32
 #define batchSize 32
 
-groupshared uint s[groupSize*batchSize];
-groupshared uint d[groupSize*batchSize];
+groupshared uint s[groupSize * batchSize]; // sort step buffer, then sorted rows
+groupshared uint d[groupSize * batchSize]; // sort step buffer, then bucket counts for sorted rows
+groupshared uint ls[groupSize * batchSize]; // lookup
+groupshared uint ld[groupSize * batchSize]; // lookup
 
 [RootSignature(SortSig)]
 [numthreads(groupSize, batchSize, 1)]
@@ -20,7 +23,9 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 {
 	uint rowst = tid.y << 5;
 	uint flatid = rowst | tid.x;
-	s[flatid] = input.Load((flatid + gid.x * groupSize * batchSize) << 2 );
+	uint initialElementIndex = flatid + gid.x * groupSize * batchSize;
+	s[flatid] = input.Load(initialElementIndex << 2 );
+	ls[flatid] = initialElementIndex;
 	//scan on bit i
 	for (uint i = maskOffset; i < maskOffset+4; i++) {
 		uint imask = 0x1 << i;
@@ -30,9 +35,11 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 			uint allBits = WaveActiveCountBits(pred);
 			if (pred) {
 				d[rowst | (groupSize - (allBits - prefixBits))] = s[flatid];
+				ld[rowst | (groupSize - (allBits - prefixBits))] = ls[flatid];
 			}
 			else {
 				d[flatid - prefixBits] = s[flatid];
+				ld[flatid - prefixBits] = ls[flatid];
 			}
 		}
 		i++;
@@ -43,14 +50,15 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 			uint allBits = WaveActiveCountBits(pred);
 			if (pred) {
 				s[rowst | (groupSize - (allBits - prefixBits))] = d[flatid];
+				ls[rowst | (groupSize - (allBits - prefixBits))] = ld[flatid];
 			}
 			else {
 				s[flatid - prefixBits] = d[flatid];
+				ls[flatid - prefixBits] = ld[flatid];
 			}
 		}
 	}
 	//compute step
-//	input.Store(flatid * 4, s[flatid]);
 
 	uint sfm = (s[flatid] >> maskOffset)  & 0xf;
 	d[flatid] = 0; // count goes here
@@ -73,7 +81,7 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	GroupMemoryBarrierWithGroupSync();
 	if (tid.y == 1 && tid.x < 16) {
 		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x] + d[32 * 31 + tid.x];
-		bucketCounts.Store((tid.x | gid.x << 4) << 2, perPageBucketCount);
+//		bucketCounts.Store((tid.x | gid.x << 4) << 2, perPageBucketCount);
 		d[tid.x + 16] = WavePrefixSum(perPageBucketCount);
 	}
 	// write these out to resource mem, per 1024-page
@@ -87,6 +95,7 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	uint target = d[16 + bucketid + (tid.y << 5)] + tid.x;
 
 	input.Store((target + groupSize * batchSize * gid.x) << 2 , s[flatid]);
+	inputIndices.Store((target + groupSize * batchSize * gid.x) << 2, ls[flatid]);
 //	input.Store(flatid << 2, d[flatid]);
 /*
 	DeviceMemoryBarrierWithGroupSync();
