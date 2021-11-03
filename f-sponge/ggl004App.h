@@ -607,17 +607,30 @@ public:
 
 					// input is mortons [dont wanna deal with Particles here really]
 					// sort mortons [output: sortedIndex]
-					// prefix sum on clist
-					//  - also output: hlist (hashes of clist codes)
-					//	- where clist : (1 if Morton code differs from previous particle, 0 otherwise)
-					//  - include a flag bit in the output for starting entries
-					// compact: scatter starting's index to to prefixsum position, also write cbegin (prefixsum position -> original location)
-					// get clength by subtracting neighbors in cbegin
-					// compute hlist (hashes of clist codes)
-					// sort hlist, sort cstart and clength along
-					// get hstart ( hashcode -> where it begins in hlist ) 
-					// get hlength by subtracting neighbors in hstart
+					// csStarterCount perpage count
+						// count starters per page (Morton code differs from previous particle, OR force one if no starters in row )
+								// ^[latter should be an extreme case (32+ particles in a cell), forcing will cause two compacter clist entries with identical hash])
+						// count left-leading non-starters per page
+					//csCreateCellList clist prefix sum-compact-scatter
+						// load starters per page, prefix sum it (every group does this)
+						// prefix sum on clist (each page separately), add perpage preceding sum
+						// if starter
+							// compact: scatter write to cbegin (prefixsum position -> original location)
+							// write clength
+								//count left-leading non-starter ballot bits to shared mem
+								//count right-trailing non-starter ballot bits, add neighbor's leading, or next page #leading
+							//  - also output: hlist (hashes of compacted clist entries)
+					// sort hlist, sort cstart+clength along
+					// perpage leading nonstarter count for hlist
+					// get hstart ( hashcode -> where it begins in hlist ), hlegth, embed
 						
+					// UAVS
+					// u0: mortons
+					// u1: #starters per page | #leading non-starters per page
+					// u2: hlist	
+					// u3: particle sorting index
+					// u4: cbegin | clength
+					// u5: embedflag: hstart | hlength OR cbegin | clength
 					ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
 					m_computeCommandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 

@@ -361,6 +361,12 @@
     <FxCompile Include="Shaders\csPBDSphereTransClear.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csStarterCount.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCreateCellList.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">
@@ -398,6 +404,9 @@
     </None>
     <None Include="Shaders\PBDTetrahedron.hlsli">
       <Filter>Shaders\PBD</Filter>
+    </None>
+    <None Include="Shaders\proximity.hlsli">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>
