@@ -2,8 +2,9 @@
 
 StructuredBuffer<uint2> linkBuffer;
 
-bool MetaBallTest_ABuffer(float3 p, float4 pos, IMetaballTester metaballTester)
+bool MetaBallTest_ABuffer(float3 p, IMetaballTester metaballTester)
 {
+	float2 pos = WorldToScreen(p);
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 	uint offset = offsetBuffer[uIndex];
 
@@ -23,10 +24,11 @@ bool MetaBallTest_ABuffer(float3 p, float4 pos, IMetaballTester metaballTester)
 	return false;
 }
 
-float3 Grad_ABuffer(float3 p, float4 pos)
+float3 Grad_ABuffer(float3 p)
 {
 	float3 grad;
 
+	float2 pos = WorldToScreen(p);
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 
 	uint offset = offsetBuffer[uIndex];
@@ -45,36 +47,36 @@ float3 Grad_ABuffer(float3 p, float4 pos)
 
 class ABufferMetaballVisualizer : IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos)
+	bool callMetaballTestFunction(float3 p)
 	{
 		if (functionType == 2)
 		{
 			WyvillMetaballTester wyvillMetaballTester;
-			return MetaBallTest_ABuffer(p, pos, wyvillMetaballTester);
+			return MetaBallTest_ABuffer(p, wyvillMetaballTester);
 		}
 		if (functionType == 3)
 		{
 			NishimuraMetaballTester nishimuraMetaballTester;
-			return MetaBallTest_ABuffer(p, pos, nishimuraMetaballTester);
+			return MetaBallTest_ABuffer(p, nishimuraMetaballTester);
 		}
 		if (functionType == 4)
 		{
 			MurakamiMetaballTester murakamiMetaballTester;
-			return MetaBallTest_ABuffer(p, pos, murakamiMetaballTester);
+			return MetaBallTest_ABuffer(p, murakamiMetaballTester);
 		}
 		SimpleMetaballTester simpleMetaballTester;
-		return MetaBallTest_ABuffer(p, pos, simpleMetaballTester);
+		return MetaBallTest_ABuffer(p, simpleMetaballTester);
 	}
 
-	float3 callGradientCalculator(float3 p, float4 pos)
+	float3 callGradientCalculator(float3 p)
 	{
-		return Grad_ABuffer(p, pos);
+		return Grad_ABuffer(p);
 	}
 
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
 	{
 		ABufferMetaballVisualizer aBufferMetaballVisualizer;
 
-		return BinarySearch(startInside, startPos, endInside, endPos, pos, aBufferMetaballVisualizer);
+		return BinarySearch(startInside, startPos, endInside, endPos, aBufferMetaballVisualizer);
 	}
 };

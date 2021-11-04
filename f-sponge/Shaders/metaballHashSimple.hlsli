@@ -6,8 +6,10 @@ RWByteAddressBuffer hlistLength;
 RWByteAddressBuffer clistBegin;
 RWByteAddressBuffer clistLength;
 
-bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTester)
+bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 {
+	float2 pos = WorldToScreen(p);
+
 	bool result = false;
 	float acc = 0.0;
 
@@ -65,8 +67,10 @@ bool MetaBallTest_HashSimple(float3 p, float4 pos, IMetaballTester metaballTeste
 }
 
 
-float3 Grad_HashSimple(float3 p, float4 pos)
+float3 Grad_HashSimple(float3 p)
 {
+	float2 pos = WorldToScreen(p);
+
 	float3 grad = float3 (0.0, 0.0, 0.0);
 	/*
 	uint zIndex = mortonHash(pos.xyz);
@@ -174,36 +178,36 @@ float3 Grad_HashSimple(float3 p, float4 pos)
 
 class HashSimpleMetaballVisualizer : IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos)
+	bool callMetaballTestFunction(float3 p)
 	{
 		if (functionType == 2)
 		{
 			WyvillMetaballTester wyvillMetaballTester;
-			return MetaBallTest_HashSimple(p, pos, wyvillMetaballTester);
+			return MetaBallTest_HashSimple(p, wyvillMetaballTester);
 		}
 		if (functionType == 3)
 		{
 			NishimuraMetaballTester nishimuraMetaballTester;
-			return MetaBallTest_HashSimple(p, pos, nishimuraMetaballTester);
+			return MetaBallTest_HashSimple(p, nishimuraMetaballTester);
 		}
 		if (functionType == 4)
 		{
 			MurakamiMetaballTester murakamiMetaballTester;
-			return MetaBallTest_HashSimple(p, pos, murakamiMetaballTester);
+			return MetaBallTest_HashSimple(p, murakamiMetaballTester);
 		}
 		SimpleMetaballTester simpleMetaballTester;
-		return MetaBallTest_HashSimple(p, pos, simpleMetaballTester);
+		return MetaBallTest_HashSimple(p, simpleMetaballTester);
 	}
 
-	float3 callGradientCalculator(float3 p, float4 pos)
+	float3 callGradientCalculator(float3 p)
 	{
-		return Grad_HashSimple(p, pos);
+		return Grad_HashSimple(p);
 	}
 
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
 	{
 		HashSimpleMetaballVisualizer hashMetaballVisualizer;
 
-		return BinarySearch(startInside, startPos, endInside, endPos, pos, hashMetaballVisualizer);
+		return BinarySearch(startInside, startPos, endInside, endPos, hashMetaballVisualizer);
 	}
 };

@@ -4,7 +4,7 @@ float4 psMetaballSBufferGradient(VsosQuad input) : SV_Target
 {
 	SBufferMetaballVisualizer sbufferMetaballVisualizer;
 
-	return CalculateColor_Gradient(input.rayDir, input.pos, sbufferMetaballVisualizer);
+	return CalculateColor_Gradient(input.rayDir, sbufferMetaballVisualizer);
 }
 
 

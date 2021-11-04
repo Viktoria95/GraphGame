@@ -73,9 +73,9 @@ struct RayMarchHit
 
 interface IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos);
-	float3 callGradientCalculator(float3 p, float4 pos);
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos);
+	bool callMetaballTestFunction(float3 p);
+	float3 callGradientCalculator(float3 p);
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos);
 };
 
 interface IMetaballTester
@@ -231,7 +231,7 @@ float3 FresnelForMetals(float3 inDir, float3 normal, float3 n, float3 k)
 	return ((n - one * n - one) + 4.0 * n * pow(1.0 - cosTheta, 5.0) + k * k) / ((n + one) * (n + one) + k * k);
 }
 
-float2 WorldToNDC(float3 wp)
+float2 WorldToNDC(float3 wp) // ???
 {
 	float4 worldPos = mul(float4(wp, 1.0), modelViewProjMatrix);
 	worldPos /= worldPos.w;
@@ -240,6 +240,22 @@ float2 WorldToNDC(float3 wp)
 	screenPos.y = ((worldPos.y - 1.0) * windowHeight) / -2.0;
 	return screenPos;
 }
+
+float2 WorldToScreen(float3 wp)
+{
+	float4 worldPos = mul(float4(wp, 1.0), modelViewProjMatrix);
+	worldPos /= worldPos.w;
+	float2 screenPos = float2(0.0, 0.0);
+	screenPos.x = ((worldPos.x + 1.0) * windowWidth) / 2.0;
+	screenPos.y = ((worldPos.y - 1.0) * windowHeight) / -2.0;
+	return screenPos;
+}
+
+float2 ScreenToUV (float2 sp)
+{
+	return float2 (sp.x / windowWidth, sp.y / windowHeight);
+}
+
 
 // Metaball test functions
 
@@ -281,7 +297,7 @@ float3 Grad(float3 p) {
 
 // Binary search functions
 
-float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 inputPos, IMetaballVisualizer metaballVisualizer)
+float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, IMetaballVisualizer metaballVisualizer)
 {
 	float3 newStart = startPos;
 	float3 newEnd = endPos;
@@ -290,7 +306,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 	for (i = 0; i < binaryStepCount; i++)
 	{
 		float3 mid = (startPos + endPos) / 2.0;
-		bool midInside = metaballVisualizer.callMetaballTestFunction(mid, inputPos);
+		bool midInside = metaballVisualizer.callMetaballTestFunction(mid);
 		if (midInside == startInside)
 		{
 			newStart = mid;
@@ -308,7 +324,7 @@ float3 BinarySearch(bool startInside, float3 startPos, bool endInside, float3 en
 
 class NormalMetaballVisualizer : IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos)
+	bool callMetaballTestFunction(float3 p)
 	{
 		if (functionType == 2)
 		{
@@ -329,12 +345,12 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 		return MetaBallTest(p, simpleMetaballTester);
 	}
 
-	float3 callGradientCalculator(float3 p, float4 pos)
+	float3 callGradientCalculator(float3 p)
 	{
 		return Grad(p);
 	}
 
-	float3 phongShading(float3 p, float4 pos, float ambientIntensity, float specularIntensity, float3 lightDir, float3 viewDir, float3 reflectDir, float3 surfaceColor, float3 lightColor, int shininess)
+	float3 phongShading(float3 p, float ambientIntensity, float specularIntensity, float3 lightDir, float3 viewDir, float3 reflectDir, float3 surfaceColor, float3 lightColor, int shininess)
 	{
 		float3 normal = normalize(Grad(p));
 		float3 ambient = ambientIntensity * lightColor;
@@ -343,27 +359,28 @@ class NormalMetaballVisualizer : IMetaballVisualizer
 		return (ambient + diffuse + specular) * surfaceColor;
 	}
 
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
 	{
 		NormalMetaballVisualizer normalMetaballVisualizer;
 
-		return BinarySearch(startInside, startPos, endInside, endPos, pos, normalMetaballVisualizer);
+		return BinarySearch(startInside, startPos, endInside, endPos, normalMetaballVisualizer);
 	}
 };
 
-float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer metaballVisualizer)
+float4 CalculateColor_Gradient(float3 rayDir, IMetaballVisualizer metaballVisualizer)
 {
 	float ambientIntensity2 = 0.7;
 	float3 lightDir2 = float3(1.0, 0.0, 0.0);
 	float3 surfaceColor2 = float3(0.22745, 0.20000, 0.20000);
 	float3 lightColor2 = float3(1.0, 1.0, 1.0);
 
-	float2 uv = float2 (pos.x / windowWidth, pos.y / windowHeight);
-	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
-
 	float tStart, tEnd;
 	float3 p = eyePos;
 	float3 d = normalize(rayDir);
+
+	float2 screenPos = WorldToScreen(eyePos + d);
+	float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
+	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
 
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
@@ -395,11 +412,11 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 			}
 			//else
 			{
-				if (metaballVisualizer.callMetaballTestFunction(p, pos))
+				if (metaballVisualizer.callMetaballTestFunction(p))
 				{
 					//return float4(1.0, 1.0, 1.0, 1.0);
-					p = metaballVisualizer.doBinarySearch(false, p - step, true, p, pos);
-					float3 normal = normalize(metaballVisualizer.callGradientCalculator(p, pos));
+					p = metaballVisualizer.doBinarySearch(false, p - step, true, p);
+					float3 normal = normalize(metaballVisualizer.callGradientCalculator(p));
 
 					float3 ref = reflect(normalize(rayDir), normal);
 					return float4(abs(normal), 1.0);
@@ -419,7 +436,7 @@ float4 CalculateColor_Gradient(float3 rayDir, float4 pos, IMetaballVisualizer me
 						float3 envColor = envTexture.SampleLevel(ss, ref, 0);
 						return float4(fresnel * envColor, 1.0);
 					}
-					return float4(normalize(metaballVisualizer.callGradientCalculator(p, pos)), 1.0);
+					return float4(normalize(metaballVisualizer.callGradientCalculator(p)), 1.0);
 				}
 
 				p += step;
@@ -480,7 +497,7 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 
 		if (intersect && marchRecursionDepth < maxRecursion)
 		{
-			bool startedInside = metaballVisualizer.callMetaballTestFunction(marchPos, screenPos);
+			bool startedInside = metaballVisualizer.callMetaballTestFunction(marchPos);
 			float3 start = marchPos;
 			float3 marchStep = marchDir * (tEnd - tStart) / float(marchCount);
 			marchPos += marchDir * tStart;
@@ -495,11 +512,11 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 				}
 				else
 				{
-					bool inside = metaballVisualizer.callMetaballTestFunction(marchPos, screenPos);
+					bool inside = metaballVisualizer.callMetaballTestFunction(marchPos);
 					if (inside && !startedInside || !inside && startedInside)
 					{
 						marchHit = true;
-						marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos, screenPos);
+						marchPos = metaballVisualizer.doBinarySearch(startedInside, start, inside, marchPos);
 
 						float distance = length(marchPos - stack[stackSize].position);
 						float i0 = 1.0f;
@@ -508,7 +525,7 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 							i0 = startedInside ? 1.0f * exp(-distance * 13.0) : 1.0;
 						}
 
-						float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos, screenPos));
+						float3 normal = normalize(-metaballVisualizer.callGradientCalculator(marchPos));
 						float refractiveIndex = 1.4;
 						if (dot(normal, marchDir) > 0) {
 							normal = -normal;

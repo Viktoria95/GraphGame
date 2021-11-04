@@ -4,7 +4,7 @@ float4 psMetaballNormalGradient(VsosQuad input) : SV_Target
 {
 	NormalMetaballVisualizer normalMetaballVisualizer;
 	
-	return CalculateColor_Gradient(input.rayDir, input.pos, normalMetaballVisualizer);
+	return CalculateColor_Gradient(input.rayDir, normalMetaballVisualizer);
 }
 
 
