@@ -50,7 +50,7 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	}
 	if (!meNonstarter) {
 		cbegin.Store(compactIndex, clength << 16 | initialElementIndex);
-		hlist.Store(compactIndex, hash(myMorton));
+		//hlist.Store(compactIndex, hash(myMorton));
 	}
 
 	if (tid.y == 0) {
