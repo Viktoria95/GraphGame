@@ -2,8 +2,10 @@
 
 StructuredBuffer<uint> idBuffer;
 
-bool MetaBallTest_SBuffer(float3 p, float4 pos, IMetaballTester metaballTester)
+bool MetaBallTest_SBuffer(float3 p, IMetaballTester metaballTester)
 {
+	float2 pos = WorldToScreen(p);
+
 	float acc = 0.0;
 
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
@@ -31,8 +33,10 @@ bool MetaBallTest_SBuffer(float3 p, float4 pos, IMetaballTester metaballTester)
 	return false;
 }
 
-bool MetaBallTest_SBufferV2(float3 p, float4 pos, IMetaballTester metaballTester)
+bool MetaBallTest_SBufferV2(float3 p, IMetaballTester metaballTester)
 {
+	float2 pos = WorldToScreen(p);
+
 	float acc = 0.0;
 
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
@@ -61,7 +65,8 @@ bool MetaBallTest_SBufferV2(float3 p, float4 pos, IMetaballTester metaballTester
 	return false;
 }
 
-float3 Grad_SBuffer(float3 p, float4 pos) {
+float3 Grad_SBuffer(float3 p) {
+	float2 pos = WorldToScreen(p);
 
 	uint uIndex = (uint)pos.y * (uint)windowWidth + (uint)pos.x;
 
@@ -87,7 +92,8 @@ float3 Grad_SBuffer(float3 p, float4 pos) {
 	return grad;
 }
 
-float3 Grad_SBufferV2(float3 p, float4 pos) {
+float3 Grad_SBufferV2(float3 p) {
+	float2 pos = WorldToScreen(p);
 
 	return float3(0.0, 0.0, 0.0);
 
@@ -117,72 +123,72 @@ float3 Grad_SBufferV2(float3 p, float4 pos) {
 
 class SBufferMetaballVisualizer : IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos)
+	bool callMetaballTestFunction(float3 p)
 	{
 		if (functionType == 2)
 		{
 			WyvillMetaballTester wyvillMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, wyvillMetaballTester);
+			return MetaBallTest_SBuffer(p, wyvillMetaballTester);
 		}
 		if (functionType == 3)
 		{
 			NishimuraMetaballTester nishimuraMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, nishimuraMetaballTester);
+			return MetaBallTest_SBuffer(p, nishimuraMetaballTester);
 		}
 		if (functionType == 4)
 		{
 			MurakamiMetaballTester murakamiMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, murakamiMetaballTester);
+			return MetaBallTest_SBuffer(p, murakamiMetaballTester);
 		}
 		SimpleMetaballTester simpleMetaballTester;
-		return MetaBallTest_SBuffer(p, pos, simpleMetaballTester);
+		return MetaBallTest_SBuffer(p, simpleMetaballTester);
 	}
 
-	float3 callGradientCalculator(float3 p, float4 pos)
+	float3 callGradientCalculator(float3 p)
 	{
-		return Grad_SBuffer(p, pos);
+		return Grad_SBuffer(p);
 	}
 
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
 	{
 		SBufferMetaballVisualizer sBufferMetaballVisualizer;
 
-		return BinarySearch(startInside, startPos, endInside, endPos, pos, sBufferMetaballVisualizer);
+		return BinarySearch(startInside, startPos, endInside, endPos, sBufferMetaballVisualizer);
 	}
 };
 
 class SBufferV2MetaballVisualizer : IMetaballVisualizer
 {
-	bool callMetaballTestFunction(float3 p, float4 pos)
+	bool callMetaballTestFunction(float3 p)
 	{
 		if (functionType == 2)
 		{
 			WyvillMetaballTester wyvillMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, wyvillMetaballTester);
+			return MetaBallTest_SBuffer(p, wyvillMetaballTester);
 		}
 		if (functionType == 3)
 		{
 			NishimuraMetaballTester nishimuraMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, nishimuraMetaballTester);
+			return MetaBallTest_SBuffer(p, nishimuraMetaballTester);
 		}
 		if (functionType == 4)
 		{
 			MurakamiMetaballTester murakamiMetaballTester;
-			return MetaBallTest_SBuffer(p, pos, murakamiMetaballTester);
+			return MetaBallTest_SBuffer(p, murakamiMetaballTester);
 		}
 		SimpleMetaballTester simpleMetaballTester;
-		return MetaBallTest_SBufferV2(p, pos, simpleMetaballTester);
+		return MetaBallTest_SBufferV2(p, simpleMetaballTester);
 	}
 
-	float3 callGradientCalculator(float3 p, float4 pos)
+	float3 callGradientCalculator(float3 p)
 	{
-		return Grad_SBufferV2(p, pos);
+		return Grad_SBufferV2(p);
 	}
 
-	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos, float4 pos)
+	float3 doBinarySearch(bool startInside, float3 startPos, bool endInside, float3 endPos)
 	{
 		SBufferV2MetaballVisualizer sBufferMetaballVisualizer;
 
-		return BinarySearch(startInside, startPos, endInside, endPos, pos, sBufferMetaballVisualizer);
+		return BinarySearch(startInside, startPos, endInside, endPos, sBufferMetaballVisualizer);
 	}
 };
