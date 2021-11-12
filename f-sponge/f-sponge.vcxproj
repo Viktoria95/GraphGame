@@ -684,6 +684,7 @@
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli" />
     <None Include="Shaders\hash.hlsli" />
+    <None Include="Shaders\hhash.hlsli" />
     <None Include="Shaders\metaball.hlsli" />
     <None Include="Shaders\metaballABuffer.hlsli" />
     <None Include="Shaders\metaballHashSimple.hlsli" />
