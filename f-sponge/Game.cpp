@@ -1643,36 +1643,6 @@ void Game::CreateSpongeMesh() {
 	elements[cElements].SemanticName = "THIRDTEX";
 	cElements++;
 
-	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	elements[cElements].AlignedByteOffset = normalOffset = cOffset;
-	cOffset += sizeof(float) * 3;
-	elements[cElements].InputSlot = 0;
-	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	elements[cElements].InstanceDataStepRate = 0;
-	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "NORMAL";
-	cElements++;
-
-	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	elements[cElements].AlignedByteOffset = binormalOffset = cOffset;
-	cOffset += sizeof(float) * 3;
-	elements[cElements].InputSlot = 0;
-	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	elements[cElements].InstanceDataStepRate = 0;
-	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "BINORMAL";
-	cElements++;
-
-	elements[cElements].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	elements[cElements].AlignedByteOffset = tangentOffset = cOffset;
-	cOffset += sizeof(float) * 3;
-	elements[cElements].InputSlot = 0;
-	elements[cElements].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	elements[cElements].InstanceDataStepRate = 0;
-	elements[cElements].SemanticIndex = 0;
-	elements[cElements].SemanticName = "TANGENT";
-	cElements++;
-
 	int gridSize = PBDGrideSize;
 	unsigned int vertexStride = cOffset;
 	unsigned int nElements = cElements;
@@ -1683,15 +1653,12 @@ void Game::CreateSpongeMesh() {
 	std::map<int, float2> neighbourTex0;
 	std::map<int, float2> neighbourTex1;
 	std::map<int, float2> neighbourTex2;
-	std::map<int, float3> normals;
-	std::map<int, float3> binormals;
-	std::map<int, float3> tangents;
 	std::map<int, int> particleIdMap;
 
 	int originalId = 0, newId = 0;
 	for (int dim = 0; dim < gridSize; dim++) {
-		for (int col = 0; col < gridSize; col++) {
-			for (int row = 0; row < gridSize; row++) {
+		for (int row = 0; row < gridSize; row++) {
+			for (int col = 0; col < gridSize; col++) {
 				if (particleIdMap.find(newId) != particleIdMap.end()) {
 					particleIdMap.at(newId) = originalId;
 				}
@@ -1715,46 +1682,63 @@ void Game::CreateSpongeMesh() {
 	std::map<int, int> positionMap;
 	std::vector<float3> vertices;
 	originalId = 0;
-	for (int col = 0; col < gridSize; col++) {
-		for (int row = 0; row < gridSize; row++) {
-			float3 pos = float3(col, row, 0);
-			vertices.push_back(pos);
-			texcoords.push_back(pos.xy / (gridSize - 1));
-		}
-	}
+	// front
 	for (int col = 0; col < gridSize; col++) {
 		for (int row = 0; row < gridSize; row++) {
 			float3 pos = float3(col, row, (gridSize - 1));
 			vertices.push_back(pos);
 			texcoords.push_back(pos.xy / (gridSize - 1));
+			//texcoords.push_back(float2(0.375 + (row * (0.25 / (gridSize - 1))), 1.0 - (col * (0.25 / (gridSize - 1)))));
 		}
 	}
+
+	// top
 	for (int col = 0; col < gridSize; col++) {
 		for (int dim = 0; dim < gridSize; dim++) {
 			float3 pos = float3(col, (gridSize - 1), dim);
 			vertices.push_back(pos);
-			texcoords.push_back(pos.xz / (gridSize - 1));
+			texcoords.push_back(float2(pos.xz / (gridSize - 1)));
+			//texcoords.push_back(float2(0.875 - (col * (0.25 / (gridSize - 1))), 0.5 + (dim * (0.25 / (gridSize - 1)))));
 		}
 	}
+
+	// back
+	for (int col = 0; col < gridSize; col++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(col, row, 0);
+			vertices.push_back(pos);
+			texcoords.push_back(float2(pos.xy / (gridSize - 1)));
+			//texcoords.push_back(float2(0.375 + (row * (0.25 / (gridSize - 1))), 0.25 + (col * (0.25 / (gridSize - 1)))));
+		}
+	}
+
+	// bottom
 	for (int col = 0; col < gridSize; col++) {
 		for (int dim = 0; dim < gridSize; dim++) {
 			float3 pos = float3(col, 0, dim);
 			vertices.push_back(pos);
-			texcoords.push_back(pos.xz / (gridSize - 1));
+			texcoords.push_back(float2(pos.xz / (gridSize - 1)));
+			//texcoords.push_back(float2(0.125 + (col * (0.25 / (gridSize - 1))), 0.5 + (dim * (0.25 / (gridSize - 1)))));
 		}
 	}
-	for (int dim = 0; dim < gridSize; dim++) {
-		for (int row = 0; row < gridSize; row++) {
-			float3 pos = float3(0, row, dim);
-			vertices.push_back(pos);
-			texcoords.push_back(pos.yz / (gridSize - 1));
-		}
-	}
+
+	// left
 	for (int dim = 0; dim < gridSize; dim++) {
 		for (int row = 0; row < gridSize; row++) {
 			float3 pos = float3((gridSize - 1), row, dim);
 			vertices.push_back(pos);
-			texcoords.push_back(pos.yz / (gridSize - 1));
+			texcoords.push_back(float2(pos.yz / (gridSize - 1)));
+			//texcoords.push_back(float2(0.375 + (row * (0.25 / (gridSize - 1))), 0.5 + (dim * (0.25 / (gridSize - 1)))));
+		}
+	}
+
+	// right
+	for (int dim = 0; dim < gridSize; dim++) {
+		for (int row = 0; row < gridSize; row++) {
+			float3 pos = float3(0, row, dim);
+			vertices.push_back(pos);
+			texcoords.push_back(float2(pos.yz / (gridSize - 1)));
+			//texcoords.push_back(float2(0.375 + (row * (0.25 / (gridSize - 1))), 0.25 - (dim * (0.25 / (gridSize - 1)))));
 		}
 	}
 
@@ -1798,7 +1782,7 @@ void Game::CreateSpongeMesh() {
 
 	std::vector<int> faceIndices;
 
-	// front
+	// front -> ok
 	for (int col = 0; col < gridSize - 1; col++) {
 		for (int row = 0; row < gridSize - 1; row++) {
 			int p0 = col * gridSize + row + 1;
@@ -1833,25 +1817,10 @@ void Game::CreateSpongeMesh() {
 			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
 			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
 			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
-
-			normals.insert(std::pair<int, float3>(p0, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p0), vertices.at(p2), vertices.at(p3))));
-
-			binormals.insert(std::pair<int, float3>(p0, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
-
-			tangents.insert(std::pair<int, float3>(p0, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
 		}
 	}
 
-	// back 
+	// top 
 	for (int col = 0; col < gridSize - 1; col++) {
 		for (int row = 0; row < gridSize - 1; row++) {
 			int p0 = (gridSize * gridSize) + ((col + 1) * gridSize + row + 1);
@@ -1865,6 +1834,11 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p0;
 			sysMemIndices[faceIdx++] = p2;
 			sysMemIndices[faceIdx++] = p3;
+
+			float3 pm0 = controlParticles.at(positionMap.at(0)).position;
+			float3 pm1 = controlParticles.at(positionMap.at(1)).position;
+			float3 pm2 = controlParticles.at(positionMap.at(2)).position;
+			float3 pm3 = controlParticles.at(positionMap.at(3)).position;
 
 			neighbours.insert(std::pair<int, float3>(p0, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
 			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p0), positionMap.at(p1), positionMap.at(p2))));
@@ -1885,25 +1859,10 @@ void Game::CreateSpongeMesh() {
 			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
 			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
 			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
-
-			normals.insert(std::pair<int, float3>(p0, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p0), vertices.at(p1), vertices.at(p2))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p0), vertices.at(p2), vertices.at(p3))));
-
-			binormals.insert(std::pair<int, float3>(p0, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
-
-			tangents.insert(std::pair<int, float3>(p0, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p0), vertices.at(p1), vertices.at(p2), texcoords.at(p0), texcoords.at(p1), texcoords.at(p2))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p0), vertices.at(p2), vertices.at(p3), texcoords.at(p0), texcoords.at(p2), texcoords.at(p3))));
 		}
 	}
 
-	// top
+	// back -> ok
 	for (int col = 0; col < gridSize - 1; col++) {
 		for (int dim = 0; dim < gridSize - 1; dim++) {
 			int p3 = 2 * (gridSize * gridSize) + ((col + 1) * gridSize + dim + 1);
@@ -1918,41 +1877,25 @@ void Game::CreateSpongeMesh() {
 			sysMemIndices[faceIdx++] = p3;
 			sysMemIndices[faceIdx++] = p4;
 
-			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p1), positionMap.at(p2), positionMap.at(p3))));
-			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p1), positionMap.at(p3), positionMap.at(p4))));
+			neighbours.insert(std::pair<int, float3>(p1, float3(positionMap.at(p3), positionMap.at(p2), positionMap.at(p1))));
+			neighbours.insert(std::pair<int, float3>(p2, float3(positionMap.at(p3), positionMap.at(p2), positionMap.at(p1))));
+			neighbours.insert(std::pair<int, float3>(p3, float3(positionMap.at(p3), positionMap.at(p2), positionMap.at(p1))));
+			neighbours.insert(std::pair<int, float3>(p4, float3(positionMap.at(p3), positionMap.at(p1), positionMap.at(p4))));
 
-			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
-			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
-			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
-			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
+			neighbourTex0.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
+			neighbourTex0.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
+			neighbourTex0.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex0.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
 
 			neighbourTex1.insert(std::pair<int, float2>(p1, texcoords.at(p2)));
 			neighbourTex1.insert(std::pair<int, float2>(p2, texcoords.at(p2)));
 			neighbourTex1.insert(std::pair<int, float2>(p3, texcoords.at(p2)));
-			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p3)));
+			neighbourTex1.insert(std::pair<int, float2>(p4, texcoords.at(p1)));
 
-			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p3)));
-			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
-			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
+			neighbourTex2.insert(std::pair<int, float2>(p1, texcoords.at(p1)));
+			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p1)));
+			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p1)));
 			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
-
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
-
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
-
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
-
 		}
 	}
 
@@ -1990,21 +1933,6 @@ void Game::CreateSpongeMesh() {
 			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
-
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
-
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
-
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
 
@@ -2042,21 +1970,6 @@ void Game::CreateSpongeMesh() {
 			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
-
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
-
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
-
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
 
@@ -2094,21 +2007,6 @@ void Game::CreateSpongeMesh() {
 			neighbourTex2.insert(std::pair<int, float2>(p2, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p3, texcoords.at(p3)));
 			neighbourTex2.insert(std::pair<int, float2>(p4, texcoords.at(p4)));
-
-			normals.insert(std::pair<int, float3>(p1, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p2, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p3, calculateNormal(vertices.at(p1), vertices.at(p2), vertices.at(p3))));
-			normals.insert(std::pair<int, float3>(p4, calculateNormal(vertices.at(p1), vertices.at(p3), vertices.at(p4))));
-
-			binormals.insert(std::pair<int, float3>(p1, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p2, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p3, calculateBinormal(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			binormals.insert(std::pair<int, float3>(p4, calculateBinormal(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
-
-			tangents.insert(std::pair<int, float3>(p1, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p2, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p3, calculateTangent(vertices.at(p1), vertices.at(p2), vertices.at(p3), texcoords.at(p1), texcoords.at(p2), texcoords.at(p3))));
-			tangents.insert(std::pair<int, float3>(p4, calculateTangent(vertices.at(p1), vertices.at(p3), vertices.at(p4), texcoords.at(p1), texcoords.at(p3), texcoords.at(p4))));
 		}
 	}
 
@@ -2119,9 +2017,6 @@ void Game::CreateSpongeMesh() {
 		memcpy(sysMemVertices + i * vertexStride + neighbourTex0Offset, &neighbourTex0.at(i), sizeof(float) * 2);
 		memcpy(sysMemVertices + i * vertexStride + neighbourTex1Offset, &neighbourTex1.at(i), sizeof(float) * 2);
 		memcpy(sysMemVertices + i * vertexStride + neighbourTex2Offset, &neighbourTex2.at(i), sizeof(float) * 2);
-		memcpy(sysMemVertices + i * vertexStride + normalOffset, &normals.at(i), sizeof(float) * 3);
-		memcpy(sysMemVertices + i * vertexStride + binormalOffset, &binormals.at(i), sizeof(float) * 3);
-		memcpy(sysMemVertices + i * vertexStride + tangentOffset, &tangents.at(i), sizeof(float) * 3);
 	}
 
 	Egg11::Mesh::VertexStreamDesc vertexStreamDesc;
@@ -2239,6 +2134,24 @@ void Game::CreateSpongeMesh() {
 	{
 		//return false;
 	}
+
+	CD3D11_SAMPLER_DESC samplerStateDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+
+	samplerStateDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerStateDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerStateDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerStateDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerStateDesc.MipLODBias = 0.0f;
+	samplerStateDesc.MaxAnisotropy = 1;
+	samplerStateDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerStateDesc.BorderColor[0] = 0;
+	samplerStateDesc.BorderColor[1] = 0;
+	samplerStateDesc.BorderColor[2] = 0;
+	samplerStateDesc.BorderColor[3] = 0;
+	samplerStateDesc.MinLOD = 0;
+	samplerStateDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	device->CreateSamplerState(&samplerStateDesc, samplerState2.GetAddressOf());
 
 }
 
@@ -4159,27 +4072,34 @@ void forAllXYZ(std::function<void(uint32_t, uint32_t, uint32_t)> f) {
 void Game::renderSpongeMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	uint values[4] = { 0,0,0,0 };
 	context->ClearUnorderedAccessViewUint(offsetUAV.Get(), values);
-	float scale = 1.0;
-
-	float4x4 matrices[4];
-	matrices[0] = float4x4::identity;
-	matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
-	//matrices[2] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
-	matrices[2] = (float4x4::identity);
-	matrices[3] = firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix();
-	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	float4 perFrameVectors[1];
 	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 
+	float4x4 matrices[4];
+	matrices[0] = float4x4::translation(float3(0.0, 0.0, 0.0)) * float4x4::identity;
+	matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
+	//matrices[2] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix()));
+	matrices[2] = (float4x4::translation(float3(0.0, 0.0, 0.0)) * float4x4::identity).invert();
+	matrices[3] = firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix();
+	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
+
 	context->VSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+
+	//float4x4 matrices[4];
+	//matrices[0] = float4x4::identity;
+	//matrices[1] = ((firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix())).invert();
+	//matrices[2] = float4x4::translation(float3(0.0, 0.0, 0.0)) * (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
+	//matrices[3] = firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix();
+	//context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
 	spongeMesh->getMaterial()->setCb("spongeCB", eyePosCB, Egg11::Mesh::ShaderStageFlag::Vertex);
 	context->PSSetShaderResources(0, 1, spongeDiffuseSRV.GetAddressOf());
 	context->PSSetShaderResources(1, 1, spongeNormalSRV.GetAddressOf());
 	context->PSSetShaderResources(2, 1, spongeHeightSRV.GetAddressOf());
-	spongeMesh->getMaterial()->setSamplerState("ss", samplerState, Egg11::Mesh::ShaderStageFlag::Pixel);
+	spongeMesh->getMaterial()->setSamplerState("ss", samplerState2, Egg11::Mesh::ShaderStageFlag::Pixel);
+
 
 	spongeMesh->draw(context);
 }

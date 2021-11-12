@@ -181,6 +181,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeDiffuseSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeNormalSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> spongeHeightSRV;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState2;
 
 	// Prefix sum
 	Microsoft::WRL::ComPtr<ID3D11Buffer> scanBucketSizeCB;
