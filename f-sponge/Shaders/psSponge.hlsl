@@ -18,6 +18,10 @@ struct VsosTrafo
 	float3 viewDirTS: VIEWDIRTS;
 };
 
+cbuffer spongeCB
+{
+	float4 eyePos;
+};
 
 float4 psSponge(VsosTrafo input) : SV_Target
 {
@@ -53,9 +57,14 @@ float4 psSponge(VsosTrafo input) : SV_Target
 	float3x3 tbn = { input.tangent, input.binormal, input.normal };
 	float3 worldNormal = normalize(mul(n, tbn));
 
+	float eyeDistance = distance(input.worldPos.xyz, eyePos.xyz);
+
+	//return float4(
+	//	(kd * ndotl + float3(0.10, 0.10, 0.10) * ndoth) * 0.9
+	//	//		+
+	//	//		envTex.Sample(sampl, reflect(-normalize(vso.viewDir), worldNormal)).rgb * 0.1
+	//			, 1);
+
 	return float4(
-		(kd * ndotl + float3(0.10, 0.10, 0.10) * ndoth) * 0.9
-		//		+
-		//		envTex.Sample(sampl, reflect(-normalize(vso.viewDir), worldNormal)).rgb * 0.1
-				, 1);
+		(kd * ndotl + float3(1, 1, 1) * ndoth) * 0.7 + float3(0.1f, 0.1f, 0.1f) * 0.3, eyeDistance);
 }
