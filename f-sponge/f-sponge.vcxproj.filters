@@ -49,6 +49,9 @@
     <Filter Include="Shaders\PBD\Tetrahedrons">
       <UniqueIdentifier>{e4c5bf84-ecc4-47da-bc18-6782d5230373}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Cell">
+      <UniqueIdentifier>{ac29f499-3da8-4b51-bb18-cba23d1b2620}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -85,12 +88,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\csLocalSort.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csMerge.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
       <Filter>Shaders\Hash</Filter>
     </FxCompile>
@@ -361,11 +358,17 @@
     <FxCompile Include="Shaders\csPBDSphereTransClear.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csStarterCount.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csCreateCellList.hlsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csStarterCount.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csLocalSort.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csMerge.hlsl">
+      <Filter>Shaders\Cell</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -406,7 +409,10 @@
       <Filter>Shaders\PBD</Filter>
     </None>
     <None Include="Shaders\proximity.hlsli">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Cell</Filter>
+    </None>
+    <None Include="Shaders\hhash.hlsli">
+      <Filter>Shaders\Cell</Filter>
     </None>
   </ItemGroup>
 </Project>

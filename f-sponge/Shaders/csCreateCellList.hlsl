@@ -1,4 +1,5 @@
 #include "proximity.hlsli"
+#include "hhash.hlsli"
 
 // sortedMortons => starterCounts
 
@@ -35,6 +36,14 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	GroupMemoryBarrierWithGroupSync();
 
 	if (tid.y == 0) {
+		bool rowNotFull = perRowLeadingNonstarterCount[tid.x] != 32;
+		uint notFullMask = WaveActiveBallot(rowNotFull).x >> (tid.x + 1);
+		uint nFullRowsAfterMe = firstbitlow(notFullMask);
+		if (!rowNotFull && nFullRowsAfterMe != 0xffffffff) {
+			uint nextNonFullLeadingNonStarterCount = perRowLeadingNonstarterCount[tid.x + 1 + nFullRowsAfterMe];
+			perRowLeadingNonstarterCount[tid.x] += nFullRowsAfterMe * 32 + nextNonFullLeadingNonStarterCount;
+		}
+
 		perRowStarterCountsSummed[tid.x] = WavePrefixSum(perRowStarterCount[tid.x]);
 	}
 	GroupMemoryBarrierWithGroupSync();
