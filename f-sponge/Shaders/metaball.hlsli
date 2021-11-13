@@ -379,8 +379,9 @@ float4 CalculateColor_Gradient(float3 rayDir, IMetaballVisualizer metaballVisual
 	float3 d = normalize(rayDir);
 
 	float2 screenPos = WorldToScreen(eyePos + d);
-	float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
-	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
+	float eyeDistToSolid = solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).w;
+	//float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
+	//float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
 
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
@@ -408,9 +409,10 @@ float4 CalculateColor_Gradient(float3 rayDir, IMetaballVisualizer metaballVisual
 		{
 			if (eyeDistToSolid != 0.0 && distance(eyePos, p) > eyeDistToSolid)
 			{
-				return float4(solidRenderTarget.Sample(ss, uv).xyz, 1.0);
+				return float4 (solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).rgb, 1.0);
+				//return float4(solidRenderTarget.Sample(ss, uv).xyz, 1.0);
 			}
-			//else
+			else
 			{
 				if (metaballVisualizer.callMetaballTestFunction(p))
 				{
@@ -447,17 +449,18 @@ float4 CalculateColor_Gradient(float3 rayDir, IMetaballVisualizer metaballVisual
 	//{
 	//	return float4(1.0, 1.0, 1.0, 1.0);
 	//}
-	return envTexture.Sample(ss, d) + solidRenderTarget.Sample(ss, uv);
+	return envTexture.Sample(ss, d);
 }
 
-float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisualizer metaballVisualizer)
+float4 CalculateColor_Realistic(float3 rayDir, float4 screenPosDef, IMetaballVisualizer metaballVisualizer)
 {
 	const float boundarySideThreshold = boundarySide * 1.1;
 	const float boundaryTopThreshold = boundaryTop * 1.1;
 	const float boundaryBottomThreshold = boundaryBottom * 1.1;
 
-	float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
-	float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
+	//float2 screenPos = WorldToScreen(eyePos + normalize(rayDir));
+	//float2 uv = float2 (screenPos.x / windowWidth, screenPos.y / windowHeight);
+	//float eyeDistToSolid = solidRenderTarget.Sample(ss, uv).w;
 
 	RayMarchHit firstElem;
 	firstElem.position = eyePos;
@@ -506,6 +509,8 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 			bool solidHit = false;
 			for (int i = 0; i < marchCount && !marchHit && !solidHit; i++)
 			{
+				float2 screenPos = WorldToScreen(marchPos);
+				float eyeDistToSolid = solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).w;
 				if (eyeDistToSolid != 0.0 && distance (eyePos, marchPos) > eyeDistToSolid)
 				{
 					solidHit = true;
@@ -568,7 +573,9 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 
 			if (solidHit)
 			{
-				color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
+				float2 screenPos = WorldToScreen(marchPos);
+				color += solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).rgb * marchAlfa;
+				//color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
 			}
 			else if (!marchHit)
 			{
@@ -589,13 +596,16 @@ float4 CalculateColor_Realistic(float3 rayDir, float4 screenPos, IMetaballVisual
 		}
 		else
 		{
-			if (eyeDistToSolid == 0.0)
+			float2 screenPos = WorldToScreen(marchPos);
+			float eyeDistToSolid = solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).w;
+			if (!intersect || eyeDistToSolid == 0.0)
 			{
 				color += envTexture.SampleLevel(ss, marchDir, 0) * marchAlfa;
 			}
 			else
 			{
-				color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
+				color += solidRenderTarget.Load(uint3 (screenPos.x, screenPos.y, 0)).rgb * marchAlfa;
+				//color += solidRenderTarget.Sample(ss, uv).rgb * marchAlfa;
 			}
 
 			//color += solidRenderTarget.Sample(ss, uv) * marchAlfa * 0.9;
