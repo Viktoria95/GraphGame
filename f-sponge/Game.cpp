@@ -1168,6 +1168,10 @@ void Game::CreateControlParticles()
 			PBDShaderSphereTransClear = Egg11::Mesh::Shader::create("csPBDSphereTransClear.cso", device, shaderByteCode);
 		}
 		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDVelocityFilter.cso");
+			PBDShaderVelocityFilter = Egg11::Mesh::Shader::create("csPBDVelocityFilter.cso", device, shaderByteCode);
+		}
+		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
 			PBDShaderFinalUpdate = Egg11::Mesh::Shader::create("csPBDFinalUpdate.cso", device, shaderByteCode);
 		}
@@ -3794,6 +3798,16 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(controlParticleCount, 1, 1);
 
 	clearContext(context);
+	/*
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderVelocityFilter->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
+	context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
+	context->CSSetShaderResources(2, 1, particleSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
+	context->Dispatch(controlParticleCount, 1, 1);
+	
+	clearContext(context);
+	*/
 }
 
 std::array<float3, 4> get_nabla_p_Sij(const float4x4& F, const float4x4& C, uint32_t i, uint32_t j) {

@@ -87,7 +87,7 @@ float viscositySmoothingKernelLaplace (float3 deltaPos, float supportRadius)
 }
 
 [numthreads(1, 1, 1)]
-void csFluidSimulation (uint3 DTid : SV_GroupID)
+void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID*/)
 {
 	float dt	= 0.01; // s
 	float g		= 9.82; // m/s2
@@ -100,6 +100,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID)
 	float viscosity			= 3.5;		// Pa*s
 	float surfaceTension	= 0.0728;	// N/m
 
+	//unsigned int tid = DTid.x * 128 + GTid.x;
 	unsigned int tid = DTid.x;
 
 	// I. Find close neighbors and II. calc mass density
