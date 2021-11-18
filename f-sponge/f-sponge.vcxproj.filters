@@ -86,6 +86,9 @@
     <ClInclude Include="Particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RawBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
@@ -368,6 +371,9 @@
       <Filter>Shaders\Cell</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csMerge.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csCreateHashList.hlsl">
       <Filter>Shaders\Cell</Filter>
     </FxCompile>
   </ItemGroup>

@@ -1,0 +1,693 @@
+﻿  stdafx.cpp
+  App.cpp
+  SystemEnvironment.cpp
+d:\szecsi\GraphGame\Projects\Egg\App\SystemEnvironment.cpp(90,24): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+  UtfConverter.cpp
+  Generating Code...
+  convertutf.c
+  FirstPerson.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(10,35): warning C4305: 'argument': truncation from 'double' to 'float'
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(15,12): warning C4305: '=': truncation from 'double' to 'float'
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(16,14): warning C4305: '=': truncation from 'double' to 'float'
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(92,12): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(91,6): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(115,24): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(115,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(117,24): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(117,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(119,24): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(119,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(121,24): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(121,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(123,32): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(123,64): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(125,32): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(125,64): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(129,46): warning C4305: 'argument': truncation from 'double' to 'float'
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(133,59): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(133,38): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Cam\FirstPerson.cpp(133,25): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+  constants.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+  Flip.cpp
+  GeometryLoader.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\GeometryLoader.cpp(68,59): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Mesh\GeometryLoader.cpp(139,33): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\GeometryLoader.cpp(153,58): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Mesh\GeometryLoader.cpp(206,32): warning C4018: '<': signed/unsigned mismatch
+  Importer.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.h(24,2): error C2516: 'Egg::Mesh::Geometry': is not a legal base class
+d:\szecsi\GraphGame\Projects\Egg\Mesh\ShaderStageFlag.h(12): message : see declaration of 'Egg::Mesh::Geometry'
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Importer.cpp(159,17): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Importer.cpp(195,26): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Importer.cpp(207,26): warning C4018: '<': signed/unsigned mismatch
+  Indexed.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(13,45): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(17,41): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(24,40): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(30,40): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(35,31): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.cpp(84,16): warning C4018: '<': signed/unsigned mismatch
+  InputBinder.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\InputBinder.cpp(37,61): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+  Instanced.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(27,41): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(32,45): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(58,45): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(65,30): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(72,44): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(74,31): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Instanced.cpp(98,16): warning C4018: '<': signed/unsigned mismatch
+  Material.cpp
+  Mien.cpp
+  Multi.cpp
+  Nothing.cpp
+  Shaded.cpp
+  Shader.cpp
+  ShaderReflectionGUID.cpp
+  VertexStream.cpp
+d:\szecsi\GraphGame\Projects\Egg\Mesh\VertexStream.cpp(20,16): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Mesh\VertexStream.cpp(47,16): warning C4018: '<': signed/unsigned mismatch
+  DDSTextureLoader.cpp
+  Entity.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+  FixedRigidBody.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+  ManagerApp.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+d:\szecsi\GraphGame\Projects\Egg\Mesh\VertexStream.h(27,2): error C2516: 'Egg::Mesh::Geometry': is not a legal base class
+d:\szecsi\GraphGame\Projects\Egg\Mesh\ShaderStageFlag.h(12): message : see declaration of 'Egg::Mesh::Geometry'
+d:\szecsi\GraphGame\Projects\Egg\Mesh\Indexed.h(31,2): error C2516: 'Egg::Mesh::Geometry': is not a legal base class
+d:\szecsi\GraphGame\Projects\Egg\Mesh\ShaderStageFlag.h(12): message : see declaration of 'Egg::Mesh::Geometry'
+d:\szecsi\GraphGame\Projects\Egg\Scene\ManagerApp.cpp(68,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Scene\ManagerApp.cpp(68,19): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Scene\ManagerApp.cpp(190,16): warning C4018: '<': signed/unsigned mismatch
+d:\szecsi\GraphGame\Projects\Egg\Scene\ManagerApp.cpp(227,114): error C2664: 'Microsoft::WRL::ComPtr<ID3D11InputLayout> Egg::Mesh::InputBinder::getCompatibleInputLayout(Microsoft::WRL::ComPtr<ID3DBlob>,std::shared_ptr<Egg::Mesh::Geometry>)': cannot convert argument 2 from 'std::shared_ptr<Egg::Mesh::Indexed>' to 'std::shared_ptr<Egg::Mesh::Geometry>'
+d:\szecsi\GraphGame\Projects\Egg\Scene\ManagerApp.cpp(227,103): message : No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+d:\szecsi\GraphGame\Projects\Egg\Mesh\InputBinder.h(38,45): message : see declaration of 'Egg::Mesh::InputBinder::getCompatibleInputLayout'
+  Generating Code...
+  Compiling...
+  RigidBody.cpp
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(164,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(165,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(166,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(167,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(168,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(169,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(170,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(171,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(175,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(178,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(179,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(226,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(227,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(231,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(249,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(271,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(272,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float1.h(290,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(200,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(201,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(202,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(203,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(204,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(205,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(206,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(207,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(211,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(214,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(215,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(262,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(263,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(267,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(285,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(307,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(308,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(326,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float2.h(335,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(309,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(310,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(311,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(312,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(313,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(314,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(315,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(316,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(320,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(323,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(324,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(371,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(372,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(376,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(394,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(416,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(417,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(432,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float3.h(435,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(408,39): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(541,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(542,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(543,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(544,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(545,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(546,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(547,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(548,2): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(552,23): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(555,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(556,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(603,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(604,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(608,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(626,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(648,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(649,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,34): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(664,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(667,2): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4.h(692,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(193,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(194,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\float4x4.h(297,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\szecsi\GraphGame\Projects\Egg\Math\math.h(31,9): warning C4615: #pragma warning: unknown user warning type
+  Generating Code...

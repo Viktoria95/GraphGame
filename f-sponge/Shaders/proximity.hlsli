@@ -4,7 +4,7 @@
 
 uint maskOffset : register(b0);
 RWByteAddressBuffer inputMortons : register(u0);
-RWByteAddressBuffer sortedMortons : register(u1);
+RWByteAddressBuffer sorted : register(u1); // morton or hash
 RWByteAddressBuffer starterCounts : register(u2);
 RWByteAddressBuffer hlist : register(u3);
 RWByteAddressBuffer particleSortingIndex : register(u4);
