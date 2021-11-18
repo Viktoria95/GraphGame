@@ -109,6 +109,7 @@ private:
 	Egg11::Mesh::Shader::P PBDShaderSphereCollision;
 	Egg11::Mesh::Shader::P PBDShaderSphereAnimate;
 	Egg11::Mesh::Shader::P PBDShaderSphereTransClear;
+	Egg11::Mesh::Shader::P PBDShaderVelocityFilter;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> solidRenderTargetTexture;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>solidRenderTargetView;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidShaderResourceView;
