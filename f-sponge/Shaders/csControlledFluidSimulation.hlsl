@@ -2,6 +2,7 @@
 
 #include "particle.hlsli"
 #include "PBDSphere.hlsli"
+#include "fluid.hlsli"
 
 
 RWStructuredBuffer<Particle> particles;
@@ -14,101 +15,10 @@ cbuffer controlParamsCB
 	float4 controlParams[2];
 };
 
-#define pi 3.1415
-
-const float controlParticlePressure = -0.0001f;
-
-float defaultSmoothingKernel (float3 deltaPos, float supportRadius)
+[numthreads(particlePerCore, 1, 1)]
+void csControlledFluidSimulation (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThreadID)
 {
-	if (length(deltaPos) > supportRadius)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return (315.0 / (64.0 * pi * pow(supportRadius, 9))) * pow((pow(supportRadius, 2) - dot(deltaPos, deltaPos)), 3);
-	}
-}
-
-float3 defaultSmoothingKernelGradient (float3 deltaPos, float supportRadius)
-{
-	if (length(deltaPos) > supportRadius)
-	{
-		return float3 (0.0, 0.0, 0.0);
-	}
-	else
-	{
-		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * pow((pow(supportRadius, 2) - dot(deltaPos, deltaPos)), 2);
-	}
-}
-
-float defaultSmoothingKernelLaplace (float3 deltaPos, float supportRadius)
-{
-	if (length(deltaPos) > supportRadius)
-	{
-		return 0.0;
-	}
-	else
-	{
-		//return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
-		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
-	}
-}
-
-float pressureSmoothingKernel(float3 deltaPos, float supportRadius)
-{
-	float lengthOfDeltaPos = length(deltaPos);
-	if (lengthOfDeltaPos > supportRadius)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return (15.0 / (pi * pow(supportRadius, 6))) * pow(supportRadius - lengthOfDeltaPos, 3);
-	}
-}
-
-float3 pressureSmoothingKernelGradient (float3 deltaPos, float supportRadius)
-{
-	float lengthOfDeltaPos = length(deltaPos);
-	if (lengthOfDeltaPos > supportRadius)
-	{
-		return float3 (0.0, 0.0, 0.0);
-	}
-	else
-	{
-		return (-45.0 / (pi * pow(supportRadius, 6))) * (deltaPos/ lengthOfDeltaPos) * pow(supportRadius - lengthOfDeltaPos, 2);
-	}
-}
-
-float viscositySmoothingKernelLaplace (float3 deltaPos, float supportRadius)
-{
-	float lengthOfDeltaPos = length(deltaPos);
-	if (lengthOfDeltaPos > supportRadius)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return (45.0 / (pi * pow(supportRadius, 6))) * (supportRadius - lengthOfDeltaPos);
-	}
-}
-
-[numthreads(1, 1, 1)]
-void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
-{
-	float dt	= 0.01; // s
-	float g		= 9.82; // m/s2
-
-	// Water
-	float massPerParticle	= 0.02;		// kg
-	float restMassDensity	= 998.29;	// kg/m3
-	float supportRadius		= 0.0457;	// m
-	float gasStiffness		= 3.0;		// J
-	float viscosity			= 3.5;		// Pa*s
-	float surfaceTension	= 0.0728;	// N/m
-
-	unsigned int tid = DTid.x;
+	unsigned int tid = DTid.x * particlePerCore + GTid;
 
 	// I. Find close neighbors and II. calc mass density
 	{
@@ -116,7 +26,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 		for (int i = 0; i < particleCount; i++)
 		{
 			float3 deltaPos = particles[tid].position - particles[i].position;
-			massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius);
+			massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius_w);
 		}
 		particles[tid].massDensity = massDensity;
 	}
@@ -141,7 +51,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 					float3 deltaPos = particles[tid].position - particles[i].position;
 
 					pressureForce +=	((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + (particles[i].pressure / pow(particles[i].massDensity, 2)))
-										* massPerParticle * pressureSmoothingKernelGradient (deltaPos, supportRadius);
+										* massPerParticle * pressureSmoothingKernelGradient (deltaPos, supportRadius_w);
 				}
 			}
 		}
@@ -155,7 +65,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace (deltaPos, supportRadius);
+					viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace (deltaPos, supportRadius_w);
 					
 				}
 			}
@@ -172,7 +82,7 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient(deltaPos, supportRadius);
+					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient(deltaPos, supportRadius_w);
 				}
 			}
 
@@ -183,8 +93,8 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius);
-					if (length(deltaPos) < supportRadius)
+					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
+					if (length(deltaPos) < supportRadius_w)
 					{
 						tempCount++;
 					}
@@ -208,8 +118,8 @@ void csControlledFluidSimulation (uint3 DTid : SV_GroupID)
 				{
 					float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w,0);
 
-					//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius * 0.8);
-					controlForce += controlParticles[i].controlPressureRatio * 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius * 1.2);
+					//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 0.8);
+					controlForce += controlParticles[i].controlPressureRatio * 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 1.2);
 				}
 			}
 		}

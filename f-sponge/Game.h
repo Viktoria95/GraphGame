@@ -63,6 +63,22 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
 
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePositionUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleVelocityBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleVelocitySRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleVelocityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleMassDensityBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleMassDensitySRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleMassDensityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePressureBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePressureSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePressureUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleForceBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleForceSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFroceUAV;
+
 	// Control Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
@@ -224,6 +240,12 @@ private:
 	// Animation
 	Egg11::Mesh::Shader::P fluidSimulationShader;
 	Egg11::Mesh::Shader::P controlledFluidSimulationShader;
+
+	Egg11::Mesh::Shader::P fluidSimulationMassPressShader;
+	Egg11::Mesh::Shader::P fluidSimulationForcesShader;
+	Egg11::Mesh::Shader::P fluidSimulationForcesControlledShader;
+	Egg11::Mesh::Shader::P fluidSimulationFinalShader;
+
 	Egg11::Mesh::Shader::P simpleSortEvenShader;
 	Egg11::Mesh::Shader::P simpleSortOddShader;
 	Egg11::Mesh::Shader::P mortonHashShader;

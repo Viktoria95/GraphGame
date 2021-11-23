@@ -172,6 +172,26 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationFinal.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationForces.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationForcesControlled.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationMassPress.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\csHListBegin.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
@@ -683,6 +703,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\billboard.hlsli" />
+    <None Include="Shaders\fluid.hlsli" />
     <None Include="Shaders\hash.hlsli" />
     <None Include="Shaders\hhash.hlsli" />
     <None Include="Shaders\metaball.hlsli" />

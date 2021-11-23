@@ -22,6 +22,7 @@
 using namespace Egg11::Math;
 
 const unsigned int defaultParticleCount = 1024 * 4;
+const unsigned int particlePerCore = 128;
 //const unsigned int defaultParticleCount = 256;
 //const unsigned int controlParticleCount = 1024 * 8;
 //const unsigned int controlParticleCount = 4096;
@@ -184,6 +185,7 @@ void Game::CreateParticles()
 	for (int i = 0; i < defaultParticleCount; i++)
 		particles.push_back(Particle());
 
+	// AllInStructer
 	{
 		// Data Buffer
 		D3D11_BUFFER_DESC particleBufferDesc;
@@ -222,6 +224,49 @@ void Game::CreateParticles()
 
 		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
 			device->CreateUnorderedAccessView(particleDataBuffer.Get(), &particleUAVDesc, &particleUAV);
+	}
+
+	/// Force
+	{
+		// Data Buffer
+		D3D11_BUFFER_DESC particleBufferDesc;
+		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		particleBufferDesc.CPUAccessFlags = 0;
+		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		particleBufferDesc.StructureByteStride = sizeof(float) * 4;
+		particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(float) * 4;
+
+		D3D11_SUBRESOURCE_DATA initialParticleData;
+		void* initData = calloc(sizeof(float), defaultParticleCount * 4);
+		initialParticleData.pSysMem = initData;
+
+		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleForceBuffer.GetAddressOf());
+
+		free(initData);
+
+		// Shader Resource View
+		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+		particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleSRVDesc.Buffer.FirstElement = 0;
+		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+
+		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+			device->CreateShaderResourceView(particleForceBuffer.Get(), &particleSRVDesc, &particleForceSRV);
+
+
+		// Unordered Access View
+		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleUAVDesc.Buffer.FirstElement = 0;
+		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(particleForceBuffer.Get(), &particleUAVDesc, &particleFroceUAV);
 	}
 
 
@@ -1170,6 +1215,22 @@ void Game::CreateControlParticles()
 		{
 			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csPBDFinalUpdate.cso");
 			PBDShaderFinalUpdate = Egg11::Mesh::Shader::create("csPBDFinalUpdate.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csFluidSimulationMassPress.cso");
+			fluidSimulationMassPressShader = Egg11::Mesh::Shader::create("csFluidSimulationMassPress.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csFluidSimulationForces.cso");
+			fluidSimulationForcesShader = Egg11::Mesh::Shader::create("csFluidSimulationForces.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csFluidSimulationForcesControlled.cso");
+			fluidSimulationForcesControlledShader = Egg11::Mesh::Shader::create("csFluidSimulationForcesControlled.cso", device, shaderByteCode);
+		}
+		{
+			ComPtr<ID3DBlob> shaderByteCode = loadShaderCode("csFluidSimulationFinal.cso");
+			fluidSimulationFinalShader  = Egg11::Mesh::Shader::create("csFluidSimulationFinal.cso", device, shaderByteCode);
 		}
 
 	}
@@ -3058,13 +3119,48 @@ void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 }
 
 void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
+
+	uint zeros[2] = { 0, 0 };
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationMassPressShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+
+	if (flowControl == RealisticFlow)
+	{
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationForcesShader->getShader().Get()), nullptr, 0);
+		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+		context->CSSetUnorderedAccessViews(1, 1, particleFroceUAV.GetAddressOf(), zeros);
+		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+	}
+	else
+	{
+		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationForcesControlledShader->getShader().Get()), nullptr, 0);
+		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+		context->CSSetUnorderedAccessViews(1, 1, particleFroceUAV.GetAddressOf(), zeros);
+		ID3D11ShaderResourceView* ppShaderResourceViews[2] = { controlParticleSRV.Get(), controlParticleCounterSRV.Get() };
+		context->CSSetShaderResources(0, 2, ppShaderResourceViews);
+		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
+		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
+		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
+		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+	}
+
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationFinalShader->getShader().Get()), nullptr, 0);
+	context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, particleFroceUAV.GetAddressOf(), zeros);
+	context->CSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
+	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+
+	/*
 	if (flowControl == RealisticFlow)
 	{
 		uint zeros[2] = { 0, 0 };
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationShader->getShader().Get()), nullptr, 0);
 		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
 		context->CSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-		context->Dispatch(defaultParticleCount, 1, 1);
+		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
 	}
 	else if (flowControl == ControlledFlow)
 	{
@@ -3077,8 +3173,9 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
 		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
 		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
-		context->Dispatch(defaultParticleCount, 1, 1);
+		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
 	}
+	*/
 }
 
 void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {

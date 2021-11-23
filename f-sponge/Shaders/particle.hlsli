@@ -1,5 +1,6 @@
 
 #define particleCount 1024*4
+#define particlePerCore 128
 //#define particleCount 256
 #define counterSize 3
 
