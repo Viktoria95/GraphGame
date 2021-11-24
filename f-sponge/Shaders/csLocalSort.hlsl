@@ -4,9 +4,7 @@
 
 //SRV(t0, numDescriptors=1), 
 RWByteAddressBuffer input : register(u0);
-RWByteAddressBuffer output : register(u1);
-RWByteAddressBuffer inputIndices : register(u2);
-RWByteAddressBuffer outputIndices : register(u3);
+RWByteAddressBuffer inputIndices : register(u1);
 uint maskOffset : register(b0);
 
 #define rowSize 32

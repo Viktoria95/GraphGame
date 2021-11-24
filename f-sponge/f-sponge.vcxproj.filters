@@ -89,6 +89,12 @@
     <ClInclude Include="RawBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ComputePass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveSort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
@@ -376,6 +382,7 @@
     <FxCompile Include="Shaders\csCreateHashList.hlsl">
       <Filter>Shaders\Cell</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">

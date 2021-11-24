@@ -103,6 +103,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ComputePass.h" />
     <ClInclude Include="ConstantBufferTypes.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DualQuaternion.h" />
@@ -110,6 +111,7 @@
     <ClInclude Include="ggl004App.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="RawBuffer.h" />
+    <ClInclude Include="WaveSort.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csAdaptiveControlPressure.hlsl">
