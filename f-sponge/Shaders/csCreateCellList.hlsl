@@ -1,10 +1,11 @@
 #include "proximity.hlsli"
 #include "hhash.hlsli"
 
-// uav offset @starterCounts (#4)
-RWByteAddressBuffer starterCounts : register(u0);
-RWByteAddressBuffer hlist : register(u1);
-RWByteAddressBuffer cbegin : register(u2);
+// uav offset @sortedMortons (#3)
+RWByteAddressBuffer sorted : register(u0);
+RWByteAddressBuffer starterCounts : register(u1);
+RWByteAddressBuffer hlist : register(u2);
+RWByteAddressBuffer cbegin : register(u3);
 
 groupshared uint perRowStarterCount[nRowsPerPage];
 groupshared uint perRowLeadingNonstarterCount[nRowsPerPage];

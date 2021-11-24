@@ -30,12 +30,13 @@ protected:
 	com_ptr<ID3D12CommandQueue>  m_computeCommandQueue;
 	com_ptr<ID3D12GraphicsCommandList> m_computeCommandList;
 
-	RawBuffer mortons;
-	RawBuffer starters;
-	RawBuffer hlist;
-	RawBuffer particleIndex;
-	RawBuffer cbegin;
-	RawBuffer hbegin;
+	std::vector<RawBuffer> buffers;
+
+#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, mortonStarters, hlist, cellLut, sortedCellLut, sortedHlist, hashLut
+
+	enum BufferRoles {
+		BUFFERNAMES
+	};
 
 	ComputePass localSort;
 	ComputePass merge;
@@ -80,11 +81,9 @@ public:
 
 			//			ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
-			starters.copyBack(commandList);
-			hlist.copyBack(commandList);
-			particleIndex.copyBack(commandList);
-			cbegin.copyBack(commandList);
-			hbegin.copyBack(commandList);
+			for (auto name : { BUFFERNAMES }) {
+				buffers[name].copyBack(commandList);
+			}
 
 //			commandList->CopyResource(m_arrayForReadback.Get(), m_sortedArray.Get());
 
@@ -133,11 +132,9 @@ public:
 		WaitForPreviousFrame();
 
 		//TEST HERE
-//		starters.mapReadback();
-//		hlist.mapReadback();
-//		particleIndex.mapReadback();
-//		cbegin.mapReadback();
-//		hbegin.mapReadback();
+		// 			for (auto name : { BUFFERNAMES }) {
+		//	buffers[name].mapReadback(commandList);
+		//}
 
 	}
 
@@ -267,21 +264,18 @@ public:
 		DX_API("Failed to create descriptor heap for uavs")
 			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
 
-		mortons.createResources(device, device11on12);
-		starters.createResources(device, device11on12);
-		hlist.createResources(device, device11on12);
-		particleIndex.createResources(device, device11on12);
-		cbegin.createResources(device, device11on12);
-		hbegin.createResources(device, device11on12);
+		for (auto name : { BUFFERNAMES }) {
+			buffers[name].createResources(device, device11on12);
+		}
 
-		mortons.uploadRandom();
+		buffers[mortons].uploadRandom();
 
-		auto dhStart = uavHeap->GetGPUDescriptorHandleForHeapStart();
-		localSort.createResources(device, "Shaders/csLocalSort.cso", dhStart + dhIncrSize * 0);
-		merge.createResources(device, "Shaders/csMerge.cso");
-		countStarters.createResources(device, "Shaders/csStarterCount.cso");
-		createCellList.createResources(device, "Shaders/csCreateCellList.cso");
-		createHashList.createResources(device, "Shaders/csCreateHashList.cso");
+		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
+		localSort.createResources(device, "Shaders/csLocalSort.cso", dhStart.Offset(0, dhIncrSize));
+		merge.createResources(device, "Shaders/csMerge.cso", dhStart.Offset(0, dhIncrSize));
+		countStarters.createResources(device, "Shaders/csStarterCount.cso", dhStart.Offset(0, dhIncrSize));
+		createCellList.createResources(device, "Shaders/csCreateCellList.cso", dhStart.Offset(0, dhIncrSize));
+		createHashList.createResources(device, "Shaders/csCreateHashList.cso", dhStart.Offset(0, dhIncrSize));
 
 		// Create compute allocator, command queue and command list
 		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
