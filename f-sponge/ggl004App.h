@@ -9,6 +9,7 @@
 
 #include "RawBuffer.h"
 #include "ComputePass.h"
+#include "WaveSort.h"
 #include "Game.h"
 
 using namespace Egg::Math;
@@ -38,10 +39,11 @@ protected:
 		BUFFERNAMES
 	};
 
-	ComputePass localSort;
-	ComputePass merge;
-	ComputePass countStarters;
+	WaveSort mortonSort;
+	WaveSort hashSort;
+	ComputePass mortonCountStarters;
 	ComputePass createCellList;
+	ComputePass hashCountStarters;
 	ComputePass createHashList;
 
 	com_ptr<ID3D12Fence>         m_renderResourceFence;  // fence used by async compute to start once it's texture has changed to unordered access
@@ -139,20 +141,6 @@ public:
 	}
 
 	void UploadResources() {
-	}
-
-	void ResourceBarrier(_In_ ID3D12GraphicsCommandList* pCmdList, _In_ ID3D12Resource* pResource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After, D3D12_RESOURCE_BARRIER_FLAGS Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE)
-	{
-		D3D12_RESOURCE_BARRIER barrierDesc = {};
-
-		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrierDesc.Flags = Flags;
-		barrierDesc.Transition.pResource = pResource;
-		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		barrierDesc.Transition.StateBefore = Before;
-		barrierDesc.Transition.StateAfter = After;
-
-		pCmdList->ResourceBarrier(1, &barrierDesc);
 	}
 
 	virtual void CreateSwapChainResources() override {
@@ -268,14 +256,29 @@ public:
 			buffers[name].createResources(device, device11on12);
 		}
 
-		buffers[mortons].uploadRandom();
+		buffers[mortons].fillRandom();
 
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
-		localSort.createResources(device, "Shaders/csLocalSort.cso", dhStart.Offset(0, dhIncrSize));
-		merge.createResources(device, "Shaders/csMerge.cso", dhStart.Offset(0, dhIncrSize));
-		countStarters.createResources(device, "Shaders/csStarterCount.cso", dhStart.Offset(0, dhIncrSize));
-		createCellList.createResources(device, "Shaders/csCreateCellList.cso", dhStart.Offset(0, dhIncrSize));
-		createHashList.createResources(device, "Shaders/csCreateHashList.cso", dhStart.Offset(0, dhIncrSize));
+		ComputeShader csLocalSort;
+		ComputeShader csMerge;
+		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
+		csMerge.createResources(device, "Shaders/csMerge.cso");
+
+		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, 0, buffers);
+		hashSort.creaseResources(csLocalSort, csMerge, dhStart, 4, buffers);
+	
+		ComputeShader csStarterCount;
+		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
+		mortonCountStarters.createResources(csStarterCount, dhStart.Offset(3, dhIncrSize));
+		hashCountStarters.createResources(csStarterCount, dhStart.Offset(6, dhIncrSize));
+
+		ComputeShader csCreateCellList;
+		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
+		createCellList.createResources(csCreateCellList, dhStart.Offset(3, dhIncrSize));
+
+		ComputeShader csCreateHashList;
+		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
+		createHashList.createResources(csCreateHashList, dhStart.Offset(8, dhIncrSize));
 
 		// Create compute allocator, command queue and command list
 		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
@@ -340,13 +343,7 @@ public:
 		DX_API("Failed to reset command list (UploadResources)")
 			commandList->Reset(commandAllocator.Get(), nullptr);
 
-		ResourceBarrier(commandList.Get(), m_arrayToBeSorted.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
-		ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
-
-		commandList->CopyResource(m_arrayToBeSorted.Get(), m_arrayForUpload.Get());
-
-		ResourceBarrier(commandList.Get(), m_arrayToBeSorted.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		ResourceBarrier(commandList.Get(), m_sortedArray.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		buffers[mortons].upload(commandList);
 
 		DX_API("Failed to close command list (UploadResources)")
 			commandList->Close();
@@ -425,52 +422,7 @@ public:
 
 					resourceState = ResourceState_Computing;
 
-					m_computeCommandList->SetComputeRootSignature(m_computeRootSignature.Get());
-
-					m_computeCommandList->SetComputeRootDescriptorTable(1, uavHeap->GetGPUDescriptorHandleForHeapStart());
-					
-					D3D12_RESOURCE_BARRIER uavBarrier;
-					uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-					uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					uavBarrier.UAV.pResource = m_arrayToBeSorted.Get();
-
-					D3D12_RESOURCE_BARRIER uav1Barrier;
-					uav1Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-					uav1Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					uav1Barrier.UAV.pResource = m_sortedArray.Get();
-
-					m_computeCommandList->SetPipelineState(m_computePSO.Get());
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 0, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 4, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 8, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 12, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 16, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 20, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 24, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-					m_computeCommandList->SetComputeRoot32BitConstant(0, 28, 0);
-					m_computeCommandList->Dispatch(32, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uavBarrier);
-
-					m_computeCommandList->SetComputeRootSignature(m_mergeRootSignature.Get());
-					m_computeCommandList->SetComputeRootDescriptorTable(1, uavHeap->GetGPUDescriptorHandleForHeapStart());
-
-					m_computeCommandList->SetPipelineState(m_mergePSO.Get());
-					m_computeCommandList->Dispatch(1, 1, 1);
-					m_computeCommandList->ResourceBarrier(1, &uav1Barrier);
+					mortonSort.populate(m_computeCommandList);
 
 					// close and execute the command list
 					m_computeCommandList->Close();
@@ -484,13 +436,13 @@ public:
 						m_computeFence->SetEventOnCompletion(fence, m_computeFenceEvent.Get());
 						WaitForSingleObject(m_computeFenceEvent.Get(), INFINITE);
 					}
-					m_resourceState[0/*ComputeIndex()*/] = ResourceState_Computed;						// signal the buffer is now ready for render thread to use
+					resourceState = ResourceState_Computed;						// signal the buffer is now ready for render thread to use
 
 					m_computeAllocator->Reset();
-					m_computeCommandList->Reset(m_computeAllocator.Get(), m_computePSO.Get());
+					m_computeCommandList->Reset(m_computeAllocator.Get(), nullptr);
 
 					break;
-				}
+				//}
 				//else
 				//{
 				//	SwitchToThread();

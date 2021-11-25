@@ -105,7 +105,7 @@ public:
 		);
 	}
 
-	void uploadRandom() {
+	void fillRandom() {
 		void* pData;
 		CD3DX12_RANGE range(0, bufferUintSize);
 		uploadBuffer->Map(0, &range, &pData);
@@ -154,4 +154,35 @@ public:
 
 		uploadBuffer->Unmap(0, &range);
 	}
+
+	static void barrier( com_ptr<ID3D12GraphicsCommandList> pCmdList, com_ptr<ID3D12Resource> pResource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE)
+	{
+		D3D12_RESOURCE_BARRIER barrierDesc = {};
+
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Flags = flags;
+		barrierDesc.Transition.pResource = pResource.Get();
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = before;
+		barrierDesc.Transition.StateAfter = after;
+
+		pCmdList->ResourceBarrier(1, &barrierDesc);
+	}
+
+	void upload(com_ptr<ID3D12GraphicsCommandList> commandList) {
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		commandList->CopyResource(buffer.Get(), uploadBuffer.Get());
+
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	}
+
+	D3D12_RESOURCE_BARRIER uavBarrier() const {
+		D3D12_RESOURCE_BARRIER b;
+		b.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		b.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		b.UAV.pResource = buffer.Get();
+		return b;
+	}
+
 };
