@@ -21,8 +21,8 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 
-	uint myMorton = sortedMortons.Load(initialElementIndex << 2);
-	uint prevMorton = initialElementIndex ? sortedMortons.Load((initialElementIndex - 1) << 2) : 0xffffffff;
+	uint myMorton = sorted.Load(initialElementIndex << 2);
+	uint prevMorton = initialElementIndex ? sorted.Load((initialElementIndex - 1) << 2) : 0xffffffff;
 	bool meNonstarter = (myMorton == prevMorton);
 	uint nonStartersUpToMe = WavePrefixCountBits(meNonstarter) + (meNonstarter ? 1 : 0);
 	if (tid.x == 31) {
@@ -54,25 +54,11 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	uint clength = firstbitlow(starterMask) + 1;
 	if (clength == 0) { // runs over row end
 		clength = 32 - tid.x;
-		clength += (tid.y==31)?starterCounts.Load((gid.x+1)<<2)>>16:perRowLeadingNonstarterCount[tid.y + 1];
-		// ^^TODO full rows need to be gathered
+		clength += (tid.y==31) ? starterCounts.Load((gid.x+1)<<2)>>16 : perRowLeadingNonstarterCount[tid.y + 1];
 	}
 	if (!meNonstarter) {
 		cbegin.Store(compactIndex, clength << 16 | initialElementIndex);
-		//hlist.Store(compactIndex, hash(myMorton));
+		hlist.Store(compactIndex, hhash(myMorton));
 	}
 
-	if (tid.y == 0) {
-		uint nonstarterCount = perRowLeadingNonstarterCount[tid.x];
-		//		uint hasStarterMask = (WaveActiveBallot(nonstarterCount != 32) << (32-tid.x)) | 0x1;
-		//		uint precedingRowsWithNoStarterCount = (tid.x)?firstbithigh(hasStarterMask):0;
-		uint hasStarterMask = WaveActiveBallot(nonstarterCount != 32).x;
-		uint firstNotEmpty = firstbitlow(hasStarterMask); // no starter on entire page would be weird
-		uint leadingNonStarterCount = firstNotEmpty * 32 + perRowLeadingNonstarterCount[firstNotEmpty];
-
-		uint perPageStarterCount = WavePrefixSum(perRowStarterCount[tid.x]) + perRowStarterCount[31];
-		if (tid.x == 31) {
-			starterCounts.Store(gid.x << 2, (leadingNonStarterCount << 16) | perPageStarterCount);
-		}
-	}
 }

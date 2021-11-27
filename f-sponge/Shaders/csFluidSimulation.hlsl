@@ -14,6 +14,86 @@ void csFluidSimulation (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThreadID)
 {
 	unsigned int tid = DTid.x * particlePerCore + GTid;
 
+float3 defaultSmoothingKernelGradient (float3 deltaPos, float supportRadius)
+{
+	if (length(deltaPos) > supportRadius)
+	{
+		return float3 (0.0, 0.0, 0.0);
+	}
+	else
+	{
+		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * pow((pow(supportRadius, 2) - dot(deltaPos, deltaPos)), 2);
+	}
+}
+
+float defaultSmoothingKernelLaplace (float3 deltaPos, float supportRadius)
+{
+	if (length(deltaPos) > supportRadius)
+	{
+		return 0.0;
+	}
+	else
+	{
+		//return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * deltaPos * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
+		return (-945.0 / (32.0 * pi * pow(supportRadius, 9))) * (pow(supportRadius, 2) - dot(deltaPos, deltaPos)) * (3.0 * pow(supportRadius, 2) - 7.0 * dot(deltaPos, deltaPos));
+	}
+}
+
+float pressureSmoothingKernel(float3 deltaPos, float supportRadius)
+{
+	float lengthOfDeltaPos = length(deltaPos);
+	if (lengthOfDeltaPos > supportRadius)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return (15.0 / (pi * pow(supportRadius, 6))) * pow(supportRadius - lengthOfDeltaPos, 3);
+	}
+}
+
+float3 pressureSmoothingKernelGradient (float3 deltaPos, float supportRadius)
+{
+	float lengthOfDeltaPos = length(deltaPos);
+	if (lengthOfDeltaPos > supportRadius)
+	{
+		return float3 (0.0, 0.0, 0.0);
+	}
+	else
+	{
+		return (-45.0 / (pi * pow(supportRadius, 6))) * (deltaPos/ lengthOfDeltaPos) * pow(supportRadius - lengthOfDeltaPos, 2);
+	}
+}
+
+float viscositySmoothingKernelLaplace (float3 deltaPos, float supportRadius)
+{
+	float lengthOfDeltaPos = length(deltaPos);
+	if (lengthOfDeltaPos > supportRadius)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return (45.0 / (pi * pow(supportRadius, 6))) * (supportRadius - lengthOfDeltaPos);
+	}
+}
+
+[numthreads(1, 1, 1)]
+void csFluidSimulation (uint3 DTid : SV_GroupID)
+{
+	float dt	= 0.01; // s
+	float g		= 9.82; // m/s2
+
+	// Water
+	float massPerParticle	= 0.02;		// kg
+	float restMassDensity	= 998.29;	// kg/m3
+	float supportRadius		= 0.0457;	// m
+	float gasStiffness		= 3.0;		// J
+	float viscosity			= 3.5;		// Pa*s
+	float surfaceTension	= 0.0728;	// N/m
+
+	unsigned int tid = DTid.x;
+
 	// I. Find close neighbors and II. calc mass density
 	{
 		float massDensity = 0.0;
