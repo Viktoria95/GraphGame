@@ -19,7 +19,8 @@ public:
 	}
 
 	void createResources(com_ptr<ID3D12Device> device,
-		com_ptr<ID3D11On12Device> device11on12
+		com_ptr<ID3D11On12Device> device11on12,
+		const D3D12_CPU_DESCRIPTOR_HANDLE& handle
 	) {
 		const D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		const D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(4 * bufferUintSize,
@@ -27,6 +28,7 @@ public:
 		DX_API("commited resource")
 			device->CreateCommittedResource(
 				&defaultHeapProperties,
+				//D3D12_HEAP_FLAG_SHARED,  TODO use this for 11 interop
 				D3D12_HEAP_FLAG_NONE,
 				&bufferDesc,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
@@ -63,7 +65,12 @@ public:
 				IID_PPV_ARGS(uploadBuffer.ReleaseAndGetAddressOf()));
 		uploadBuffer->SetName((debugName + L" [UPLOAD]").c_str());
 
-		D3D11_RESOURCE_FLAGS d3d11Flags = { D3D11_BIND_UNORDERED_ACCESS };
+		//TODO share
+//		HANDLE sharedBufferHandle;
+//		device->CreateSharedHandle(buffer.Get(), NULL, GENERIC_ALL, debugName.c_str(), &sharedBufferHandle);
+		// use ID3D11Device1::OpenSharedResource1 in d3d11 to get this resource
+/*		does not work for resources?
+D3D11_RESOURCE_FLAGS d3d11Flags = {D3D11_BIND_UNORDERED_ACCESS};
 		DX_API("Failed to wrap 12 back buffer for d3d11")
 			device11on12->CreateWrappedResource(
 				buffer.Get(),
@@ -71,7 +78,18 @@ public:
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				IID_PPV_ARGS(wrappedBuffer.GetAddressOf())
-			);
+			);*/
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+		uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer.CounterOffsetInBytes = 0;
+		uavDesc.Buffer.FirstElement = 0;
+		uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+		uavDesc.Buffer.NumElements = bufferUintSize;
+		uavDesc.Buffer.StructureByteStride = 0;
+		// create uav
+		device->CreateUnorderedAccessView(buffer.Get(), nullptr, &uavDesc, handle);
 	}
 
 	void releaseResources() {

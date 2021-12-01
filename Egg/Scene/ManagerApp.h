@@ -154,6 +154,7 @@ namespace Egg {
 			}
 
 			virtual void UploadResources() {
+				auto& commandList = commandLists[swapChainBackBufferIndex];
 				for (auto& tex : textures) {
 					tex.second.UploadResource(commandList.Get());
 				}
@@ -207,6 +208,7 @@ namespace Egg {
 			}
 
 			virtual void PopulateCommandList() override {
+				auto& commandList = commandLists[swapChainBackBufferIndex];
 				for (int i = 0; i < entities.size(); i++) {
 					entities[i]->Draw(commandList.Get(), 0, i);
 				}
