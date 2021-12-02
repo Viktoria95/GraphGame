@@ -269,6 +269,91 @@ void Game::CreateParticles()
 			device->CreateUnorderedAccessView(particleForceBuffer.Get(), &particleUAVDesc, &particleFroceUAV);
 	}
 
+	/// Position
+	{
+		// Data Buffer
+		D3D11_BUFFER_DESC particleBufferDesc;
+		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		particleBufferDesc.CPUAccessFlags = 0;
+		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		particleBufferDesc.StructureByteStride = sizeof(float) * 4;
+		particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(float) * 4;
+
+		D3D11_SUBRESOURCE_DATA initialParticleData;
+		void* initData = calloc(sizeof(float), defaultParticleCount * 4);
+		initialParticleData.pSysMem = initData;
+
+		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particlePositionBuffer.GetAddressOf());
+
+		free(initData);
+
+		// Shader Resource View
+		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+		particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleSRVDesc.Buffer.FirstElement = 0;
+		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+
+		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+			device->CreateShaderResourceView(particlePositionBuffer.Get(), &particleSRVDesc, &particlePositionSRV);
+
+
+		// Unordered Access View
+		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleUAVDesc.Buffer.FirstElement = 0;
+		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(particlePositionBuffer.Get(), &particleUAVDesc, &particlePositionUAV);
+	}
+
+	/// Velocity
+	{
+		// Data Buffer
+		D3D11_BUFFER_DESC particleBufferDesc;
+		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		particleBufferDesc.CPUAccessFlags = 0;
+		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		particleBufferDesc.StructureByteStride = sizeof(float) * 4;
+		particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(float) * 4;
+
+		D3D11_SUBRESOURCE_DATA initialParticleData;
+		void* initData = calloc(sizeof(float), defaultParticleCount * 4);
+		initialParticleData.pSysMem = initData;
+
+		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleVelocityBuffer.GetAddressOf());
+
+		free(initData);
+
+		// Shader Resource View
+		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+		particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleSRVDesc.Buffer.FirstElement = 0;
+		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+
+		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+			device->CreateShaderResourceView(particleVelocityBuffer.Get(), &particleSRVDesc, &particleVelocitySRV);
+
+
+		// Unordered Access View
+		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleUAVDesc.Buffer.FirstElement = 0;
+		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+
+		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(particleVelocityBuffer.Get(), &particleUAVDesc, &particleVelocityUAV);
+	}
 
 	/// Hashtables
 	{
@@ -3895,7 +3980,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(controlParticleCount, 1, 1);
 
 	clearContext(context);
-	/*
+	
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderVelocityFilter->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticleSRV.GetAddressOf());
 	context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
@@ -3904,7 +3989,7 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->Dispatch(controlParticleCount, 1, 1);
 	
 	clearContext(context);
-	*/
+	 
 }
 
 std::array<float3, 4> get_nabla_p_Sij(const float4x4& F, const float4x4& C, uint32_t i, uint32_t j) {

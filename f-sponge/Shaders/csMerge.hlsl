@@ -2,10 +2,11 @@
 				"RootConstants(num32BitConstants=1, b0)," \
                 "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1))" 
 
+// uav offset @mortons or @ (#0 or #4)
 RWByteAddressBuffer input : register(u0);
-RWByteAddressBuffer output : register(u1);
-RWByteAddressBuffer inputIndices : register(u2);
-RWByteAddressBuffer outputIndices : register(u3);
+RWByteAddressBuffer inputIndices : register(u1);
+RWByteAddressBuffer outputIndices : register(u2);
+RWByteAddressBuffer output : register(u3);
 
 #define groupSize 32
 

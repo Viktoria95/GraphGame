@@ -1,0 +1,14 @@
+//	com_ptr<ID3D12PipelineState> m_computePSO;
+//	com_ptr<ID3D12RootSignature> m_computeRootSignature;
+//	com_ptr<ID3D12PipelineState> m_mergePSO;
+//	com_ptr<ID3D12RootSignature> m_mergeRootSignature;
+
+//	unsigned int* m_arrayDataBegin;
+//	unsigned int* m_arrayDataEnd;
+
+//	com_ptr<ID3D12Resource>      m_arrayToBeSorted;
+//	com_ptr<ID3D12Resource>      m_sortedArray;
+//	com_ptr<ID3D12Resource>      m_indicesToBeSorted;
+//	com_ptr<ID3D12Resource>      m_sortedIndices;
+//	com_ptr<ID3D12Resource>      m_arrayForUpload;
+//	com_ptr<ID3D12Resource>      m_arrayForReadback;

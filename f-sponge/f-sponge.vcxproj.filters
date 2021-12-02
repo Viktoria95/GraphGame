@@ -89,6 +89,15 @@
     <ClInclude Include="RawBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ComputePass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveSort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputeShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
@@ -119,12 +128,6 @@
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csAnimateControlParticles.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csControlledFluidSimulation.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csFluidSimulation.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\csMortonHash.hlsl">
@@ -388,7 +391,9 @@
     <FxCompile Include="Shaders\csFluidSimulationMassPress.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl" />
+    <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">

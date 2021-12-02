@@ -1,6 +1,9 @@
 #include "proximity.hlsli"
 
 // sortedMortons => starterCounts
+// uav offset @sortedMortons or @cbegin (#3 or #6)
+RWByteAddressBuffer sorted : register(u0);
+RWByteAddressBuffer starterCounts : register(u1);
 
 groupshared uint perRowStarterCount[nRowsPerPage];
 groupshared uint perRowLeadingNonstarterCount[nRowsPerPage];

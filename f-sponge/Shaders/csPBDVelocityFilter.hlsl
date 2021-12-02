@@ -47,14 +47,14 @@ void csPBDVelocityFilter(uint3 DTid : SV_GroupID) {
 					float3 deltaPos = controlParticles[tid].position - particles[i].position;
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
-					viscosityForce += particles[i].velocity * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
+					viscosityForce += particles[i].velocity * viscositySmoothingKernelLaplace(deltaPos, supportRadius) * 0.0000000003;
 
 				}
 			}
 			viscosityForce *= viscosity;
 		}
 
-		velocity[tid].xyz += viscosityForce * 0.000000001;
+		velocity[tid].xyz += viscosityForce;
 		//velocity[tid].xyz += float3 (0.0, 0.1, 0.0);
 
 	}

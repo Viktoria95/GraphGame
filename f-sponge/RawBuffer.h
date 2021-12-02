@@ -74,10 +74,115 @@ public:
 			);
 	}
 
-	void ReleaseResource() {
+	void releaseResources() {
 		buffer.Reset();
 		uploadBuffer.Reset();
 		readbackBuffer.Reset();
 		wrappedBuffer.Reset();
 	}
+
+	void copyBack(com_ptr<ID3D12GraphicsCommandList> commandList) {
+		commandList->CopyResource(readbackBuffer.Get(), buffer.Get());
+	}
+
+	void mapReadback() {
+		D3D12_RANGE readbackBufferRange{ 0, 4 * 32 * 32 * 32 };
+		unsigned int* pReadbackBufferData;
+		readbackBuffer->Map
+		(
+			0,
+			&readbackBufferRange,
+			reinterpret_cast<void**>(&pReadbackBufferData)
+		);
+
+		// Code goes here to access the data via pReadbackBufferData.
+
+		D3D12_RANGE emptyRange{ 0, 0 };
+		readbackBuffer->Unmap
+		(
+			0,
+			&emptyRange
+		);
+	}
+
+	void fillRandom() {
+		void* pData;
+		CD3DX12_RANGE range(0, bufferUintSize);
+		uploadBuffer->Map(0, &range, &pData);
+		unsigned int* m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
+		unsigned int* m_arrayDataEnd = m_arrayDataBegin + bufferUintSize;
+
+		for (auto ip = m_arrayDataBegin; ip < m_arrayDataEnd; ip++) {
+			*ip = rand() & 0xff;
+			*ip |= (rand() & 0xff) << 8;
+			*ip |= (rand() & 0xff) << 16;
+			*ip |= (rand() & 0xff) << 24;
+		}
+
+		m_arrayDataBegin[0] = 0x1454abff;
+		m_arrayDataBegin[1] = 0xa1667600;
+		m_arrayDataBegin[2] = 0x23144bca;
+		m_arrayDataBegin[3] = 0x004156fe;
+		m_arrayDataBegin[4] = 0xf4541bff;
+		m_arrayDataBegin[5] = 0xa5667100;
+		m_arrayDataBegin[6] = 0x232441ca;
+		m_arrayDataBegin[7] = 0x004156f1;
+		m_arrayDataBegin[8] = 0x4454abfd;
+		m_arrayDataBegin[9] = 0xa4667600;
+		m_arrayDataBegin[10] = 0x23444bca;
+		m_arrayDataBegin[11] = 0x004456fe;
+		m_arrayDataBegin[12] = 0x34544bfb;
+		m_arrayDataBegin[13] = 0xa4667400;
+		m_arrayDataBegin[14] = 0x235444cb;
+		m_arrayDataBegin[15] = 0x004656f4;
+		m_arrayDataBegin[16] = 0xf4547bfc;
+		m_arrayDataBegin[17] = 0xaf667800;
+		m_arrayDataBegin[18] = 0x23f44b9a;
+		m_arrayDataBegin[19] = 0x004f56fa;
+		m_arrayDataBegin[20] = 0xf454fbff;
+		m_arrayDataBegin[21] = 0xa5667f09;
+		m_arrayDataBegin[22] = 0x3243fca;
+		m_arrayDataBegin[23] = 0xc04156ff;
+		m_arrayDataBegin[24] = 0xfc54abf8;
+		m_arrayDataBegin[25] = 0xa5c67606;
+		m_arrayDataBegin[26] = 0x232c4b57;
+		m_arrayDataBegin[27] = 0x0041c4fe;
+		m_arrayDataBegin[28] = 0xf4543cf5;
+		m_arrayDataBegin[29] = 0xa56976c0;
+		m_arrayDataBegin[30] = 0x23844bc3;
+		m_arrayDataBegin[31] = 0x074156f2;
+
+		uploadBuffer->Unmap(0, &range);
+	}
+
+	static void barrier( com_ptr<ID3D12GraphicsCommandList> pCmdList, com_ptr<ID3D12Resource> pResource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE)
+	{
+		D3D12_RESOURCE_BARRIER barrierDesc = {};
+
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Flags = flags;
+		barrierDesc.Transition.pResource = pResource.Get();
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = before;
+		barrierDesc.Transition.StateAfter = after;
+
+		pCmdList->ResourceBarrier(1, &barrierDesc);
+	}
+
+	void upload(com_ptr<ID3D12GraphicsCommandList> commandList) {
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		commandList->CopyResource(buffer.Get(), uploadBuffer.Get());
+
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	}
+
+	D3D12_RESOURCE_BARRIER uavBarrier() const {
+		D3D12_RESOURCE_BARRIER b;
+		b.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		b.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		b.UAV.pResource = buffer.Get();
+		return b;
+	}
+
 };

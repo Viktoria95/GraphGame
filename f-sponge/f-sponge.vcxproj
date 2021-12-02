@@ -103,6 +103,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ComputePass.h" />
+    <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="ConstantBufferTypes.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DualQuaternion.h" />
@@ -110,6 +112,7 @@
     <ClInclude Include="ggl004App.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="RawBuffer.h" />
+    <ClInclude Include="WaveSort.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csAdaptiveControlPressure.hlsl">
@@ -154,12 +157,6 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
     </FxCompile>
-    <FxCompile Include="Shaders\csControlledFluidSimulation.hlsl">
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-    </FxCompile>
     <FxCompile Include="Shaders\csCreateCellList.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.4</ShaderModel>
@@ -173,12 +170,6 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.4</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.4</ShaderModel>
-    </FxCompile>
-    <FxCompile Include="Shaders\csFluidSimulation.hlsl">
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</EntryPointName>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</EntryPointName>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\csFluidSimulationFinal.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
