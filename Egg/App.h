@@ -15,10 +15,11 @@ namespace Egg {
 		// swap chain resources
 		D3D12_VIEWPORT viewPort;
 		D3D12_RECT scissorRect;
-		unsigned int backBufferDepth;
-		unsigned int rtvDescriptorHandleIncrementSize;
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+		unsigned int swapChainBackBufferCount;
 		com_ptr<ID3D12DescriptorHeap> rtvDescriptorHeap;
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+		unsigned int rtvDescriptorHandleIncrementSize;
+
 		std::vector<com_ptr<ID3D12Resource>> renderTargets;
 		float aspectRatio;
 
@@ -26,7 +27,8 @@ namespace Egg {
 		com_ptr<ID3D12Fence> fence;
 		HANDLE fenceEvent;
 		unsigned long long fenceValue;
-		unsigned int frameIndex;
+
+		unsigned int swapChainBackBufferIndex;
 
 		bool stopped;
 		std::string stopMessage;
@@ -64,7 +66,7 @@ namespace Egg {
 			DXGI_SWAP_CHAIN_DESC scDesc;
 			swapChain->GetDesc(&scDesc);
 
-			backBufferDepth = scDesc.BufferCount;
+			swapChainBackBufferCount = scDesc.BufferCount;
 
 			viewPort.TopLeftX = 0;
 			viewPort.TopLeftY = 0;
@@ -85,7 +87,7 @@ namespace Egg {
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			rtvHeapDesc.NumDescriptors = backBufferDepth;
+			rtvHeapDesc.NumDescriptors = swapChainBackBufferCount;
 			rtvHeapDesc.NodeMask = 0;
 
 			DX_API("Failed to create render target view descriptor heap")
@@ -96,9 +98,9 @@ namespace Egg {
 
 			// Create Render Target Views
 
-			renderTargets.resize(backBufferDepth);
+			renderTargets.resize(swapChainBackBufferCount);
 
-			for(unsigned int i = 0; i < backBufferDepth; ++i) {
+			for(unsigned int i = 0; i < swapChainBackBufferCount; ++i) {
 				DX_API("Failed to get swap chain buffer")
 					swapChain->GetBuffer(i, IID_PPV_ARGS(renderTargets[i].GetAddressOf()));
 
@@ -108,7 +110,7 @@ namespace Egg {
 				device->CreateRenderTargetView(renderTargets[i].Get(), nullptr, cpuHandle);
 			}
 
-			frameIndex = swapChain->GetCurrentBackBufferIndex();
+			swapChainBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 		}
 
 		virtual void ReleaseSwapChainResources() {
@@ -147,7 +149,7 @@ namespace Egg {
 		virtual void Resize(int width, int height) {
 			ReleaseSwapChainResources();
 			DX_API("Failed to resize swap chain")
-				swapChain->ResizeBuffers(backBufferDepth, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+				swapChain->ResizeBuffers(swapChainBackBufferCount, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 			CreateSwapChainResources();
 		}
 

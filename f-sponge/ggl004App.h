@@ -17,6 +17,9 @@ using namespace Egg::Math;
 class ggl004App : public Egg::SimpleApp {
 	Egg11::App::P app11;
 protected:
+	static const int nRenderBuffers = 4;
+
+
 	com_ptr<ID3D11On12Device> device11on12;
 	com_ptr<ID3D11Device> device11;
 	com_ptr<ID3D11DeviceContext> context11;
@@ -137,6 +140,7 @@ public:
 		// 			for (auto name : { BUFFERNAMES }) {
 		//	buffers[name].mapReadback(commandList);
 		//}
+		buffers[sortedMortons].mapReadback();
 
 	}
 
@@ -245,7 +249,7 @@ public:
 		D3D12_DESCRIPTOR_HEAP_DESC dhd;
 		dhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		dhd.NodeMask = 0;
-		dhd.NumDescriptors = 6;
+		dhd.NumDescriptors = (uint)hashLut+1; //TODO number of buffers
 		dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		uint dhIncrSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -253,7 +257,12 @@ public:
 			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
 		/*
 		for (auto name : { BUFFERNAMES }) {
-			buffers[name].createResources(device, device11on12);
+			buffers.push_back( RawBuffer( L"rawBuffer") );
+			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
+				uavHeap->GetCPUDescriptorHandleForHeapStart(),
+				name,
+				device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+			buffers[name].createResources(device, device11on12, handle);
 		}
 
 		buffers[mortons].fillRandom();
@@ -293,7 +302,8 @@ public:
 				0,
 				D3D12_COMMAND_LIST_TYPE_COMPUTE,
 				m_computeAllocator.Get(),
-				nullptr,
+				//nullptr,
+				csLocalSort.pso.Get(),
 				IID_PPV_ARGS(m_computeCommandList.ReleaseAndGetAddressOf()));
 	}
 

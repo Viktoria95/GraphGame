@@ -21,7 +21,7 @@ public:
 		this->uavOffset = uavOffset;
 
 		for (uint i = 0; i < 4; i++) {
-			uavBarriers[0] = buffers[uavOffset + i].uavBarrier();
+			uavBarriers[i] = buffers[uavOffset + i].uavBarrier();
 		}
 		*/
 	}

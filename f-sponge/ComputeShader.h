@@ -2,6 +2,7 @@
 #include "Egg/Common.h"
 
 class ComputeShader {
+public:
 	com_ptr<ID3D12PipelineState> pso;
 	com_ptr<ID3D12RootSignature> rootSig;
 

@@ -97,17 +97,21 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncComputeApp.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DualQuaternion.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncComputeApp.h" />
     <ClInclude Include="ComputePass.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="ConstantBufferTypes.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DualQuaternion.h" />
+    <ClInclude Include="Fence.h" />
+    <ClInclude Include="FenceChain.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="ggl004App.h" />
     <ClInclude Include="Particle.h" />
