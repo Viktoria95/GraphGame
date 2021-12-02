@@ -3,7 +3,9 @@
 #include "particle.hlsli"
 #include "fluid.hlsli"
 
-RWStructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
+RWStructuredBuffer<float> massDensities;
+RWStructuredBuffer<float> pressures;
 
 [numthreads(particlePerCore, 1, 1)]
 void csFluidSimulationMassPress (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThreadID)
@@ -14,13 +16,13 @@ void csFluidSimulationMassPress (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupT
 	float massDensity = 0.0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		float3 deltaPos = particles[tid].position - particles[i].position;
+		float3 deltaPos = positions[tid].xyz - positions[i].xyz;
 		massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius_w);
 	}
-	particles[tid].massDensity = massDensity;
+	massDensities[tid] = massDensity;
 
 	// III. Calc pressure
-	particles[tid].pressure = gasStiffness * (particles[tid].massDensity - restMassDensity);
+	pressures[tid] = gasStiffness * (massDensity - restMassDensity);
 }
 
 

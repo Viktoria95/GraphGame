@@ -3,7 +3,7 @@
 #include "particle.hlsli"
 #include "hash.hlsli"
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<uint> hashes;
 RWByteAddressBuffer clistBegin;
 RWByteAddressBuffer clistCellCount;
 RWByteAddressBuffer hlist;
@@ -20,7 +20,7 @@ void csHListInit(uint3 DTid : SV_GroupID)
 	{
 		uint address = tid * 4;
 		uint particleIdx = clistBegin.Load(address);
-		uint hashValue = particles[particleIdx].zindex % hashCount;
+		uint hashValue = hashes[particleIdx] % hashCount;
 		hlist.Store(address, hashValue);
 	}
 

@@ -13,9 +13,9 @@ bool BallTest(float3 p, out float3 grad)
 
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
-			grad = normalize(p - float3(particles[i].position));
+			grad = normalize(p - float3(positions[i].xyz));
 			return true;
 		}
 	}
@@ -31,7 +31,7 @@ float ParticleCount(float3 p)
 	float hitCount = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 		}
@@ -48,7 +48,7 @@ float Index (float3 p)
 	float index = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 			index += i;
@@ -57,7 +57,7 @@ float Index (float3 p)
 
 	return index / hitCount / particleCount;
 }
-
+/*
 float Zindex(float3 p)
 {
 	const float r = 0.005;
@@ -67,7 +67,7 @@ float Zindex(float3 p)
 	float index = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 			index += particles[i].zindex;
@@ -86,7 +86,7 @@ float Pressure(float3 p)
 	float pressure = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 			pressure += particles[i].pressure;
@@ -105,7 +105,7 @@ float MassDensity(float3 p)
 	float massDensity = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 			massDensity += particles[i].massDensity;
@@ -124,7 +124,7 @@ float Speed(float3 p)
 	float speed = 0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			hitCount++;
 			speed += length(particles[i].velocity);
@@ -133,13 +133,13 @@ float Speed(float3 p)
 
 	return speed / hitCount / maxSpeed;
 }
-
+*/
 float3 RandColor(float3 p) {
 	const float r = 0.005;
 
 	for (int i = 0; i < particleCount; i++)
 	{
-		if (length(p - float3(particles[i].position)) < r)
+		if (length(p - float3(positions[i].xyz)) < r)
 		{
 			int div = i % 6;
 			if (div == 0)
@@ -218,7 +218,7 @@ float4 psParticleBall(VsosQuad input) : SV_Target
 				else if (debugType == 2)
 				{
 					return float4 (Index(p), 0.0, 0.0, 1.0);
-				}
+				}/*
 				else if (debugType == 3)
 				{
 					return float4 (Zindex(p), 0.0, 0.0, 1.0);
@@ -234,7 +234,7 @@ float4 psParticleBall(VsosQuad input) : SV_Target
 				else if (debugType == 6)
 				{
 					return float4 (0.0, Speed(p), 0.0, 1.0);
-				}
+				}*/
 				else
 				{
 					return float4 (0.0, 0.0, 0.0, 1.0);

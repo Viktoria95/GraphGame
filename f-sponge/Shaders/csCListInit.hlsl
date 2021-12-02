@@ -2,7 +2,7 @@
 
 #include "particle.hlsli"
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<uint> hashes;
 RWByteAddressBuffer clist;
 RWByteAddressBuffer clistNonZero;
 
@@ -14,7 +14,7 @@ void csCListInit(uint3 DTid : SV_GroupID)
 
 	uint value = 0;
 	uint address = tid * 4;
-	if (tid > 0 && particles[tid - 1].zindex != particles[tid].zindex)
+	if (tid > 0 && hashes[tid - 1] != hashes[tid])
 	{
 		value = tid;
 	}

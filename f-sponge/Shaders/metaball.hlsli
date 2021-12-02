@@ -47,7 +47,7 @@ cbuffer metaballFunctionCB {
 	int functionType;
 };
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
 Buffer<uint> offsetBuffer;
 
 struct IaosQuad
@@ -263,7 +263,7 @@ bool MetaBallTest(float3 p, IMetaballTester metaballTester)
 {
 	float acc = 0.0;
 	for (int i = 0; i < particleCount; i++) {
-		if (metaballTester.testFunction(p, particles[i].position, acc, acc) == true)
+		if (metaballTester.testFunction(p, positions[i].xyz, acc, acc) == true)
 		{
 			return true;
 		}
@@ -289,7 +289,7 @@ float3 Grad(float3 p) {
 	float3 grad;
 
 	for (int i = 0; i < particleCount; i++) {
-		grad = calculateGrad(p, particles[i].position, grad);
+		grad = calculateGrad(p, positions[i].xyz, grad);
 	}
 
 	return grad;

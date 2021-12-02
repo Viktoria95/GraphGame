@@ -15,7 +15,7 @@ bool MetaBallTest_ABuffer(float3 p, IMetaballTester metaballTester)
 		offset = element.x;
 		int i = element.y;
 
-		if (metaballTester.testFunction(p, particles[i].position, acc, acc) == true)
+		if (metaballTester.testFunction(p, positions[i].xyz, acc, acc) == true)
 		{
 			return true;
 		}
@@ -39,7 +39,7 @@ float3 Grad_ABuffer(float3 p)
 		offset = element.x;
 		int i = element.y;
 
-		grad = calculateGrad(p, particles[i].position, grad);
+		grad = calculateGrad(p, positions[i].xyz, grad);
 	}
 
 	return grad;

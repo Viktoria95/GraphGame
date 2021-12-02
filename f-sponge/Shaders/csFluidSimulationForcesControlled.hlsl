@@ -3,8 +3,10 @@
 #include "particle.hlsli"
 #include "fluid.hlsli"
 
-
-RWStructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
+StructuredBuffer<float4> velocities;
+StructuredBuffer<float> massDensities;
+StructuredBuffer<float> pressures;
 RWStructuredBuffer<float4> particleForce;
 StructuredBuffer<ControlParticle> controlParticles;
 Buffer<uint> controlParticleCounter;
@@ -29,13 +31,13 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
 
-				pressureForce += ((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + (particles[i].pressure / pow(particles[i].massDensity, 2)))
+				pressureForce += ((pressures[tid] / pow(massDensities[tid], 2)) + (pressures[i] / pow(massDensities[i], 2)))
 					* massPerParticle * pressureSmoothingKernelGradient(deltaPos, supportRadius_w);
 			}
 		}
-		pressureForce *= -particles[tid].massDensity;
+		pressureForce *= -massDensities[tid];
 	}
 
 	// IV.b Viscosity force
@@ -45,8 +47,8 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace(deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				viscosityForce += (velocities[i].xyz - velocities[tid].xyz) * (massPerParticle / massDensities[i]) * viscositySmoothingKernelLaplace(deltaPos, supportRadius_w);
 
 			}
 		}
@@ -61,8 +63,8 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient(deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				inwardSurfaceNormal += (massPerParticle / massDensities[i]) * defaultSmoothingKernelGradient(deltaPos, supportRadius_w);
 			}
 		}
 
@@ -72,8 +74,8 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				surfaceTensionForceAmplitude += (massPerParticle / massDensities[i]) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
 				if (length(deltaPos) < supportRadius_w)
 				{
 					tempCount++;
@@ -87,7 +89,7 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 	}
 
 	// IV.d Gravitational force
-	float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0);
+	float3 gravitationalForce = float3 (0.0, -g * massDensities[tid], 0.0);
 
 	// V. Control force
 	float3 controlForce = float3(0.0, 0.0, 0.0);
@@ -96,10 +98,10 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			//if (i != tid && controlParticles[i].pressure == 1.0)
 			{
-				float3 deltaPos = particles[tid].position - controlParticles[i].position + float3 (0, controlParams[1].w, 0);
+				float3 deltaPos = positions[tid].xyz - controlParticles[i].position + float3 (0, controlParams[1].w, 0);
 
 				//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 0.8);
-				controlForce += controlParticles[i].controlPressureRatio * 0.9 * particles[i].massDensity * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 1.2);
+				controlForce += controlParticles[i].controlPressureRatio * 0.9 * massDensities[i] * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 1.2);
 			}
 		}
 	}
@@ -115,7 +117,7 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 	if (controlAmplitude > maxConrtolForce)
 	{
 		controlForce *= maxConrtolForce / controlAmplitude;
-		particles[tid].velocity *= 0.9;
+		//velocities[tid].xyz *= 0.9; //TODO Why was this here
 	}
 
 	if (controlParams[0].x > 0.5)

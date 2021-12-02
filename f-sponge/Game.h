@@ -59,10 +59,6 @@ private:
 	bool controlParticleAnimtaionIsActive;
 
 	// Particle
-	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
-
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePositionBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePositionSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePositionUAV;
@@ -78,6 +74,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleForceBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleForceSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFroceUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleHashBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleHashSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleHashUAV;
 
 	// Control Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;

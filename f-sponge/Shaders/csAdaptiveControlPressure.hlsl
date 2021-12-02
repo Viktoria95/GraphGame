@@ -2,7 +2,7 @@
 
 #include "particle.hlsli"
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
 RWStructuredBuffer<ControlParticle> controlParticles;
 
 #define pi 3.1415
@@ -31,7 +31,7 @@ void csAdaptiveControlPressure(uint3 DTid : SV_GroupID)
 	float massDensity = 0.0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		float3 deltaPos = controlParticles[tid].position - particles[i].position;
+		float3 deltaPos = controlParticles[tid].position - positions[i];
 		massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius);
 	}
 

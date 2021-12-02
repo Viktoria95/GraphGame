@@ -3,8 +3,10 @@
 #include "particle.hlsli"
 #include "fluid.hlsli"
 
-
-RWStructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
+StructuredBuffer<float4> velocities;
+StructuredBuffer<float> massDensities;
+StructuredBuffer<float> pressures;
 RWStructuredBuffer<float4> particleForce;
 
 [numthreads(particlePerCore, 1, 1)]
@@ -22,13 +24,13 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
 
-				pressureForce +=	((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + (particles[i].pressure / pow(particles[i].massDensity, 2)))
+				pressureForce +=	((pressures[tid] / pow(massDensities[tid], 2)) + (pressures[i] / pow(massDensities[i], 2)))
 									* massPerParticle * pressureSmoothingKernelGradient (deltaPos, supportRadius_w);
 			}
 		}
-		pressureForce *= -particles[tid].massDensity;
+		pressureForce *= -massDensities[tid];
 	}
 
 	// IV.b Viscosity force
@@ -38,8 +40,8 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace (deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				viscosityForce += (velocities[i].xyz - velocities[tid].xyz) * (massPerParticle / massDensities[i]) * viscositySmoothingKernelLaplace (deltaPos, supportRadius_w);
 					
 			}
 		}
@@ -54,8 +56,8 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 		{
 			if (i != tid)
 			{
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient (deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				inwardSurfaceNormal += (massPerParticle / massDensities[i]) * defaultSmoothingKernelGradient (deltaPos, supportRadius_w);
 			}
 		}
 
@@ -65,8 +67,8 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 		{
 			if (i != tid)
 			{					
-				float3 deltaPos = particles[tid].position - particles[i].position;
-				surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
+				float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+				surfaceTensionForceAmplitude += (massPerParticle / massDensities[i]) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
 				if (length(deltaPos) < supportRadius_w)
 				{
 					tempCount++;
@@ -80,7 +82,7 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 	}
 
 	// IV.d Gravitational force
-	float3 gravitationalForce = float3 (0.0, -g * particles[tid].massDensity, 0.0);
+	float3 gravitationalForce = float3 (0.0, -g * massDensities[tid], 0.0);
 
 
 	// IV.e sum forces

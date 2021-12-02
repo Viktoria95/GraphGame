@@ -7,7 +7,8 @@
 StructuredBuffer<ControlParticle> controlParticles;
 Buffer<uint> controlParticleCounter;
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
+StructuredBuffer<float4> velocities;
 
 RWStructuredBuffer<float4> velocity;
 
@@ -44,10 +45,10 @@ void csPBDVelocityFilter(uint3 DTid : SV_GroupID) {
 			{
 				//if (i != tid)
 				{
-					float3 deltaPos = controlParticles[tid].position - particles[i].position;
+					float3 deltaPos = controlParticles[tid].position - positions[i].xyz;
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
-					viscosityForce += particles[i].velocity * viscositySmoothingKernelLaplace(deltaPos, supportRadius) * 0.0000000003;
+					viscosityForce += velocities[i] * viscositySmoothingKernelLaplace(deltaPos, supportRadius) * 0.0000000003;
 
 				}
 			}
