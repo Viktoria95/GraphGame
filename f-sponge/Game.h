@@ -239,9 +239,6 @@ private:
 	Egg11::Mesh::Shader::P metaballGradientHashSimpleShader;
 
 	// Animation
-	Egg11::Mesh::Shader::P fluidSimulationShader;
-	Egg11::Mesh::Shader::P controlledFluidSimulationShader;
-
 	Egg11::Mesh::Shader::P fluidSimulationMassPressShader;
 	Egg11::Mesh::Shader::P fluidSimulationForcesShader;
 	Egg11::Mesh::Shader::P fluidSimulationForcesControlledShader;

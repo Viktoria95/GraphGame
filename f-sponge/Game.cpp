@@ -2459,12 +2459,6 @@ void Game::CreateMetaball() {
 void Game::CreateAnimation() {
 	using namespace Microsoft::WRL;
 
-	ComPtr<ID3DBlob>fluidSimulationShaderByteCode = loadShaderCode("csFluidSimulation.cso");
-	fluidSimulationShader = Egg11::Mesh::Shader::create("csFluidSimulation.cso", device, fluidSimulationShaderByteCode);
-
-	ComPtr<ID3DBlob> controlledFluidSimulationShaderByteCode = loadShaderCode("csControlledFluidSimulation.cso");
-	controlledFluidSimulationShader = Egg11::Mesh::Shader::create("csControlledFluidSimulation.cso", device, controlledFluidSimulationShaderByteCode);
-
 	ComPtr<ID3DBlob>simpleSortEvenShaderByteCode = loadShaderCode("csSimpleSortEven.cso");
 	simpleSortEvenShader = Egg11::Mesh::Shader::create("csSimpleSortEven.cso", device, simpleSortEvenShaderByteCode);
 
@@ -3230,8 +3224,7 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 		ID3D11ShaderResourceView* ppShaderResourceViews[2] = { controlParticleSRV.Get(), controlParticleCounterSRV.Get() };
 		context->CSSetShaderResources(0, 2, ppShaderResourceViews);
 		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
-		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
-		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
+		context->CSSetConstantBuffers(0, 1, controlParamsCB.GetAddressOf());
 		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
 	}
 
@@ -3241,30 +3234,6 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	context->CSSetUnorderedAccessViews(1, 1, particleFroceUAV.GetAddressOf(), zeros);
 	context->CSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
 	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
-
-	/*
-	if (flowControl == RealisticFlow)
-	{
-		uint zeros[2] = { 0, 0 };
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		context->CSSetShaderResources(0, 1, PBDTestMeshPosSRV.GetAddressOf());
-		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
-	}
-	else if (flowControl == ControlledFlow)
-	{
-		uint zeros[1] = { 0 };
-		context->CSSetShader(static_cast<ID3D11ComputeShader*>(controlledFluidSimulationShader->getShader().Get()), nullptr, 0);
-		context->CSSetUnorderedAccessViews(0, 1, particleUAV.GetAddressOf(), zeros);
-		ID3D11ShaderResourceView* ppShaderResourceViews[2] = { controlParticleSRV.Get(), controlParticleCounterSRV.Get() };
-		context->CSSetShaderResources(0, 2, ppShaderResourceViews);
-		context->CSSetShaderResources(2, 1, PBDTestMeshPosSRV.GetAddressOf());
-		context->UpdateSubresource(controlParamsCB.Get(), 0, nullptr, &controlParams[0], 0, 0);
-		uint cbindex = controlledFluidSimulationShader->getResourceIndex("controlParamsCB");
-		context->CSSetConstantBuffers(cbindex, 1, controlParamsCB.GetAddressOf());
-		context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
-	}
-	*/
 }
 
 void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
