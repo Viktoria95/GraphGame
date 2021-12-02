@@ -82,11 +82,41 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
+
+	/*
+	float3	position;
+	float	controlPressureRatio;
+	float3	nonAnimatedPos;
+	float	temp;
+	float4	blendWeights;
+	uint4	blendIndices;
+	*/
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticlePositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticlePositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticlePositionUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDefaultPositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleDefaultPositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleDefaultPositionUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleBlendWeightBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleBlendWeightSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleBlendWeightUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleBlendIndexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleBlendIndexSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleBlendIndexUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticlePressureRatioBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticlePressureRatioSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticlePressureRatioUAV;
+
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleCounterDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleCounterSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleCounterUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleIndirectDisptachDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleIndirectDisptachUAV;
+
 	Egg11::Mesh::Shaded::P controlMesh;
 	Egg11::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg11::Mesh::Shaded::P controlMeshFill;

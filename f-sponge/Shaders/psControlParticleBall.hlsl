@@ -4,7 +4,7 @@
 //SamplerState ss;
 //TextureCube envTexture;
 
-StructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<float4> controlPositions;
 Buffer<uint> controlParticleCounter;
 
 bool BallTest(float3 p)
@@ -13,7 +13,7 @@ bool BallTest(float3 p)
 
 	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
-		if (length(p - float3(controlParticles[i].position)) < r)
+		if (length(p - float3(controlPositions[i].xyz)) < r)
 		{
 			return true;
 		}
@@ -27,7 +27,7 @@ float3 RandColor(float3 p) {
 
 	for (int i = 0; i < controlParticleCounter[0]; i++)
 	{
-		if (length(p - float3(controlParticles[i].position)) < r)
+		if (length(p - float3(controlPositions[i].xyz)) < r)
 		{
 			int div = i % 6;
 			if (div == 0)

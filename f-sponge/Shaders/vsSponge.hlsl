@@ -1,7 +1,7 @@
 #include "particle.hlsli"
 #include "pbd.hlsli"
 
-StructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<float4> controlPositions;
 
 cbuffer modelViewProjCB
 {
@@ -95,7 +95,7 @@ VsosTrafo vsSponge(IaosTrafo input, uint vid : SV_VertexID)
 {
 	VsosTrafo output = (VsosTrafo)0;
 
-	float4 worldPos = mul(modelMatrix, float4(controlParticles[input.particleId].position.xyz, 1.0f));
+	float4 worldPos = mul(modelMatrix, float4(controlPositions[input.particleId].xyz, 1.0f));
 	float3 descartesPos = worldPos.xyz / worldPos.w;
 
 	float4 lightPos = (50.0, 100, 200, 1.0);
@@ -105,10 +105,10 @@ VsosTrafo vsSponge(IaosTrafo input, uint vid : SV_VertexID)
 
 	float3 lightDir = viewDir;//float3(-1.0, 1.0, -1.0);// normalize(lightPos.xyz - descartesPos * lightPos.w);
 
-	float3 normal = calculateNormal(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz);
-	float3 binormal = calculateBinormal(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz,
+	float3 normal = calculateNormal(controlPositions[input.neighbourIds.x].xyz, controlPositions[input.neighbourIds.y].xyz, controlPositions[input.neighbourIds.z].xyz);
+	float3 binormal = calculateBinormal(controlPositions[input.neighbourIds.x].xyz, controlPositions[input.neighbourIds.y].xyz, controlPositions[input.neighbourIds.z].xyz,
 		input.neighbourTex0, input.neighbourTex1, input.neighbourTex2);
-	float3 tangent = calculateTangent(controlParticles[input.neighbourIds.x].position.xyz, controlParticles[input.neighbourIds.y].position.xyz, controlParticles[input.neighbourIds.z].position.xyz,
+	float3 tangent = calculateTangent(controlPositions[input.neighbourIds.x].xyz, controlPositions[input.neighbourIds.y].xyz, controlPositions[input.neighbourIds.z].xyz,
 		input.neighbourTex0, input.neighbourTex1, input.neighbourTex2);
 
 	//normal = normal.xyz / 2.0 + float3(0.5, 0.5, 0.5);

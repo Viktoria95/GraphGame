@@ -3,7 +3,8 @@
 #include "particle.hlsli"
 
 StructuredBuffer<float4> positions;
-RWStructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<float4> controlPositions;
+RWStructuredBuffer<float> pressureRatios;
 
 #define pi 3.1415
 
@@ -31,17 +32,17 @@ void csAdaptiveControlPressure(uint3 DTid : SV_GroupID)
 	float massDensity = 0.0;
 	for (int i = 0; i < particleCount; i++)
 	{
-		float3 deltaPos = controlParticles[tid].position - positions[i];
+		float3 deltaPos = controlPositions[tid].xyz - positions[i].xyz;
 		massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius);
 	}
 
 	if (massDensity < restMassDensity * 0.8)
 	{
-		controlParticles[tid].controlPressureRatio = 1.0;
+		pressureRatios[tid] = 1.0;
 	}
 	else if (massDensity > restMassDensity * 1.2)
 	{
-		controlParticles[tid].controlPressureRatio = 0.5;
+		pressureRatios[tid] = 0.5;
 
 	}
 
