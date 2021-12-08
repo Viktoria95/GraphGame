@@ -73,9 +73,11 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 
 	float3 radDis = positions[tid].xyz - testMesh[0].pos.xyz;
 	float sphereDist = length(radDis);
-	radDis = normalize(radDis);
+	float3 radNorm = normalize(radDis);
 	if (sphereDist < sphereRadius) {
 		positions[tid].xyz += radDis;
+		velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
+		velocities[tid].xyz *= 0.0;
 	}
 
 	if (positions[tid].xyz.y < boundaryBottom)

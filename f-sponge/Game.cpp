@@ -4128,14 +4128,14 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	}
 
 	clearContext(context);
-	/*
+	
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderSphereAnimate->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticleCounterSRV.GetAddressOf());
 	//context->CSSetShaderResources(1, 1, PBDTestMeshTransSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, PBDTestMeshPosUAV.GetAddressOf(), zeros);
 	context->CSSetUnorderedAccessViews(1, 1, PBDTestMeshTransUAV.GetAddressOf(), zeros);
 	context->Dispatch(1, 1, 1);
-	*/
+	
 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderFinalUpdate->getShader().Get()), nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, 1, controlParticlePositionUAV.GetAddressOf(), zeros);
