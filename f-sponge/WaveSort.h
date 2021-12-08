@@ -25,7 +25,7 @@ public:
 	}
 
 	void populate(com_ptr<ID3D12GraphicsCommandList> computeCommandList) {
-		localSort.setup(computeCommandList, uavHandle);
+		localSort.setup(computeCommandList, uavHandle); //TODO offset 
 
 		computeCommandList->SetComputeRoot32BitConstant(0, 0, 0);
 		computeCommandList->Dispatch(32, 1, 1);
@@ -52,10 +52,9 @@ public:
 		computeCommandList->Dispatch(32, 1, 1);
 		computeCommandList->ResourceBarrier(2, uavBarriers);
 
-		merge.setup(computeCommandList, uavHandle);
+		merge.setup(computeCommandList, uavHandle); //TODO offset
 
 		computeCommandList->Dispatch(1, 1, 1);
-		computeCommandList->ResourceBarrier(2, uavBarriers+2);
-
+		computeCommandList->ResourceBarrier(2, &uavBarriers[2]);
 	}
 };

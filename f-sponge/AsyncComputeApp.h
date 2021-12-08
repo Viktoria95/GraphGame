@@ -125,6 +125,20 @@ public:
 		commandList->ClearRenderTargetView(rHandle, clearColor, 0, nullptr);
 		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+		//READBACK HERE?
+		for (auto name : { BUFFERNAMES }) {
+			buffers[name].copyBack(commandLists[swapChainBackBufferIndex]);
+		}
+
+		//TEST HERE
+		//for (auto name : { BUFFERNAMES }) {
+		//	buffers[name].mapReadback();
+		//}
+//		buffers[mortons].mapReadback();
+//		buffers[pins].mapReadback();
+		buffers[sortedPins].mapReadback();
+//		buffers[sortedMortons].mapReadback();
+
 		DX_API("close command list")
 			commandList->Close();
 
@@ -384,17 +398,4 @@ public:
 		context11->RSSetViewports(1, &screenViewport);
 	}
 
-
-//	buffers[mortons].upload(commandList);
-
-			//READBACK HERE?
-		//for (auto name : { BUFFERNAMES }) {
-		//	buffers[name].copyBack(commandLists[swapChainBackBufferIndex]);
-		//}
-
-		//TEST HERE
-		// 			for (auto name : { BUFFERNAMES }) {
-		//	buffers[name].mapReadback(commandList);
-		//}
-		// buffers[sortedMortons].mapReadback();
 };

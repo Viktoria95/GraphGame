@@ -100,7 +100,10 @@ D3D11_RESOURCE_FLAGS d3d11Flags = {D3D11_BIND_UNORDERED_ACCESS};
 	}
 
 	void copyBack(com_ptr<ID3D12GraphicsCommandList> commandList) {
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		commandList->CopyResource(readbackBuffer.Get(), buffer.Get());
+		barrier(commandList, buffer, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
 	}
 
 	void mapReadback() {

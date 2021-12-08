@@ -8,7 +8,7 @@ public:
 
 public:
 	void createResources(com_ptr<ID3D12Device> device, std::string csoName) {
-		com_ptr<ID3DBlob> computeShader = Egg::Shader::LoadCso("Shaders/csLocalSort.cso");
+		com_ptr<ID3DBlob> computeShader = Egg::Shader::LoadCso(csoName);
 		rootSig = Egg::Shader::LoadRootSignature(device.Get(), computeShader.Get());
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC descComputePSO = {};
