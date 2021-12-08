@@ -2,25 +2,17 @@
 
 #include "particle.hlsli"
 #include "PBDSphere.hlsli"
+#include "fluid.hlsli"
 
 
 RWStructuredBuffer<Particle> particles;
 
 StructuredBuffer<Sphere> testMesh;
 
-#define pi 3.1415
-
-float defaultSmoothingKernel (float3 deltaPos, float supportRadius)
+[numthreads(particlePerCore, 1, 1)]
+void csFluidSimulation (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThreadID)
 {
-	if (length(deltaPos) > supportRadius)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return (315.0 / (64.0 * pi * pow(supportRadius, 9))) * pow((pow(supportRadius, 2) - dot(deltaPos, deltaPos)), 3);
-	}
-}
+	unsigned int tid = DTid.x * particlePerCore + GTid;
 
 float3 defaultSmoothingKernelGradient (float3 deltaPos, float supportRadius)
 {
@@ -87,7 +79,7 @@ float viscositySmoothingKernelLaplace (float3 deltaPos, float supportRadius)
 }
 
 [numthreads(1, 1, 1)]
-void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID*/)
+void csFluidSimulation (uint3 DTid : SV_GroupID)
 {
 	float dt	= 0.01; // s
 	float g		= 9.82; // m/s2
@@ -100,7 +92,6 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 	float viscosity			= 3.5;		// Pa*s
 	float surfaceTension	= 0.0728;	// N/m
 
-	//unsigned int tid = DTid.x * 128 + GTid.x;
 	unsigned int tid = DTid.x;
 
 	// I. Find close neighbors and II. calc mass density
@@ -109,7 +100,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 		for (int i = 0; i < particleCount; i++)
 		{
 			float3 deltaPos = particles[tid].position - particles[i].position;
-			massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius);
+			massDensity += massPerParticle * defaultSmoothingKernel(deltaPos, supportRadius_w);
 		}
 		particles[tid].massDensity = massDensity;
 	}
@@ -134,7 +125,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 					float3 deltaPos = particles[tid].position - particles[i].position;
 
 					pressureForce +=	((particles[tid].pressure / pow(particles[tid].massDensity, 2)) + (particles[i].pressure / pow(particles[i].massDensity, 2)))
-										* massPerParticle * pressureSmoothingKernelGradient (deltaPos, supportRadius);
+										* massPerParticle * pressureSmoothingKernelGradient (deltaPos, supportRadius_w);
 				}
 			}
 			pressureForce *= -particles[tid].massDensity;
@@ -148,7 +139,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace (deltaPos, supportRadius);
+					viscosityForce += (particles[i].velocity - particles[tid].velocity) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace (deltaPos, supportRadius_w);
 					
 				}
 			}
@@ -164,7 +155,7 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 				if (i != tid)
 				{
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient (deltaPos, supportRadius);
+					inwardSurfaceNormal += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelGradient (deltaPos, supportRadius_w);
 				}
 			}
 
@@ -175,8 +166,8 @@ void csFluidSimulation (uint3 DTid : SV_GroupID/*, uint3 GTid : SV_GroupThreadID
 				if (i != tid)
 				{					
 					float3 deltaPos = particles[tid].position - particles[i].position;
-					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius);
-					if (length(deltaPos) < supportRadius)
+					surfaceTensionForceAmplitude += (massPerParticle / particles[i].massDensity) * defaultSmoothingKernelLaplace(deltaPos, supportRadius_w);
+					if (length(deltaPos) < supportRadius_w)
 					{
 						tempCount++;
 					}

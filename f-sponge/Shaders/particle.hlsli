@@ -1,5 +1,6 @@
 
 #define particleCount 1024*4
+#define particlePerCore 128
 //#define particleCount 256
 #define counterSize 3
 
@@ -13,18 +14,6 @@
 #define boundarySide 0.3
 #define boundaryBottom 0.0
 #define boundaryTop 1.0
-
-#define mortonBinPerAxis 
-
-struct Particle
-{
-	float3	position;
-	float	massDensity;
-	float3	velocity;
-	float	pressure;
-	float3 temp;
-	uint zindex;
-};
 
 struct ControlParticle
 {

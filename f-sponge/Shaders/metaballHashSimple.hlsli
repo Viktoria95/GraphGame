@@ -1,6 +1,7 @@
 #include "metaball.hlsli"
 #include "hash.hlsli"
 
+StructuredBuffer<uint> hashes;
 RWByteAddressBuffer hlistBegin;
 RWByteAddressBuffer hlistLength;
 RWByteAddressBuffer clistBegin;
@@ -45,9 +46,9 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
-						if (particles[pIdx].zindex == zIndex) {
+						if (hashes[pIdx] == zIndex) {
 							acc += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
-							if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
+							if (metaballTester.testFunction(p, positions[pIdx].xyz, acc, acc) == true)
 							{
 								result = true;
 								pIdx = pIdxMax;
@@ -157,8 +158,8 @@ float3 Grad_HashSimple(float3 p)
 					for (; pIdx < pIdxMax; pIdx++) {
 						//acc += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
 						//if (metaballTester.testFunction(p, particles[pIdx].position, acc, acc) == true)
-						if (particles[pIdx].zindex == zIndex) {
-							grad = calculateGrad(p, particles[pIdx].position, grad);
+						if (hashes[pIdx] == zIndex) {
+							grad = calculateGrad(p, positions[pIdx].xyz, grad);
 						}
 							//result = true;
 							//pIdx = pIdxMax;

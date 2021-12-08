@@ -59,19 +59,64 @@ private:
 	bool controlParticleAnimtaionIsActive;
 
 	// Particle
-	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePositionUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleVelocityBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleVelocitySRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleVelocityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleMassDensityBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleMassDensitySRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleMassDensityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePressureBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePressureSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePressureUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleForceBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleForceSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFroceUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleHashBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleHashSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleHashUAV;
 
 	// Control Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleUAV;
+
+	/*
+	float3	position;
+	float	controlPressureRatio;
+	float3	nonAnimatedPos;
+	float	temp;
+	float4	blendWeights;
+	uint4	blendIndices;
+	*/
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticlePositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticlePositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticlePositionUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDefaultPositionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleDefaultPositionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleDefaultPositionUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleBlendWeightBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleBlendWeightSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleBlendWeightUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleBlendIndexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleBlendIndexSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleBlendIndexUAV;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticlePressureRatioBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticlePressureRatioSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticlePressureRatioUAV;
+
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleCounterDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> controlParticleCounterSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleCounterUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleIndirectDisptachDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> controlParticleIndirectDisptachUAV;
+
 	Egg11::Mesh::Shaded::P controlMesh;
 	Egg11::Mesh::Shaded::P controlMeshFlat; //Debug
 	Egg11::Mesh::Shaded::P controlMeshFill;
@@ -223,8 +268,11 @@ private:
 	Egg11::Mesh::Shader::P metaballGradientHashSimpleShader;
 
 	// Animation
-	Egg11::Mesh::Shader::P fluidSimulationShader;
-	Egg11::Mesh::Shader::P controlledFluidSimulationShader;
+	Egg11::Mesh::Shader::P fluidSimulationMassPressShader;
+	Egg11::Mesh::Shader::P fluidSimulationForcesShader;
+	Egg11::Mesh::Shader::P fluidSimulationForcesControlledShader;
+	Egg11::Mesh::Shader::P fluidSimulationFinalShader;
+
 	Egg11::Mesh::Shader::P simpleSortEvenShader;
 	Egg11::Mesh::Shader::P simpleSortOddShader;
 	Egg11::Mesh::Shader::P mortonHashShader;

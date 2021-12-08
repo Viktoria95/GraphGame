@@ -24,7 +24,7 @@ bool MetaBallTest_SBuffer(float3 p, IMetaballTester metaballTester)
 	for (uint i = startIdx; i < endIdx; i++) {
 		uint j = idBuffer[i];
 
-		if (metaballTester.testFunction(p, particles[j].position, acc, acc) == true)
+		if (metaballTester.testFunction(p, positions[j].xyz, acc, acc) == true)
 		{
 			return true;
 		}
@@ -56,7 +56,7 @@ bool MetaBallTest_SBufferV2(float3 p, IMetaballTester metaballTester)
 	//for (uint i = startIdx; i < endIdx; i+= counterSize) {
 	//	uint j = idBuffer[i];
 
-	//	if (metaballTester.testFunction(p, particles[j].position, acc, acc) == true)
+	//	if (metaballTester.testFunction(p, positions[j].xyz, acc, acc) == true)
 	//	{
 	//		return true;
 	//	}
@@ -86,7 +86,7 @@ float3 Grad_SBuffer(float3 p) {
 
 	for (int i = startIdx; i < endIdx; i++) {
 		uint j = idBuffer[i];
-		grad = calculateGrad(p, particles[j].position, grad);
+		grad = calculateGrad(p, positions[j].xyz, grad);
 	}
 
 	return grad;
@@ -115,7 +115,7 @@ float3 Grad_SBufferV2(float3 p) {
 
 	for (int i = startIdx; i < endIdx; i++) {
 		uint j = idBuffer[i];
-		grad = calculateGrad(p, particles[j].position, grad);
+		grad = calculateGrad(p, positions[j].xyz, grad);
 	}
 
 	return grad;

@@ -255,7 +255,7 @@ public:
 
 		DX_API("Failed to create descriptor heap for uavs")
 			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
-
+		/*
 		for (auto name : { BUFFERNAMES }) {
 			buffers.push_back( RawBuffer( L"rawBuffer") );
 			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
@@ -266,7 +266,7 @@ public:
 		}
 
 		buffers[mortons].fillRandom();
-
+		*/
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
 		ComputeShader csLocalSort;
 		ComputeShader csMerge;
@@ -353,7 +353,7 @@ public:
 		DX_API("Failed to reset command list (UploadResources)")
 			commandList->Reset(commandAllocator.Get(), nullptr);
 
-		buffers[mortons].upload(commandList);
+		//buffers[mortons].upload(commandList);
 
 		DX_API("Failed to close command list (UploadResources)")
 			commandList->Close();
@@ -381,88 +381,88 @@ public:
 
 	void AsyncComputeThreadProc()
 	{
-		while (!m_terminateThread)
-		{
-			if (m_suspendThread)
-			{
-				(void)WaitForSingleObject(m_computeResumeSignal.Get(), INFINITE);
-			}
+		//while (!m_terminateThread)
+		//{
+		//	if (m_suspendThread)
+		//	{
+		//		(void)WaitForSingleObject(m_computeResumeSignal.Get(), INFINITE);
+		//	}
 
-			if (m_usingAsyncCompute)
-			{
-					if (m_suspendThread)
-					{
-						(void)WaitForSingleObject(m_computeResumeSignal.Get(), INFINITE);
-					}
+		//	if (m_usingAsyncCompute)
+		//	{
+		//			if (m_suspendThread)
+		//			{
+		//				(void)WaitForSingleObject(m_computeResumeSignal.Get(), INFINITE);
+		//			}
 
-					// input is mortons [dont wanna deal with Particles here really]
-					// sort mortons [output: sortedIndex]
-					// csStarterCount perpage count
-						// count starters per page (Morton code differs from previous particle, OR force one if no starters in row )
-								// ^[latter should be an extreme case (32+ particles in a cell), forcing will cause two compacter clist entries with identical hash])
-						// count left-leading non-starters per page
-					//csCreateCellList clist prefix sum-compact-scatter
-						// load starters per page, prefix sum it (every group does this)
-						// prefix sum on clist (each page separately), add perpage preceding sum
-						// if starter
-							// compact: scatter write to cbegin (prefixsum position -> original location)
-							// write clength
-								//count left-leading non-starter ballot bits to shared mem
-								//count right-trailing non-starter ballot bits, add neighbor's leading, or next page #leading
-							//  - also output: hlist (hashes of compacted clist entries)
-					// sort hlist, sort cstart+clength along
-					// perpage leading nonstarter count for hlist
-					// get hstart ( hashcode -> where it begins in hlist ), hlegth, embed
-						
-					// UAVS
-					// u0: mortons in
-					// u1: indices in
-					// u2: sorted indices
-					// u3: sorted mortons
-					// u4: #starters per page | #leading non-starters per page
-					// u5: hlist
-					// u6: cbegin | clength
-					// u7: sorted cbegin
-					// u8: sorted hlist
-					// u9: h: #starters per page | #leading non-starters pp
-					// ua: embedflag: hstart | hlength OR cbegin | clength
+		//			// input is mortons [dont wanna deal with Particles here really]
+		//			// sort mortons [output: sortedIndex]
+		//			// csStarterCount perpage count
+		//				// count starters per page (Morton code differs from previous particle, OR force one if no starters in row )
+		//						// ^[latter should be an extreme case (32+ particles in a cell), forcing will cause two compacter clist entries with identical hash])
+		//				// count left-leading non-starters per page
+		//			//csCreateCellList clist prefix sum-compact-scatter
+		//				// load starters per page, prefix sum it (every group does this)
+		//				// prefix sum on clist (each page separately), add perpage preceding sum
+		//				// if starter
+		//					// compact: scatter write to cbegin (prefixsum position -> original location)
+		//					// write clength
+		//						//count left-leading non-starter ballot bits to shared mem
+		//						//count right-trailing non-starter ballot bits, add neighbor's leading, or next page #leading
+		//					//  - also output: hlist (hashes of compacted clist entries)
+		//			// sort hlist, sort cstart+clength along
+		//			// perpage leading nonstarter count for hlist
+		//			// get hstart ( hashcode -> where it begins in hlist ), hlegth, embed
+		//				
+		//			// UAVS
+		//			// u0: mortons in
+		//			// u1: indices in
+		//			// u2: sorted indices
+		//			// u3: sorted mortons
+		//			// u4: #starters per page | #leading non-starters per page
+		//			// u5: hlist
+		//			// u6: cbegin | clength
+		//			// u7: sorted cbegin
+		//			// u8: sorted hlist
+		//			// u9: h: #starters per page | #leading non-starters pp
+		//			// ua: embedflag: hstart | hlength OR cbegin | clength
 
-					ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
-					m_computeCommandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
+		//			ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
+		//			m_computeCommandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
-					resourceState = ResourceState_Computing;
+		//			resourceState = ResourceState_Computing;
 
-					mortonSort.populate(m_computeCommandList);
+		//			mortonSort.populate(m_computeCommandList);
 
-					// close and execute the command list
-					m_computeCommandList->Close();
-					ID3D12CommandList* tempList = m_computeCommandList.Get();
-					m_computeCommandQueue->ExecuteCommandLists(1, &tempList);
+		//			// close and execute the command list
+		//			m_computeCommandList->Close();
+		//			ID3D12CommandList* tempList = m_computeCommandList.Get();
+		//			m_computeCommandQueue->ExecuteCommandLists(1, &tempList);
 
-					const uint64_t fence = m_computeFenceValue++;
-					m_computeCommandQueue->Signal(m_computeFence.Get(), fence);
-					if (m_computeFence->GetCompletedValue() < fence)								// block until async compute has completed using a fence
-					{
-						m_computeFence->SetEventOnCompletion(fence, m_computeFenceEvent.Get());
-						WaitForSingleObject(m_computeFenceEvent.Get(), INFINITE);
-					}
-					resourceState = ResourceState_Computed;						// signal the buffer is now ready for render thread to use
+		//			const uint64_t fence = m_computeFenceValue++;
+		//			m_computeCommandQueue->Signal(m_computeFence.Get(), fence);
+		//			if (m_computeFence->GetCompletedValue() < fence)								// block until async compute has completed using a fence
+		//			{
+		//				m_computeFence->SetEventOnCompletion(fence, m_computeFenceEvent.Get());
+		//				WaitForSingleObject(m_computeFenceEvent.Get(), INFINITE);
+		//			}
+		//			resourceState = ResourceState_Computed;						// signal the buffer is now ready for render thread to use
 
-					m_computeAllocator->Reset();
-					m_computeCommandList->Reset(m_computeAllocator.Get(), nullptr);
+		//			m_computeAllocator->Reset();
+		//			m_computeCommandList->Reset(m_computeAllocator.Get(), nullptr);
 
-					break;
-				//}
-				//else
-				//{
-				//	SwitchToThread();
-				//}
-			}
-			else
-			{
-				SwitchToThread();
-			}
-		}
+		//			break;
+		//		//}
+		//		//else
+		//		//{
+		//		//	SwitchToThread();
+		//		//}
+		//	}
+		//	else
+		//	{
+		//		SwitchToThread();
+		//	}
+		//}
 	}
 };
 

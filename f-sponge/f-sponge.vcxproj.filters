@@ -142,12 +142,6 @@
     <FxCompile Include="Shaders\csAnimateControlParticles.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csControlledFluidSimulation.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\csFluidSimulation.hlsl">
-      <Filter>Shaders\Animation</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\csMortonHash.hlsl">
       <Filter>Shaders\Animation</Filter>
     </FxCompile>
@@ -397,7 +391,21 @@
     <FxCompile Include="Shaders\csCreateHashList.hlsl">
       <Filter>Shaders\Cell</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl" />
+    <FxCompile Include="Shaders\csFluidSimulationFinal.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationForces.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationForcesControlled.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csFluidSimulationMassPress.hlsl">
+      <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl">
+      <Filter>Shaders\PBD</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">
@@ -441,6 +449,9 @@
     </None>
     <None Include="Shaders\hhash.hlsli">
       <Filter>Shaders\Cell</Filter>
+    </None>
+    <None Include="Shaders\fluid.hlsli">
+      <Filter>Shaders\Animation</Filter>
     </None>
   </ItemGroup>
 </Project>

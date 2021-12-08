@@ -4,12 +4,13 @@
 
 #define pi 3.1415
 
-StructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<float4> controlPositions;
 Buffer<uint> controlParticleCounter;
 
-StructuredBuffer<Particle> particles;
+StructuredBuffer<float4> positions;
+StructuredBuffer<float4> velocities;
 
-RWStructuredBuffer<float4> velocity;
+RWStructuredBuffer<float4> controlVelocities;
 
 float viscositySmoothingKernelLaplace(float3 deltaPos, float supportRadius)
 {
@@ -44,17 +45,21 @@ void csPBDVelocityFilter(uint3 DTid : SV_GroupID) {
 			{
 				//if (i != tid)
 				{
-					float3 deltaPos = controlParticles[tid].position - particles[i].position;
+					//float3 deltaPos = positions[tid].xyz - positions[i].xyz;
+					//viscosityForce += (velocities[i].xyz - velocities[tid].xyz) * (massPerParticle / massDensities[i]) * viscositySmoothingKernelLaplace(deltaPos, supportRadius_w);
+
+					float3 deltaPos = controlPositions[tid].xyz - positions[i].xyz;
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * (massPerParticle / particles[i].massDensity) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
 					//viscosityForce += (particles[i].velocity - velocity[tid].xyz) * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
-					viscosityForce += particles[i].velocity * viscositySmoothingKernelLaplace(deltaPos, supportRadius);
+					//viscosityForce += (velocities[i].xyz - controlVelocities[tid].xyz) * viscositySmoothingKernelLaplace(deltaPos, supportRadius) * 0.0000000002;
+					viscosityForce += (velocities[i].xyz - controlVelocities[tid].xyz) * viscositySmoothingKernelLaplace(deltaPos, supportRadius) * 0.0000000004;
 
 				}
 			}
 			viscosityForce *= viscosity;
 		}
 
-		velocity[tid].xyz += viscosityForce * 0.000000001;
+		controlVelocities[tid].xyz += viscosityForce;
 		//velocity[tid].xyz += float3 (0.0, 0.1, 0.0);
 
 	}

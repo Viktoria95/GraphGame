@@ -36,7 +36,7 @@ void main()
 #include "particle.hlsli"
 #include "PBD.hlsli"
 
-RWStructuredBuffer<ControlParticle> controlParticles;
+RWStructuredBuffer<float4> controlPositions;
 Buffer<uint> controlParticleCounter;
 StructuredBuffer<float4> newPos;
 RWStructuredBuffer<float4> velocity;
@@ -47,8 +47,8 @@ void csPBDFinalUpdate(uint3 DTid : SV_GroupID) {
 
 	if (tid < controlParticleCounter[0]) {
 
-		velocity[tid].xyz = (newPos[tid].xyz - controlParticles[tid].position.xyz) / dt;
-		controlParticles[tid].position.xyz = newPos[tid].xyz;
+		velocity[tid].xyz = (newPos[tid].xyz - controlPositions[tid].xyz) / dt;
+		controlPositions[tid].xyz = newPos[tid].xyz;
 		velocity[tid].xyz *= 0.9;
 	}
 }

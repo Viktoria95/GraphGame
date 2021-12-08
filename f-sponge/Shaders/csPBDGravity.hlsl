@@ -38,7 +38,7 @@ void main()
 #include "particle.hlsli"
 #include "PBD.hlsli"
 
-StructuredBuffer<ControlParticle> controlParticles;
+StructuredBuffer<float4> controlPositions;
 Buffer<uint> controlParticleCounter;
 RWStructuredBuffer<float4> newPos;
 RWStructuredBuffer<float4> velocity;
@@ -51,6 +51,6 @@ void csPBDGravity(uint3 DTid : SV_GroupID) {
 		const float3 grav = float3(0.0, -0.98, 0.0);
 
 		velocity[tid].xyz += grav * dt;
-		newPos[tid].xyz = controlParticles[tid].position.xyz + velocity[tid].xyz * dt;
+		newPos[tid].xyz = controlPositions[tid].xyz + velocity[tid].xyz * dt;
 	}
 }
