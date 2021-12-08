@@ -10,8 +10,11 @@
 
 //#define controlParticleCount 512
 
+#define boundarySide_Fluid 0.3
+#define boundaryBottom_Fluid 0.1
+#define boundaryTop_Fluid 1.0
 
-#define boundarySide 0.3
+#define boundarySide 0.4
 #define boundaryBottom 0.0
 #define boundaryTop 1.0
 

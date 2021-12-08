@@ -8,7 +8,9 @@ StructuredBuffer<float4> velocities;
 StructuredBuffer<float> massDensities;
 StructuredBuffer<float> pressures;
 RWStructuredBuffer<float4> particleForce;
-StructuredBuffer<ControlParticle> controlParticles;
+RWStructuredBuffer<float> frictions;
+StructuredBuffer<float4> controlPositions;
+StructuredBuffer<float> controlPressureRatios;
 Buffer<uint> controlParticleCounter;
 
 cbuffer controlParamsCB
@@ -98,13 +100,25 @@ void csFluidSimulationForcesControlled(uint3 DTid : SV_GroupID, uint3 GTid : SV_
 		{
 			//if (i != tid && controlParticles[i].pressure == 1.0)
 			{
-				float3 deltaPos = positions[tid].xyz - controlParticles[i].position + float3 (0, controlParams[1].w, 0);
+				float3 deltaPos = positions[tid].xyz - controlPositions[i].xyz + float3 (0, controlParams[1].w, 0);
 
 				//controlForce += 0.9 * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 0.8);
-				controlForce += controlParticles[i].controlPressureRatio * 0.9 * massDensities[i] * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 1.2);
+				controlForce += controlPressureRatios[i] * 0.9 * massDensities[i] * pressureSmoothingKernelGradient(deltaPos, supportRadius_w * 1.2);
 			}
 		}
 	}
+
+	frictions[tid] = 1.0 - min (length (controlForce)/10.0,0.5);
+	/*
+	if (length(controlForce) > 0.01)
+	{
+		frictions[tid] = 0.5;
+	}
+	else
+	{
+		frictions[tid] = 1.0;
+	}
+	*/
 
 	float controlAmplitude = length(controlForce);
 	if (controlAmplitude > 0.001)

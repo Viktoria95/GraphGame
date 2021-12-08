@@ -77,6 +77,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleHashBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleHashSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleHashUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleFrictionBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleFrictionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFrictionUAV;
 
 	// Control Particle
 	Microsoft::WRL::ComPtr<ID3D11Buffer> controlParticleDataBuffer;

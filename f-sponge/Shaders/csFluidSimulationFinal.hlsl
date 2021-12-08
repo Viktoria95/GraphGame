@@ -5,6 +5,7 @@
 #include "fluid.hlsli"
 
 StructuredBuffer<float> massDensities;
+StructuredBuffer<float> frictions;
 RWStructuredBuffer<float4> positions;
 RWStructuredBuffer<float4> velocities;
 RWStructuredBuffer<float4> particleForce;
@@ -15,15 +16,52 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 {
 	unsigned int tid = DTid.x * particlePerCore + GTid;
 
+	const float boundaryStiffness = 100.0;
+	const float boundaryForce = 10.0;
+	const float maxBoundaryForce = 100000.0;
+
+	float distBottom = positions[tid].xyz.y - boundaryBottom_Fluid;
+	float boundarySide1 = positions[tid].xyz.x + boundarySide_Fluid;
+	float boundarySide2 = boundarySide_Fluid - positions[tid].xyz.x;
+	float boundarySide3 = positions[tid].xyz.z + boundarySide_Fluid;
+	float boundarySide4 = boundarySide_Fluid - positions[tid].xyz.z;
+
 	float3 sumForce = particleForce[tid].xyz;
+	sumForce.y += min (exp(-distBottom * boundaryStiffness) * boundaryForce, maxBoundaryForce);
+	sumForce.x += min(exp(-boundarySide1 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
+	sumForce.x -= min(exp(-boundarySide2 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
+	sumForce.z += min(exp(-boundarySide3 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
+	sumForce.z -= min(exp(-boundarySide4 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
 
 
 	// V. Apply force
 	if (length (sumForce) > 0.001) // TODO: Why?
 	{
 		velocities[tid].xyz += dt * sumForce / massDensities[tid];
+		velocities[tid].xyz *= frictions[tid];
 		positions[tid].xyz += dt * velocities[tid].xyz;		
 	}
+	/*
+	for (int i = 0; i < particleCount; i++)
+	{
+		if (i != tid)
+		{
+			float dist = length(positions[tid].xyz - positions[i].xyz);
+			if (dist < 0.01) {
+				if (tid < i) {
+					positions[tid].xyz += (float3 (1.0, 1.0, 1.0) * 0.01);
+				}
+				else
+				{
+					positions[tid].xyz -= (float3 (1.0, 1.0, 1.0) * 0.01);
+				}
+			}
+		}
+	}
+	*/
+	//if (length(velocities[tid].xyz) > 3.0) {
+	//	positions[tid].y = 0.8;
+	//}
 
 	// VI. Check boundaries
 
@@ -67,8 +105,8 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	}
 	*/
 
-	const float boundaryEps = 0.001;
-	const float boundaryVelDec = 0.2;
+	const float boundaryEps = 0.01;
+	const float boundaryVelDec = 0.5;
 	//const float boundaryVelDec = 0.0;
 
 	float3 radDis = positions[tid].xyz - testMesh[0].pos.xyz;
@@ -79,6 +117,7 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
 		velocities[tid].xyz *= 0.0;
 	}
+	/*
 
 	if (positions[tid].xyz.y < boundaryBottom)
 	{
@@ -121,6 +160,7 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.x *= -1.0;
 	}
+	*/
 }
 
 

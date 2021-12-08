@@ -8,6 +8,7 @@ StructuredBuffer<float4> velocities;
 StructuredBuffer<float> massDensities;
 StructuredBuffer<float> pressures;
 RWStructuredBuffer<float4> particleForce;
+RWStructuredBuffer<float> frictions;
 
 [numthreads(particlePerCore, 1, 1)]
 void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThreadID)
@@ -97,6 +98,8 @@ void csFluidSimulationForces (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThre
 	sumForce = pressureForce + viscosityForce + surfaceTensionForce + gravitationalForce;
 
 	particleForce[tid].xyz = sumForce;
+
+	frictions[tid] = 1.0;
 }
 
 
