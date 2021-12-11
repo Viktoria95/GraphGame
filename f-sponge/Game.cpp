@@ -34,6 +34,8 @@ const unsigned int linkbufferSizePerPixel = 256;
 const unsigned int sbufferSizePerPixel = 512;
 const unsigned int hashCount = 13;
 constexpr unsigned int PBDGrideSize = 6;
+constexpr unsigned int InactiveControlLayers = 1; // For both cube
+
 //const Egg11::Math::float3 PBDGrideTrans = Egg11::Math::float3(0.0, 0.5, 0.0);
 //const Egg11::Math::float4x4 PBDGrideTrans = Egg11::Math::float4x4::translation(float3(0.0, 0.5, 0.0)) * Egg11::Math::float4x4::rotation(float3(1.0, 1.0, 1.0).normalize (), 3.14/2);
 
@@ -857,8 +859,17 @@ void Game::CreateControlParticles()
 						defaultPos = defaultPos * PBDGrideTrans;
 						cp.position = defaultPos.xyz;
 
-
-						cp.controlPressureRatio = 1.0;
+						if (i < InactiveControlLayers || i > PBDGrideSize - 1 - InactiveControlLayers ||
+							j < InactiveControlLayers || j > PBDGrideSize - 1 - InactiveControlLayers ||
+							k < InactiveControlLayers || k > PBDGrideSize - 1 - InactiveControlLayers)
+						{
+							cp.controlPressureRatio = 0.0;
+						}
+						else
+						{
+							cp.controlPressureRatio = 1.0;
+						}
+						
 						cp.temp = 0.0f;
 						//controlParticles.push_back(cp);
 						uint32_t arrayIndex = n * PBDGrideSize * PBDGrideSize * PBDGrideSize + i * PBDGrideSize * PBDGrideSize + j * PBDGrideSize + k;
@@ -1326,7 +1337,7 @@ void Game::CreateControlParticles()
 		D3D11_SUBRESOURCE_DATA initialParticleData;
 		std::vector<float> initData;
 		for (const auto& cp : controlParticles) {
-			initData.push_back(1.0);
+			initData.push_back(cp.controlPressureRatio);
 		}
 		initialParticleData.pSysMem = &initData[0];
 
