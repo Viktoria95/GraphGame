@@ -33,9 +33,11 @@ float4 psSponge(VsosTrafo input) : SV_Target
 	float3 step = v / v.z * bumpMax;
 	step *= 0.5;
 	float3 ptex = float3(input.texCoord, 0) - step;
+
+	float bumpHeight;
 	for (int i = 0; i < 16; i++) {
 		step *= 0.5;
-		float bumpHeight = bumpTex.Sample(ss, ptex).r * bumpMax;
+		bumpHeight = bumpTex.Sample(ss, ptex).r * bumpMax;
 		if (bumpHeight < bumpMax + ptex.z)
 			ptex -= step;
 		else
@@ -57,7 +59,8 @@ float4 psSponge(VsosTrafo input) : SV_Target
 	float3x3 tbn = { input.tangent, input.binormal, input.normal };
 	float3 worldNormal = normalize(mul(n, tbn));
 
-	float eyeDistance = distance(input.worldPos.xyz, eyePos.xyz);
+	float3 reliefPos = input.worldPos.xyz + worldNormal * bumpHeight;
+	float eyeDistance = distance(reliefPos, eyePos.xyz);
 
 	//return float4(
 	//	(kd * ndotl + float3(0.10, 0.10, 0.10) * ndoth) * 0.9
