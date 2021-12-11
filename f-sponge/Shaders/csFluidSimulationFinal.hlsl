@@ -33,6 +33,18 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	sumForce.z += min(exp(-boundarySide3 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
 	sumForce.z -= min(exp(-boundarySide4 * boundaryStiffness) * boundaryForce, maxBoundaryForce);
 
+	float3 radDis = positions[tid].xyz - testMesh[0].pos.xyz;
+	float sphereDist = length(radDis);
+	float3 radNorm = normalize(radDis);
+	if (sphereDist < sphereRadius) {
+		sumForce += radNorm * min(exp(10) * boundaryForce, maxBoundaryForce);
+		//positions[tid].xyz += radDis;
+		//velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
+		//velocities[tid].xyz *= 0.0;
+
+	}
+
+	//sumForce *= 0.0;
 
 	// V. Apply force
 	if (length (sumForce) > 0.001) // TODO: Why?
@@ -66,8 +78,8 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	// VI. Check boundaries
 
 	//const float boundary = 0.07;
-	
 	/*
+	
 	if (positions[tid].xyz.y < boundaryBottom)
 	{
 		positions[tid].xyz.y = boundaryBottom;
@@ -103,12 +115,13 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		positions[tid].xyz.x = -boundarySide;
 		velocities[tid].xyz.x = 0.0;
 	}
+	*
 	*/
-
+	/*
 	const float boundaryEps = 0.01;
 	const float boundaryVelDec = 0.5;
 	//const float boundaryVelDec = 0.0;
-
+	
 	float3 radDis = positions[tid].xyz - testMesh[0].pos.xyz;
 	float sphereDist = length(radDis);
 	float3 radNorm = normalize(radDis);
@@ -117,7 +130,8 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
 		velocities[tid].xyz *= 0.0;
 	}
-	/*
+	
+	
 
 	if (positions[tid].xyz.y < boundaryBottom)
 	{
@@ -161,6 +175,7 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		velocities[tid].xyz.x *= -1.0;
 	}
 	*/
+	
 }
 
 
