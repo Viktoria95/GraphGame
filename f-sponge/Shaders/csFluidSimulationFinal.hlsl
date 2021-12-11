@@ -18,7 +18,9 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 
 	const float boundaryStiffness = 100.0;
 	const float boundaryForce = 10.0;
-	const float maxBoundaryForce = 100000.0;
+	const float maxBoundaryForce = 1000000.0;
+
+	float fluidFriction = frictions[tid];
 
 	float distBottom = positions[tid].xyz.y - boundaryBottom_Fluid;
 	float boundarySide1 = positions[tid].xyz.x + boundarySide_Fluid;
@@ -38,10 +40,7 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	float3 radNorm = normalize(radDis);
 	if (sphereDist < sphereRadius) {
 		sumForce += radNorm * min(exp(10) * boundaryForce, maxBoundaryForce);
-		//positions[tid].xyz += radDis;
-		//velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
-		//velocities[tid].xyz *= 0.0;
-
+		fluidFriction *= 0.25;
 	}
 
 	//sumForce *= 0.0;
@@ -50,7 +49,7 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	if (length (sumForce) > 0.001) // TODO: Why?
 	{
 		velocities[tid].xyz += dt * sumForce / massDensities[tid];
-		velocities[tid].xyz *= frictions[tid];
+		velocities[tid].xyz *= fluidFriction;
 		positions[tid].xyz += dt * velocities[tid].xyz;		
 	}
 	/*
@@ -117,11 +116,12 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 	}
 	*
 	*/
-	/*
+	
 	const float boundaryEps = 0.01;
 	const float boundaryVelDec = 0.5;
+	const float boundaryMult = 1.0;
 	//const float boundaryVelDec = 0.0;
-	
+	/*
 	float3 radDis = positions[tid].xyz - testMesh[0].pos.xyz;
 	float sphereDist = length(radDis);
 	float3 radNorm = normalize(radDis);
@@ -130,51 +130,52 @@ void csFluidSimulationFinal (uint3 DTid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		velocities[tid].xyz = velocities[tid].xyz - radNorm * dot(radNorm, velocities[tid].xyz);
 		velocities[tid].xyz *= 0.0;
 	}
+	*/
 	
 	
 
-	if (positions[tid].xyz.y < boundaryBottom)
+	if (positions[tid].xyz.y < boundaryBottom * boundaryMult)
 	{
 		positions[tid].xyz.y = boundaryBottom + boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.y *= - 1.0;
 	}
 
-	if (positions[tid].xyz.y > boundaryTop)
+	if (positions[tid].xyz.y > boundaryTop * boundaryMult)
 	{
 		positions[tid].xyz.y = boundaryTop - boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.y *= -1.0;
 	}
 
-	if (positions[tid].xyz.z > boundarySide)
+	if (positions[tid].xyz.z > boundarySide * boundaryMult)
 	{
 		positions[tid].xyz.z = boundarySide - boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.z *= -1.0;
 	}
 
-	if (positions[tid].xyz.z < -boundarySide)
+	if (positions[tid].xyz.z < -boundarySide * boundaryMult)
 	{
 		positions[tid].xyz.z = -boundarySide + boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.z *= -1.0;
 	}
 
-	if (positions[tid].xyz.x > boundarySide)
+	if (positions[tid].xyz.x > boundarySide * boundaryMult)
 	{
 		positions[tid].xyz.x = boundarySide - boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.x *= -1.0;
 	}
 
-	if (positions[tid].xyz.x < -boundarySide)
+	if (positions[tid].xyz.x < -boundarySide * boundaryMult)
 	{
 		positions[tid].xyz.x = -boundarySide + boundaryEps;
 		velocities[tid].xyz *= boundaryVelDec;
 		velocities[tid].xyz.x *= -1.0;
 	}
-	*/
+	
 	
 }
 
