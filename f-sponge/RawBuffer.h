@@ -106,7 +106,7 @@ D3D11_RESOURCE_FLAGS d3d11Flags = {D3D11_BIND_UNORDERED_ACCESS};
 
 	}
 
-	void mapReadback() {
+	unsigned int* mapReadback() {
 		D3D12_RANGE readbackBufferRange{ 0, 4 * 32 * 32 * 32 };
 		unsigned int* pReadbackBufferData;
 		readbackBuffer->Map
@@ -115,15 +115,31 @@ D3D11_RESOURCE_FLAGS d3d11Flags = {D3D11_BIND_UNORDERED_ACCESS};
 			&readbackBufferRange,
 			reinterpret_cast<void**>(&pReadbackBufferData)
 		);
-
-		// Code goes here to access the data via pReadbackBufferData.
-
+		return pReadbackBufferData;
+	}
+	void unmapReadback() {
 		D3D12_RANGE emptyRange{ 0, 0 };
 		readbackBuffer->Unmap
 		(
 			0,
 			&emptyRange
 		);
+	}
+
+	void fillRandomMask(uint m) {
+		void* pData;
+		CD3DX12_RANGE range(0, bufferUintSize);
+		uploadBuffer->Map(0, &range, &pData);
+		unsigned int* m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
+		unsigned int* m_arrayDataEnd = m_arrayDataBegin + bufferUintSize;
+
+		for (auto ip = m_arrayDataBegin; ip < m_arrayDataEnd; ip++) {
+			*ip = rand() & m;
+			*ip |= (rand() & m) << 8;
+			*ip |= (rand() & m) << 16;
+			*ip |= (rand() & m) << 24;
+		}
+		uploadBuffer->Unmap(0, &range);
 	}
 
 	void fillRandom() {

@@ -15,48 +15,63 @@ groupshared uint linpipe[32 * 32];
 groupshared uint loutpipe[32];
 groupshared uint outpipe[32];
 groupshared uint inprog[32];
-groupshared uint op;
-groupshared uint outprog;
+//groupshared uint op;
+//groupshared uint outprog;
 
 [RootSignature(SortSig)]
 [numthreads(groupSize, 1, 1)]
 void csMerge( uint3 tid : SV_GroupThreadID)
 {
-	outprog = 0;
+//	outprog = 0;
 	inprog[tid.x] = 0;
 	uint ip = 0x20;
 	//while (WaveActiveAny(inprog[tid.x] < 32 * 32)) {
-	while (outprog < 32 * 32 * 32) {
-		uint emptyPipes = WaveActiveBallot(ip == 0x20 && inprog[tid.x] < 32 * 32).x;
-		while (emptyPipes) {
-			uint emptyPipeIndex = firstbitlow(emptyPipes);
-			uint snoopy = (emptyPipeIndex * 32 * 32 + inprog[emptyPipeIndex] + tid.x) << 2;
-			inpipe[emptyPipeIndex * 32 + tid.x] = input.Load(snoopy);
-//			linpipe[emptyPipeIndex * 32 + tid.x] = inputIndices.Load(snoopy);
-			if (tid.x == emptyPipeIndex) {
-				inprog[emptyPipeIndex] += 32;
-				ip = 0;
+//	while (outprog < 32 /* *32 *32 */) {
+	for (uint iLine = 0; iLine < 32 * 32; iLine++) {
+		for (uint iOp = 0; iOp < 32; iOp++) {
+			uint emptyPipes = WaveActiveBallot(ip == 0x20 && inprog[tid.x] < 32 * 32).x;
+			while (emptyPipes) {
+				uint emptyPipeIndex = firstbitlow(emptyPipes);
+				uint snoopy = (emptyPipeIndex * 32 * 32 + inprog[emptyPipeIndex] + tid.x) << 2;
+				inpipe[emptyPipeIndex * 32 + tid.x] = input.Load(snoopy);
+				//			linpipe[emptyPipeIndex * 32 + tid.x] = inputIndices.Load(snoopy);
+				if (tid.x == emptyPipeIndex) {
+					inprog[emptyPipeIndex] += 32;
+					ip = 0;
+				}
+//				AllMemoryBarrierWithGroupSync();
+				emptyPipes = WaveActiveBallot(ip == 0x20 && inprog[tid.x] < 32 * 32).x;
 			}
-			emptyPipes = WaveActiveBallot(ip == 0x20 && inprog[tid.x] < 32 * 32).x;
-		}
-		DeviceMemoryBarrierWithGroupSync();
-		uint candidate = inpipe[ip | (tid.x << 5)];
-		uint winner = WaveActiveMin(candidate);
-		if (candidate == winner) {
-			if (WaveIsFirstLane()) {
-				outpipe[op] = winner;
-//				loutpipe[op] = linpipe[ip | (tid.x << 5)];
-				loutpipe[op] = ip | (tid.x << 5);
-				op++;
-				ip++;
+//			AllMemoryBarrierWithGroupSync();
+			uint candidate = inpipe[ip | (tid.x << 5)];
+			if (ip > 0x1f && inprog[tid.x] == 32 * 32) {
+				candidate = 0xffffffff;
 			}
+//			GroupMemoryBarrierWithGroupSync();
+			uint winner = WaveActiveMin(candidate);
+//			GroupMemoryBarrierWithGroupSync();
+			if (candidate == winner) {
+				if (WaveIsFirstLane()) {
+					outpipe[iOp] = winner;
+					//				GroupMemoryBarrierWithGroupSync();
+									//				loutpipe[op] = linpipe[ip | (tid.x << 5)];
+									//good di			loutpipe[op] = ip | (tid.x << 5);
+													//op++;
+					ip++;
+				}
+			}
+			//AllMemoryBarrierWithGroupSync();
+			//if (WaveIsFirstLane()) {
+			//	op++;
+			//}
+			//GroupMemoryBarrierWithGroupSync();
+			//}
+			//AllMemoryBarrierWithGroupSync();
 		}
-		if (op == 0x20) {
-			output.Store((outprog + tid.x) << 2, outpipe[tid.x] );
-			outputIndices.Store((outprog + tid.x) << 2, loutpipe[tid.x]);
-			outprog += 0x20;
-			op = 0;
-		}
+		output.Store((iLine * 32 + tid.x) << 2, outpipe[tid.x]);
+		//AllMemoryBarrierWithGroupSync();
+		//			outputIndices.Store((outprog + tid.x) << 2, loutpipe[tid.x]);
 	}
+
 //	output.Store(tid.x, outpipe[tid.x]*/);
 }

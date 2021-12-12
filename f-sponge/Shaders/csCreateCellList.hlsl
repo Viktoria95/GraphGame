@@ -16,6 +16,8 @@ groupshared uint perRowStarterCountsSummed[32];
 [numthreads(rowSize, nRowsPerPage, 1)]
 void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 {
+//	hlist.Store((tid.x << 15 | tid.y << 10 | gid.y) << 2, 0xffffffff);
+
 	if (tid.y == 0) {
 		uint perPageStarterCount = starterCounts.Load(tid.x << 2) & 0xffff;
 		perPageStarterCountsSummed[tid.x] = WavePrefixSum(perPageStarterCount);
@@ -52,7 +54,7 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	}
 	GroupMemoryBarrierWithGroupSync();
 
-	uint compactIndex = tid.x + 1 - nonStartersUpToMe + perRowStarterCountsSummed[tid.y] + perPageStarterCountsSummed[gid.x];
+	uint compactIndex = tid.x - nonStartersUpToMe + perRowStarterCountsSummed[tid.y] + perPageStarterCountsSummed[gid.x];
 
 	uint starterMask = WaveActiveBallot(!meNonstarter).x >> (tid.x + 1);
 	uint clength = firstbitlow(starterMask) + 1;
@@ -61,8 +63,8 @@ void csCreateCellList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 		clength += (tid.y==31) ? starterCounts.Load((gid.x+1)<<2)>>16 : perRowLeadingNonstarterCount[tid.y + 1];
 	}
 	if (!meNonstarter) {
-		cbegin.Store(compactIndex, clength << 16 | initialElementIndex);
-		hlist.Store(compactIndex, hhash(myMorton));
+		cbegin.Store(compactIndex << 2, clength << 16 | initialElementIndex);
+		hlist.Store(compactIndex << 2, hhash(myMorton));
 	}
 
 }

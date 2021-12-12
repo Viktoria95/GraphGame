@@ -2,6 +2,7 @@
 #include "Egg/Common.h"
 #include <Egg/SimpleApp.h>
 #include <d3d11on12.h>
+#include <algorithm>
 
 #include "RawBuffer.h"
 #include "ComputePass.h"
@@ -67,6 +68,8 @@ public:
 		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
 		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
+		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+		createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
 	}
 
 	void recordCopyCommands() {}
@@ -134,10 +137,31 @@ public:
 		//for (auto name : { BUFFERNAMES }) {
 		//	buffers[name].mapReadback();
 		//}
-//		buffers[mortons].mapReadback();
-//		buffers[pins].mapReadback();
-		buffers[sortedPins].mapReadback();
-//		buffers[sortedMortons].mapReadback();
+		{
+			uint* pMortons = buffers[mortons].mapReadback();
+			bool ok = true;
+			for (uint i = 0; i < 32; i++) {
+				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32);
+			}
+			buffers[mortons].unmapReadback();
+		}
+		//		buffers[pins].mapReadback();
+		//		buffers[sortedPins].mapReadback();
+		{
+			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32);
+
+			uint* pMortonStarterCount = buffers[mortonStarters].mapReadback();
+			//TODO verify startercount
+
+			uint* pHlist = buffers[hlist].mapReadback();
+			uint* pCellLut = buffers[cellLut].mapReadback();
+
+			buffers[cellLut].unmapReadback();
+			buffers[hlist].unmapReadback();
+			buffers[mortonStarters].unmapReadback();
+			buffers[sortedMortons].unmapReadback();
+		}
 
 		DX_API("close command list")
 			commandList->Close();
@@ -301,7 +325,7 @@ public:
 			buffers[name].createResources(device, device11on12, handle);
 		}
 
-		buffers[mortons].fillRandom();
+		buffers[mortons].fillRandomMask(0x7);
 
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
 		ComputeShader csLocalSort;
@@ -309,21 +333,21 @@ public:
 		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
 		csMerge.createResources(device, "Shaders/csMerge.cso");
 
-		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, 0, buffers);
-		hashSort.creaseResources(csLocalSort, csMerge, dhStart, 4, buffers);
+		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, 0, dhIncrSize, buffers);
+		hashSort.creaseResources(csLocalSort, csMerge, dhStart, 4, dhIncrSize, buffers);
 
 		ComputeShader csStarterCount;
 		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
-		mortonCountStarters.createResources(csStarterCount, dhStart.Offset(3, dhIncrSize));
-		hashCountStarters.createResources(csStarterCount, dhStart.Offset(6, dhIncrSize));
+		mortonCountStarters.createResources(csStarterCount, dhStart, 3, dhIncrSize, buffers, 2);
+		hashCountStarters.createResources(csStarterCount, dhStart, 6, dhIncrSize, buffers, 2);
 
 		ComputeShader csCreateCellList;
 		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
-		createCellList.createResources(csCreateCellList, dhStart.Offset(3, dhIncrSize));
+		createCellList.createResources(csCreateCellList, dhStart, 3, dhIncrSize, buffers, 4);
 
 		ComputeShader csCreateHashList;
 		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
-		createHashList.createResources(csCreateHashList, dhStart.Offset(8, dhIncrSize));
+		createHashList.createResources(csCreateHashList, dhStart, 8, dhIncrSize, buffers, 2);
 
 		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
 		DX_API("create compute command queue.")

@@ -11,12 +11,12 @@ class WaveSort {
 	D3D12_RESOURCE_BARRIER uavBarriers[4];
 
 public:
-	void creaseResources(ComputeShader localSort, ComputeShader merge, D3D12_GPU_DESCRIPTOR_HANDLE uavHandle, uint uavOffset, 
+	void creaseResources(ComputeShader localSort, ComputeShader merge, CD3DX12_GPU_DESCRIPTOR_HANDLE uavHandle, uint uavOffset, uint dhIncrSize,
 		const std::vector<RawBuffer>& buffers)
 	{
 		this->localSort = localSort;
 		this->merge = merge;
-		this->uavHandle = uavHandle;
+		this->uavHandle = uavHandle.Offset(uavOffset, dhIncrSize);
 		this->uavOffset = uavOffset;
 
 		for (uint i = 0; i < 4; i++) {
@@ -25,7 +25,7 @@ public:
 	}
 
 	void populate(com_ptr<ID3D12GraphicsCommandList> computeCommandList) {
-		localSort.setup(computeCommandList, uavHandle); //TODO offset 
+		localSort.setup(computeCommandList, uavHandle);
 
 		computeCommandList->SetComputeRoot32BitConstant(0, 0, 0);
 		computeCommandList->Dispatch(32, 1, 1);
@@ -52,8 +52,7 @@ public:
 		computeCommandList->Dispatch(32, 1, 1);
 		computeCommandList->ResourceBarrier(2, uavBarriers);
 
-		merge.setup(computeCommandList, uavHandle); //TODO offset
-
+		merge.setup(computeCommandList, uavHandle);
 		computeCommandList->Dispatch(1, 1, 1);
 		computeCommandList->ResourceBarrier(2, &uavBarriers[2]);
 	}
