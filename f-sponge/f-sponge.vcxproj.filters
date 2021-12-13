@@ -406,6 +406,9 @@
     <FxCompile Include="Shaders\csPBDVelocityFilter.hlsl">
       <Filter>Shaders\PBD</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csClearBuffer.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">

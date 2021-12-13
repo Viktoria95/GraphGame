@@ -2,8 +2,8 @@
 #include "hhash.hlsli"
 
 // uav offset @sortedhlist (#8)
-RWByteAddressBuffer starterCounts : register(u0);
-RWByteAddressBuffer sorted : register(u1);
+RWByteAddressBuffer sorted : register(u0);
+RWByteAddressBuffer starterCounts : register(u1);
 RWByteAddressBuffer hbegin : register(u2);
 
 groupshared uint perRowStarterCount[nRowsPerPage];
@@ -58,6 +58,6 @@ void csCreateHashList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 		clength += (tid.y==31) ? starterCounts.Load((gid.x+1)<<2)>>16 : perRowLeadingNonstarterCount[tid.y + 1];
 	}
 	if (!meNonstarter) {
-		hbegin.Store(myMorton, clength << 16 | initialElementIndex);
+		hbegin.Store(myMorton << 2, clength << 16 | initialElementIndex);
 	}
 }

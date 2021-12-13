@@ -39,7 +39,7 @@ protected:
 	com_ptr<ID3D12DescriptorHeap> uavHeap;
 	std::vector<RawBuffer> buffers;
 
-#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, mortonStarters, hlist, cellLut, sortedCellLut, sortedHlist, hashLut
+#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, mortonStarters, hlist, cellLut, sortedCellLut, sortedHlist, hashStarters, hashLut
 
 	enum BufferRoles {
 		BUFFERNAMES
@@ -49,144 +49,112 @@ protected:
 	WaveSort hashSort;
 	ComputePass mortonCountStarters;
 	ComputePass createCellList;
+	ComputePass clearHashList;
 	ComputePass hashCountStarters;
 	ComputePass createHashList;
 public:
 	AsyncComputeApp() :SimpleApp(){}
-	virtual void Update(float dt, float T) override {
-		app11->animate(dt, T);
-	}
 
-	virtual void ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
-		if (uMsg != 18) {
-			app11->processMessage(hWnd, uMsg, wParam, lParam);
-		}
-	}
+	virtual void CreateResources() override {
+		Egg::SimpleApp::CreateResources();
 
-	void recordComputeCommands() {
-		ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
-		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
+		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+		d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 
-		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
-		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
-		createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
-	}
+		auto featl = D3D_FEATURE_LEVEL_11_0;
+		DX_API("create d3d11 device")
+			D3D11On12CreateDevice(
+				device.Get(),
+				d3d11DeviceFlags,
+				nullptr,
+				0,
+				reinterpret_cast<IUnknown**>(commandQueue.GetAddressOf()),
+				1,
+				0,
+				device11.GetAddressOf(),
+				context11.GetAddressOf(),
+				nullptr
+			);
 
-	void recordCopyCommands() {}
+		device11->QueryInterface<ID3D11On12Device>(device11on12.GetAddressOf());
 
-	virtual void PopulateCommandList() override {
+		app11 = Game::Create(device11);
+		app11->createResources();
 
-		copyFenceChain.gpuWait(computeCommandQueue, previousSwapChainBackBufferIndex);
+		uploadFence.createResources(device);
 
-		computeAllocators[swapChainBackBufferIndex]->Reset();
-		auto& computeCommandList = computeCommandLists[swapChainBackBufferIndex];
-		computeCommandList->Reset(computeAllocators[swapChainBackBufferIndex].Get(), nullptr);
+		D3D12_DESCRIPTOR_HEAP_DESC dhd;
+		dhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		dhd.NodeMask = 0;
+		dhd.NumDescriptors = (uint)hashLut + 1; //TODO number of buffers
+		dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		uint dhIncrSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		recordComputeCommands();
+		DX_API("create descriptor heap for uavs")
+			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
 
-		DX_API("close command list")
-			computeCommandLists[swapChainBackBufferIndex]->Close();
-		{
-			// execute compute
-			ID3D12CommandList* ppCommandLists[] = { computeCommandLists[swapChainBackBufferIndex].Get() };
-			computeCommandQueue->ExecuteCommandLists(1, ppCommandLists);
-		}
-		computeFenceChain.signal(computeCommandQueue, swapChainBackBufferIndex);
-
-		copyAllocators[swapChainBackBufferIndex]->Reset();
-		auto& copyCommandList = copyCommandLists[swapChainBackBufferIndex];
-		copyCommandList->Reset(copyAllocators[swapChainBackBufferIndex].Get(), nullptr);
-
-		recordCopyCommands();
-
-		//wait for compute to finish
-		computeFenceChain.gpuWait(commandQueue, swapChainBackBufferIndex);
-
-		DX_API("close command list")
-			copyCommandLists[swapChainBackBufferIndex]->Close();
-		{
-			// execute copy
-			ID3D12CommandList* ppCommandLists[] = { copyCommandLists[swapChainBackBufferIndex].Get() };
-			commandQueue->ExecuteCommandLists(1, ppCommandLists);
-		}
-		copyFenceChain.signal(commandQueue, swapChainBackBufferIndex);
-
-		commandAllocators[swapChainBackBufferIndex]->Reset();
-		auto& commandList = commandLists[swapChainBackBufferIndex];
-		commandList->Reset(commandAllocators[swapChainBackBufferIndex].Get(), nullptr);
-
-		commandList->RSSetViewports(1, &viewPort);
-		commandList->RSSetScissorRects(1, &scissorRect);
-
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[swapChainBackBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), swapChainBackBufferIndex, rtvDescriptorHandleIncrementSize);
-		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvHeap->GetCPUDescriptorHandleForHeapStart());
-		commandList->OMSetRenderTargets(1, &rHandle, FALSE, &dsvHandle);
-
-		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-		commandList->ClearRenderTargetView(rHandle, clearColor, 0, nullptr);
-		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-		//READBACK HERE?
 		for (auto name : { BUFFERNAMES }) {
-			buffers[name].copyBack(commandLists[swapChainBackBufferIndex]);
+			buffers.push_back(RawBuffer(L"rawBuffer"));
+			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
+				uavHeap->GetCPUDescriptorHandleForHeapStart(),
+				name,
+				device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+			buffers[name].createResources(device, device11on12, handle);
 		}
 
-		//TEST HERE
-		//for (auto name : { BUFFERNAMES }) {
-		//	buffers[name].mapReadback();
-		//}
-		{
-			uint* pMortons = buffers[mortons].mapReadback();
-			bool ok = true;
-			for (uint i = 0; i < 32; i++) {
-				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32);
-			}
-			buffers[mortons].unmapReadback();
-		}
-		//		buffers[pins].mapReadback();
-		//		buffers[sortedPins].mapReadback();
-		{
-			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
-			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32);
+		buffers[mortons].fillRandomMask(0x7);
 
-			uint* pMortonStarterCount = buffers[mortonStarters].mapReadback();
-			//TODO verify startercount
+		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
+		ComputeShader csLocalSort;
+		ComputeShader csMerge;
+		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
+		csMerge.createResources(device, "Shaders/csMerge.cso");
 
-			uint* pHlist = buffers[hlist].mapReadback();
-			uint* pCellLut = buffers[cellLut].mapReadback();
+		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers);
+		hashSort.creaseResources(csLocalSort, csMerge, dhStart, hlist, dhIncrSize, buffers);
 
-			buffers[cellLut].unmapReadback();
-			buffers[hlist].unmapReadback();
-			buffers[mortonStarters].unmapReadback();
-			buffers[sortedMortons].unmapReadback();
-		}
+		ComputeShader csStarterCount;
+		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
+		mortonCountStarters.createResources(csStarterCount, dhStart, 3, dhIncrSize, buffers, 2);
+		hashCountStarters.createResources(csStarterCount, dhStart, sortedHlist, dhIncrSize, buffers, 2);
 
-		DX_API("close command list")
-			commandList->Close();
+		ComputeShader csCreateCellList;
+		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
+		createCellList.createResources(csCreateCellList, dhStart, sortedMortons, dhIncrSize, buffers, 4);
 
-		ID3D12CommandList* cLists[] = { commandList.Get() };
-		commandQueue->ExecuteCommandLists(_countof(cLists), cLists);
+		ComputeShader csClearHashList;
+		csClearHashList.createResources(device, "Shaders/csClearBuffer.cso");
+		clearHashList.createResources(csClearHashList, dhStart, hlist, dhIncrSize, buffers, 1);
 
-		device11on12->AcquireWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
-		device11on12->AcquireWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
+		ComputeShader csCreateHashList;
+		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
+		createHashList.createResources(csCreateHashList, dhStart, sortedHlist, dhIncrSize, buffers, 3);
 
-		//		float bg[] = { 1.0f, 0.0f, 0.0f, 0.0f };
-		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
-		app11->setDefaultViews(defaultRtvs11[swapChainBackBufferIndex], defaultDsvs11[swapChainBackBufferIndex]);
-		app11->render(context11);
-		app11->releaseDefaultViews();
+		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
+		DX_API("create compute command queue.")
+			device->CreateCommandQueue(&descCommandQueue, IID_PPV_ARGS(computeCommandQueue.ReleaseAndGetAddressOf()));
 
-		device11on12->ReleaseWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
-		device11on12->ReleaseWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
+		DX_API("create upload command allocator.")
+			device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+				IID_PPV_ARGS(uploadAllocator.ReleaseAndGetAddressOf()));
 
-		context11->Flush();
+		DX_API("create upload command list.")
+			device->CreateCommandList(
+				0,
+				D3D12_COMMAND_LIST_TYPE_DIRECT,
+				uploadAllocator.Get(),
+				nullptr,
+				IID_PPV_ARGS(uploadCommandList.ReleaseAndGetAddressOf()));
 
-		graphicsFenceChain.signal(commandQueue, swapChainBackBufferIndex);
+		buffers[mortons].upload(uploadCommandList);
 
-		WaitForPreviousFrame();
+		DX_API("close command list.")
+			uploadCommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { uploadCommandList.Get() };
+		commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
+		uploadFence.signal(commandQueue, 1);
+		uploadFence.cpuWait();
 	}
 
 	virtual void CreateSwapChainResources() override {
@@ -278,102 +246,158 @@ public:
 		}
 	}
 
-	virtual void CreateResources() override {
-		Egg::SimpleApp::CreateResources();
+	void recordComputeCommands() {
+		ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
+		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
-		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-		d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
+		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+		clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+		createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
+		hashSort.populate(computeCommandLists[swapChainBackBufferIndex]);
+		hashCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+		createHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+	}
 
-		auto featl = D3D_FEATURE_LEVEL_11_0;
-		DX_API("create d3d11 device")
-			D3D11On12CreateDevice(
-				device.Get(),
-				d3d11DeviceFlags,
-				nullptr,
-				0,
-				reinterpret_cast<IUnknown**>(commandQueue.GetAddressOf()),
-				1,
-				0,
-				device11.GetAddressOf(),
-				context11.GetAddressOf(),
-				nullptr
-			);
+	void recordCopyCommands() {}
 
-		device11->QueryInterface<ID3D11On12Device>(device11on12.GetAddressOf());
+	virtual void PopulateCommandList() override {
 
-		app11 = Game::Create(device11);
-		app11->createResources();
+		copyFenceChain.gpuWait(computeCommandQueue, previousSwapChainBackBufferIndex);
 
-		uploadFence.createResources(device);
+		computeAllocators[swapChainBackBufferIndex]->Reset();
+		auto& computeCommandList = computeCommandLists[swapChainBackBufferIndex];
+		computeCommandList->Reset(computeAllocators[swapChainBackBufferIndex].Get(), nullptr);
 
-		D3D12_DESCRIPTOR_HEAP_DESC dhd;
-		dhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		dhd.NodeMask = 0;
-		dhd.NumDescriptors = (uint)hashLut + 1; //TODO number of buffers
-		dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		uint dhIncrSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		recordComputeCommands();
 
-		DX_API("create descriptor heap for uavs")
-			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
+		DX_API("close command list")
+			computeCommandLists[swapChainBackBufferIndex]->Close();
+		{
+			// execute compute
+			ID3D12CommandList* ppCommandLists[] = { computeCommandLists[swapChainBackBufferIndex].Get() };
+			computeCommandQueue->ExecuteCommandLists(1, ppCommandLists);
+		}
+		computeFenceChain.signal(computeCommandQueue, swapChainBackBufferIndex);
 
+		copyAllocators[swapChainBackBufferIndex]->Reset();
+		auto& copyCommandList = copyCommandLists[swapChainBackBufferIndex];
+		copyCommandList->Reset(copyAllocators[swapChainBackBufferIndex].Get(), nullptr);
+
+		recordCopyCommands();
+
+		//wait for compute to finish
+		computeFenceChain.gpuWait(commandQueue, swapChainBackBufferIndex);
+
+		DX_API("close command list")
+			copyCommandLists[swapChainBackBufferIndex]->Close();
+		{
+			// execute copy
+			ID3D12CommandList* ppCommandLists[] = { copyCommandLists[swapChainBackBufferIndex].Get() };
+			commandQueue->ExecuteCommandLists(1, ppCommandLists);
+		}
+		copyFenceChain.signal(commandQueue, swapChainBackBufferIndex);
+
+		commandAllocators[swapChainBackBufferIndex]->Reset();
+		auto& commandList = commandLists[swapChainBackBufferIndex];
+		commandList->Reset(commandAllocators[swapChainBackBufferIndex].Get(), nullptr);
+
+		commandList->RSSetViewports(1, &viewPort);
+		commandList->RSSetScissorRects(1, &scissorRect);
+
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[swapChainBackBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), swapChainBackBufferIndex, rtvDescriptorHandleIncrementSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		commandList->OMSetRenderTargets(1, &rHandle, FALSE, &dsvHandle);
+
+		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+		commandList->ClearRenderTargetView(rHandle, clearColor, 0, nullptr);
+		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+		//READBACK HERE?
 		for (auto name : { BUFFERNAMES }) {
-			buffers.push_back(RawBuffer(L"rawBuffer"));
-			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
-				uavHeap->GetCPUDescriptorHandleForHeapStart(),
-				name,
-				device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-			buffers[name].createResources(device, device11on12, handle);
+			buffers[name].copyBack(commandLists[swapChainBackBufferIndex]);
 		}
 
-		buffers[mortons].fillRandomMask(0x7);
+		//TEST HERE
+		//for (auto name : { BUFFERNAMES }) {
+		//	buffers[name].mapReadback();
+		//}
+		{
+			uint* pMortons = buffers[mortons].mapReadback();
+			bool ok = true;
+			for (uint i = 0; i < 32; i++) {
+				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32);
+			}
+			buffers[mortons].unmapReadback();
+		}
+		//		buffers[pins].mapReadback();
+		//		buffers[sortedPins].mapReadback();
+		{
+			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32);
 
-		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
-		ComputeShader csLocalSort;
-		ComputeShader csMerge;
-		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
-		csMerge.createResources(device, "Shaders/csMerge.cso");
+			uint* pMortonStarterCount = buffers[mortonStarters].mapReadback();
+			//TODO verify startercount
 
-		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, 0, dhIncrSize, buffers);
-		hashSort.creaseResources(csLocalSort, csMerge, dhStart, 4, dhIncrSize, buffers);
+			uint* pHlist = buffers[hlist].mapReadback();
+			uint* pCellLut = buffers[cellLut].mapReadback();
 
-		ComputeShader csStarterCount;
-		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
-		mortonCountStarters.createResources(csStarterCount, dhStart, 3, dhIncrSize, buffers, 2);
-		hashCountStarters.createResources(csStarterCount, dhStart, 6, dhIncrSize, buffers, 2);
+			uint* pSortedHlist = buffers[sortedHlist].mapReadback();
+			uint* pHlistStarters = buffers[hashStarters].mapReadback();
+			uint* pHashLut = buffers[hashLut].mapReadback();
 
-		ComputeShader csCreateCellList;
-		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
-		createCellList.createResources(csCreateCellList, dhStart, 3, dhIncrSize, buffers, 4);
+			buffers[hashLut].unmapReadback();
+			buffers[hashStarters].unmapReadback();
+			buffers[sortedHlist].unmapReadback();
+			buffers[cellLut].unmapReadback();
+			buffers[hlist].unmapReadback();
+			buffers[mortonStarters].unmapReadback();
+			buffers[sortedMortons].unmapReadback();
+		}
 
-		ComputeShader csCreateHashList;
-		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
-		createHashList.createResources(csCreateHashList, dhStart, 8, dhIncrSize, buffers, 2);
+		DX_API("close command list")
+			commandList->Close();
 
-		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
-		DX_API("create compute command queue.")
-			device->CreateCommandQueue(&descCommandQueue, IID_PPV_ARGS(computeCommandQueue.ReleaseAndGetAddressOf()));
+		ID3D12CommandList* cLists[] = { commandList.Get() };
+		commandQueue->ExecuteCommandLists(_countof(cLists), cLists);
 
-		DX_API("create upload command allocator.")
-			device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-				IID_PPV_ARGS(uploadAllocator.ReleaseAndGetAddressOf()));
+		device11on12->AcquireWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
+		device11on12->AcquireWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
 
-		DX_API("create upload command list.")
-			device->CreateCommandList(
-				0,
-				D3D12_COMMAND_LIST_TYPE_DIRECT,
-				uploadAllocator.Get(),
-				nullptr,
-				IID_PPV_ARGS(uploadCommandList.ReleaseAndGetAddressOf()));
+		//		float bg[] = { 1.0f, 0.0f, 0.0f, 0.0f };
+		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
+		app11->setDefaultViews(defaultRtvs11[swapChainBackBufferIndex], defaultDsvs11[swapChainBackBufferIndex]);
+		app11->render(context11);
+		app11->releaseDefaultViews();
 
-		buffers[mortons].upload(uploadCommandList);
+		device11on12->ReleaseWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
+		device11on12->ReleaseWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
 
-		DX_API("close command list.")
-			uploadCommandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { uploadCommandList.Get() };
-		commandQueue->ExecuteCommandLists(1, ppCommandLists);
+		context11->Flush();
 
-		uploadFence.signal(commandQueue, 1);
-		uploadFence.cpuWait();
+		graphicsFenceChain.signal(commandQueue, swapChainBackBufferIndex);
+
+		WaitForPreviousFrame();
+
+	}
+
+	virtual void Resize(int width, int height) override {
+		SimpleApp::Resize(width, height);
+
+		CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
+		context11->RSSetViewports(1, &screenViewport);
+	}
+
+	virtual void Update(float dt, float T) override {
+		app11->animate(dt, T);
+	}
+
+	virtual void ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
+		if (uMsg != 18) {
+			app11->processMessage(hWnd, uMsg, wParam, lParam);
+		}
 	}
 
 	virtual void ReleaseSwapChainResources() {
@@ -413,13 +437,6 @@ public:
 		uavHeap.Reset();
 
 		Egg::SimpleApp::ReleaseResources();
-	}
-
-	virtual void Resize(int width, int height) override {
-		SimpleApp::Resize(width, height);
-
-		CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
-		context11->RSSetViewports(1, &screenViewport);
 	}
 
 };
