@@ -1,5 +1,6 @@
 #include "metaball.hlsli"
-#include "hash.hlsli"
+//to12 #include "hash.hlsli"
+#include "hhash.hlsli"
 
 //to12 StructuredBuffer<uint> hashes;
 //to12 RWByteAddressBuffer hlistBegin;
@@ -34,7 +35,7 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
 
 				uint zIndex = mortonHash(testp);
-				uint zHash = zIndex % hashCount;
+				uint zHash = hhash(zIndex);// % hashCount;
 
 				//zHash = 0;
 
@@ -53,7 +54,7 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
 						if (hashes.Load(pIdx*4) == zIndex) {
-							acc += 0.0001; //to12 *(hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
+							//acc += 0.0001; //to12 *(hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
 							if (metaballTester.testFunction(p, positions[pIdx].xyz, acc, acc) == true)
 							{
 								result = true;
@@ -147,7 +148,7 @@ float3 Grad_HashSimple(float3 p)
 				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
 
 				uint zIndex = mortonHash(testp);
-				uint zHash = zIndex % hashCount;
+				uint zHash = hhash(zIndex);//% hashCount;
 
 				//zHash = 0;
 

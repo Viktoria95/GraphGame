@@ -4769,10 +4769,6 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 //to12		renderLengthHList(context);
 //to12		clearContext(context);
 //to12	}
-	
-	//return;
-
-	
 
 	stepAnimationKey(context);
 
@@ -4942,6 +4938,17 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
 	//context->Unmap(uavCounterReadback.Get(), 0);
 	//auto b = 1;
+
+	// compute mortons
+	uint zeros[2] = { 0, 0 };
+
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(mortonHashShader->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, particleHashUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount, 1, 1);
+
+	clearContext(context);
+
 }
 
 void Game::animate(double dt, double t)

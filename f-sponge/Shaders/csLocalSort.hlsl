@@ -23,7 +23,7 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 	s[flatid] = input.Load(initialElementIndex << 2 );
-	ls[flatid] = initialElementIndex;
+	ls[flatid] = inputIndices.Load(initialElementIndex << 2);  //initialElementIndex;
 	//scan on bit i
 	for (uint i = maskOffset; i < maskOffset+4; i++) {
 		uint imask = 0x1 << i;

@@ -63,6 +63,7 @@ protected:
 
 	WaveSort mortonSort;
 	WaveSort hashSort;
+	ComputePass fillPins;
 	ComputePass mortonCountStarters;
 	ComputePass createCellList;
 	ComputePass clearHashList;
@@ -122,7 +123,6 @@ public:
 
 		app11->createResources();
 
-
 		buffers[mortons].fillRandomMask(0x7);
 
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
@@ -146,6 +146,10 @@ public:
 		ComputeShader csClearHashList;
 		csClearHashList.createResources(device, "Shaders/csClearBuffer.cso");
 		clearHashList.createResources(csClearHashList, dhStart, hashList, dhIncrSize, buffers, 1);
+
+		ComputeShader csFillPins;
+		csFillPins.createResources(device, "Shaders/csFillBufferIndices.cso");
+		fillPins.createResources(csFillPins, dhStart, pins, dhIncrSize, buffers, 1);
 
 		ComputeShader csCreateHashList;
 		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
@@ -271,6 +275,7 @@ public:
 		ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
 		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
+		fillPins.populate(computeCommandLists[swapChainBackBufferIndex]);
 		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
 		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
 		clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
@@ -365,6 +370,7 @@ public:
 
 			uint* pHlist = buffers[hashList].mapReadback();
 			uint* pCellLut = buffers[cellLut].mapReadback();
+			uint* pSortedCellLut = buffers[sortedCellLut].mapReadback();
 
 			uint* pSortedHlist = buffers[sortedHashList].mapReadback();
 			uint* pHlistStarters = buffers[sortedHashPerPageStarterCounts].mapReadback();
@@ -375,6 +381,7 @@ public:
 			buffers[sortedHashPerPageStarterCounts].unmapReadback();
 			buffers[sortedHashList].unmapReadback();
 			buffers[cellLut].unmapReadback();
+			buffers[sortedCellLut].unmapReadback();
 			buffers[hashList].unmapReadback();
 			buffers[sortedMortonPerPageStarterCounts].unmapReadback();
 			buffers[sortedMortons].unmapReadback();
