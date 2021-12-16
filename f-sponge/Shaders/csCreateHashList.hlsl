@@ -1,6 +1,10 @@
 #include "proximity.hlsli"
 #include "hhash.hlsli"
 
+#define ProxySig "RootFlags( 0 )," \
+				"RootConstants(num32BitConstants=1, b0)," \
+                "DescriptorTable(UAV(u0, numDescriptors=3))"
+
 // uav offset @sortedhlist (#8)
 RWByteAddressBuffer sorted : register(u0);
 RWByteAddressBuffer starterCounts : register(u1);

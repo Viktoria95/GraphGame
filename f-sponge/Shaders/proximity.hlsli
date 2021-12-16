@@ -1,7 +1,3 @@
-#define ProxySig "RootFlags( 0 )," \
-				"RootConstants(num32BitConstants=1, b0)," \
-                "DescriptorTable(UAV(u0, numDescriptors=6))" 
-
 uint maskOffset : register(b0);
 					// u0: mortons in
 					// u1: indices in

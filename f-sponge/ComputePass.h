@@ -7,7 +7,6 @@ class ComputePass {
 	D3D12_GPU_DESCRIPTOR_HANDLE uavHandle; //uavHeap->GetGPUDescriptorHandleForHeapStart()
 	D3D12_RESOURCE_BARRIER uavBarriers[16];
 	uint nUavs;
-	uint uavOffset;
 
 public:
 	void createResources(ComputeShader shader, CD3DX12_GPU_DESCRIPTOR_HANDLE uavHandle, uint uavOffset, uint dhIncrSize,

@@ -1,5 +1,9 @@
 #include "proximity.hlsli"
 
+#define ProxySig "RootFlags( 0 )," \
+				"RootConstants(num32BitConstants=1, b0)," \
+                "DescriptorTable(UAV(u0, numDescriptors=2))" 
+
 // sortedMortons => starterCounts
 // uav offset @sortedMortons or @cbegin (#3 or #6)
 RWByteAddressBuffer sorted : register(u0);

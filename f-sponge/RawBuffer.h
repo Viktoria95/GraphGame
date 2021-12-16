@@ -77,7 +77,6 @@ public:
 //not this way				device->CreateSharedHandle(buffer.Get(), NULL, GENERIC_ALL, debugName.c_str(), &sharedBufferHandle);
 // not: use ID3D11Device1::OpenSharedResource1 in d3d11 to get this resource
 
-			//*		does not work for resources?
 			D3D11_RESOURCE_FLAGS d3d11Flags;
 			d3d11Flags.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 			d3d11Flags.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
@@ -91,6 +90,7 @@ public:
 					D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 					IID_PPV_ARGS(wrappedBuffer.GetAddressOf())
 				);
+			device11on12->ReleaseWrappedResources(wrappedBuffer.GetAddressOf(), 1);
 		}
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;

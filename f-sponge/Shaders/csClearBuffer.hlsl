@@ -1,5 +1,9 @@
 #include "proximity.hlsli"
 
+#define ProxySig "RootFlags( 0 )," \
+				"RootConstants(num32BitConstants=1, b0)," \
+                "DescriptorTable(UAV(u0, numDescriptors=1))"
+
 RWByteAddressBuffer buffer : register(u0);
 
 [RootSignature(ProxySig)]

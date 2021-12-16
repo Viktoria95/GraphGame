@@ -93,7 +93,7 @@ void Game::CreateCommon()
 	firstPersonCam->setAspect(windowWidth / windowHeight);
 
 	//billboardsLoadAlgorithm = SBuffer;
-	//billboardsLoadAlgorithm = HashSimple;
+	billboardsLoadAlgorithm = HashSimple;
 	renderMode = Gradient;
 	flowControl = RealisticFlow;
 	controlParticlePlacement = PBD;
@@ -103,7 +103,7 @@ void Game::CreateCommon()
 	metaballFunction = Wyvill;
 	waterShading = SimpleWater;
 
-	billboardsLoadAlgorithm = SBuffer;
+	//billboardsLoadAlgorithm = SBuffer;
 	//renderMode = ControlParticles;
 	//renderMode = Realistic;
 	renderMode = Gradient;
@@ -428,10 +428,11 @@ void Game::CreateParticles()
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+		particleSRVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		particleSRVDesc.BufferEx.FirstElement = 0;
+		particleSRVDesc.BufferEx.Flags = D3D11_BUFFEREX_SRV_FLAG_RAW;
+		particleSRVDesc.BufferEx.NumElements = defaultParticleCount;
 
 		Egg11::ThrowOnFail("Could not create mortons srv.", __FILE__, __LINE__) ^
 //to12			device->CreateShaderResourceView(particleHashBuffer.Get(), &particleSRVDesc, &particleHashSRV);

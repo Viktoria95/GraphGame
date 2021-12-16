@@ -389,11 +389,21 @@ public:
 		device11on12->AcquireWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
 		device11on12->AcquireWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
 
+		device11on12->AcquireWrappedResources(buffers[mortons].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->AcquireWrappedResources(buffers[sortedPins].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->AcquireWrappedResources(buffers[sortedCellLut].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->AcquireWrappedResources(buffers[hashLut].getWrappedBuffer().GetAddressOf(), 1);
+
 		//		float bg[] = { 1.0f, 0.0f, 0.0f, 0.0f };
 		//		context11->ClearRenderTargetView(defaultRtv11[frameIndex].Get(), bg);
 		app11->setDefaultViews(defaultRtvs11[swapChainBackBufferIndex], defaultDsvs11[swapChainBackBufferIndex]);
 		app11->render(context11);
 		app11->releaseDefaultViews();
+
+		device11on12->ReleaseWrappedResources(buffers[hashLut].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->ReleaseWrappedResources(buffers[sortedCellLut].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->ReleaseWrappedResources(buffers[sortedPins].getWrappedBuffer().GetAddressOf(), 1);
+		device11on12->ReleaseWrappedResources(buffers[mortons].getWrappedBuffer().GetAddressOf(), 1);
 
 		device11on12->ReleaseWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
 		device11on12->ReleaseWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
