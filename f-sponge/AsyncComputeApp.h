@@ -15,6 +15,7 @@ class AsyncComputeApp : public Egg::SimpleApp {
 protected:
 	com_ptr<ID3D11On12Device> device11on12;
 	com_ptr<ID3D11Device> device11;
+	com_ptr<ID3D11Device2> device211;
 	com_ptr<ID3D11DeviceContext> context11;
 	std::vector<com_ptr<ID3D11Resource>> renderTargets11;
 	std::vector<com_ptr<ID3D11RenderTargetView>> defaultRtvs11;
@@ -39,11 +40,26 @@ protected:
 	com_ptr<ID3D12DescriptorHeap> uavHeap;
 	std::vector<RawBuffer> buffers;
 
-#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, mortonStarters, hlist, cellLut, sortedCellLut, sortedHlist, hashStarters, hashLut
+#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, sortedMortonPerPageStarterCounts, hashList, cellLut, sortedCellLut, sortedHashList, sortedHashPerPageStarterCounts, hashLut
 
-	enum BufferRoles {
+	enum BufferRole {
 		BUFFERNAMES
 	};
+	static std::wstring bufferToString(BufferRole r) {
+		switch (r) {
+		case mortons: return L"mortons";
+		case pins: return L"pins";
+		case sortedPins: return L"sortedPins";
+		case sortedMortons: return L"sortedMortons";
+		case sortedMortonPerPageStarterCounts: return L"sortedMortonPerPageStarterCounts";
+		case hashList: return L"hashList";
+		case cellLut: return L"cellLut";
+		case sortedCellLut: return L"sortedCellLut";
+		case sortedHashList: return L"sortedHashList";
+		case sortedHashPerPageStarterCounts: return L"sortedHashPerPageStarterCounts";
+		case hashLut: return L"hashLut";
+		}
+	}
 
 	WaveSort mortonSort;
 	WaveSort hashSort;
@@ -77,9 +93,8 @@ public:
 			);
 
 		device11->QueryInterface<ID3D11On12Device>(device11on12.GetAddressOf());
-
-		app11 = Game::Create(device11);
-		app11->createResources();
+		device11->QueryInterface<ID3D11Device2>(device211.GetAddressOf());
+		app11 = Game::Create(device211);
 
 		uploadFence.createResources(device);
 
@@ -94,13 +109,19 @@ public:
 			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
 
 		for (auto name : { BUFFERNAMES }) {
-			buffers.push_back(RawBuffer(L"rawBuffer"));
+			bool sharedWithD3D11 = name == mortons || name == sortedPins || name == sortedCellLut || name == hashLut;
+			std::wstring wname = bufferToString(name);
+			buffers.push_back(RawBuffer(wname, sharedWithD3D11));
 			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
 				uavHeap->GetCPUDescriptorHandleForHeapStart(),
 				name,
 				device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 			buffers[name].createResources(device, device11on12, handle);
+			app11->setSharedResource(wname, buffers[name].getWrappedBuffer());
 		}
+
+		app11->createResources();
+
 
 		buffers[mortons].fillRandomMask(0x7);
 
@@ -111,12 +132,12 @@ public:
 		csMerge.createResources(device, "Shaders/csMerge.cso");
 
 		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers);
-		hashSort.creaseResources(csLocalSort, csMerge, dhStart, hlist, dhIncrSize, buffers);
+		hashSort.creaseResources(csLocalSort, csMerge, dhStart, hashList, dhIncrSize, buffers);
 
 		ComputeShader csStarterCount;
 		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
 		mortonCountStarters.createResources(csStarterCount, dhStart, 3, dhIncrSize, buffers, 2);
-		hashCountStarters.createResources(csStarterCount, dhStart, sortedHlist, dhIncrSize, buffers, 2);
+		hashCountStarters.createResources(csStarterCount, dhStart, sortedHashList, dhIncrSize, buffers, 2);
 
 		ComputeShader csCreateCellList;
 		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
@@ -124,11 +145,11 @@ public:
 
 		ComputeShader csClearHashList;
 		csClearHashList.createResources(device, "Shaders/csClearBuffer.cso");
-		clearHashList.createResources(csClearHashList, dhStart, hlist, dhIncrSize, buffers, 1);
+		clearHashList.createResources(csClearHashList, dhStart, hashList, dhIncrSize, buffers, 1);
 
 		ComputeShader csCreateHashList;
 		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
-		createHashList.createResources(csCreateHashList, dhStart, sortedHlist, dhIncrSize, buffers, 3);
+		createHashList.createResources(csCreateHashList, dhStart, sortedHashList, dhIncrSize, buffers, 3);
 
 		D3D12_COMMAND_QUEUE_DESC descCommandQueue = { D3D12_COMMAND_LIST_TYPE_COMPUTE, 0, D3D12_COMMAND_QUEUE_FLAG_NONE };
 		DX_API("create compute command queue.")
@@ -333,27 +354,29 @@ public:
 			buffers[mortons].unmapReadback();
 		}
 		//		buffers[pins].mapReadback();
-		//		buffers[sortedPins].mapReadback();
+		//		
 		{
+			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
 			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32);
 
-			uint* pMortonStarterCount = buffers[mortonStarters].mapReadback();
+			uint* pMortonStarterCount = buffers[sortedMortonPerPageStarterCounts].mapReadback();
 			//TODO verify startercount
 
-			uint* pHlist = buffers[hlist].mapReadback();
+			uint* pHlist = buffers[hashList].mapReadback();
 			uint* pCellLut = buffers[cellLut].mapReadback();
 
-			uint* pSortedHlist = buffers[sortedHlist].mapReadback();
-			uint* pHlistStarters = buffers[hashStarters].mapReadback();
+			uint* pSortedHlist = buffers[sortedHashList].mapReadback();
+			uint* pHlistStarters = buffers[sortedHashPerPageStarterCounts].mapReadback();
 			uint* pHashLut = buffers[hashLut].mapReadback();
 
+			buffers[sortedPins].unmapReadback();
 			buffers[hashLut].unmapReadback();
-			buffers[hashStarters].unmapReadback();
-			buffers[sortedHlist].unmapReadback();
+			buffers[sortedHashPerPageStarterCounts].unmapReadback();
+			buffers[sortedHashList].unmapReadback();
 			buffers[cellLut].unmapReadback();
-			buffers[hlist].unmapReadback();
-			buffers[mortonStarters].unmapReadback();
+			buffers[hashList].unmapReadback();
+			buffers[sortedMortonPerPageStarterCounts].unmapReadback();
 			buffers[sortedMortons].unmapReadback();
 		}
 

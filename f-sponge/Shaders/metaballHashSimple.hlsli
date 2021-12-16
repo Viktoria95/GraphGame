@@ -2,10 +2,12 @@
 #include "hash.hlsli"
 
 StructuredBuffer<uint> hashes;
-RWByteAddressBuffer hlistBegin;
-RWByteAddressBuffer hlistLength;
-RWByteAddressBuffer clistBegin;
-RWByteAddressBuffer clistLength;
+//to12 RWByteAddressBuffer hlistBegin;
+//to12 RWByteAddressBuffer hlistLength;
+//to12 RWByteAddressBuffer clistBegin;
+//to12 RWByteAddressBuffer clistLength;
+RWByteAddressBuffer cellLut;
+RWByteAddressBuffer hashLut;
 
 bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 {
@@ -35,19 +37,22 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 
 				//zHash = 0;
 
-
-				uint cIdx = hlistBegin.Load(zHash * 4);
-				uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
+				uint hl = hashLut.Load(zHash * 4);
+				uint cIdx = hl & 0xffff; //to12 hlistBegin.Load(zHash * 4);
+				uint cIdxMax = hl + (cIdx >> 16);//to12cIdx + hlistLength.Load(zHash * 4);
 
 				[loop]
 				for (; cIdx < cIdxMax; cIdx++) {
-					uint pIdx = clistBegin.Load(cIdx * 4);
-					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+					//to12 uint pIdx = clistBegin.Load(cIdx * 4);
+					//to12 uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+					uint cl = cellLut.Load(zHash * 4);
+					uint pIdx = cl & 0xffff; //to12 hlistBegin.Load(zHash * 4);
+					uint pIdxMax = cl + (cIdx >> 16);//to12cIdx + hlistLength.Load(zHash * 4);
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
 						if (hashes[pIdx] == zIndex) {
-							acc += 0.0001 * (hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
+							acc += 0.0001; //to12 *(hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
 							if (metaballTester.testFunction(p, positions[pIdx].xyz, acc, acc) == true)
 							{
 								result = true;
@@ -145,14 +150,20 @@ float3 Grad_HashSimple(float3 p)
 
 				//zHash = 0;
 
+				uint hl = hashLut.Load(zHash * 4);
+				uint cIdx = hl & 0xffff; //to12 hlistBegin.Load(zHash * 4);
+				uint cIdxMax = hl + (cIdx >> 16);//to12cIdx + hlistLength.Load(zHash * 4);
 
-				uint cIdx = hlistBegin.Load(zHash * 4);
-				uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
+				//to12 uint cIdx = hlistBegin.Load(zHash * 4);
+				//to12 uint cIdxMax = cIdx + hlistLength.Load(zHash * 4);
 
 				[loop]
 				for (; cIdx < cIdxMax; cIdx++) {
-					uint pIdx = clistBegin.Load(cIdx * 4);
-					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+//					uint pIdx = clistBegin.Load(cIdx * 4);
+//					uint pIdxMax = pIdx + clistLength.Load(cIdx * 4);
+					uint cl = cellLut.Load(zHash * 4);
+					uint pIdx = cl & 0xffff; //to12 hlistBegin.Load(zHash * 4);
+					uint pIdxMax = cl + (cIdx >> 16);//to12cIdx + hlistLength.Load(zHash * 4);
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {

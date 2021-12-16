@@ -50,7 +50,7 @@ namespace Egg11 { namespace Scene
 		Mesh::Mien getMien(const std::string& mienName);
 
 	public:
-		ManagerApp(Microsoft::WRL::ComPtr<ID3D11Device> device): Egg11::App(device){currentCamera=0;}
+		ManagerApp(Microsoft::WRL::ComPtr<ID3D11Device2> device): Egg11::App(device){currentCamera=0;}
 		virtual HRESULT createResources();
 		virtual HRESULT releaseResources();
 

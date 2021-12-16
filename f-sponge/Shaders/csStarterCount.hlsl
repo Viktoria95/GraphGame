@@ -16,7 +16,7 @@ void csStarterCount(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 
-	// TODO: Morton may be hash when sorting hlist
+	// TODO: naming: Morton may be hash when sorting hlist
 	uint myMorton = sorted.Load(initialElementIndex << 2);
 	uint prevMorton = initialElementIndex? sorted.Load((initialElementIndex-1) << 2):0xffffffff ;
 	bool meNonstarter = (myMorton == prevMorton);

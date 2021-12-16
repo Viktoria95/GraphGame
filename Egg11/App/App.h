@@ -6,19 +6,25 @@
 namespace Egg11 {
 	GG_CLASS(App)
 	protected:
-		Microsoft::WRL::ComPtr<ID3D11Device> device;
+		Microsoft::WRL::ComPtr<ID3D11Device2> device;
 //		Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
 		DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
 
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> defaultRenderTargetView;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> defaultDepthStencilView;
 
+		std::map<std::wstring, com_ptr<ID3D11Resource> > sharedHandles;
+
 		SystemEnvironment systemEnvironment;
 
-		App(Microsoft::WRL::ComPtr<ID3D11Device> device):
+		App(Microsoft::WRL::ComPtr<ID3D11Device2> device):
 			device(device) 
 			{}
 	public:
+		void setSharedResource(std::wstring wname, com_ptr<ID3D11Resource> res) {
+			sharedHandles[wname] = res;
+		}
+
 		void setDefaultViews(
 			Microsoft::WRL::ComPtr<ID3D11RenderTargetView> defaultRenderTargetView,
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> defaultDepthStencilView

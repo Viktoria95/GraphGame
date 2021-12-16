@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdarg>
+#include "comdef.h"
 
 void Egg::Internal::Assert(bool trueMeansOk, const char * msgOnFail, ...) {
 	va_list argList;
@@ -38,15 +39,19 @@ Egg::Internal::HResultTester::HResultTester(const char * msg, const char * file,
 
 void Egg::Internal::HResultTester::operator<<(HRESULT hr) {
 	if(FAILED(hr)) {
+		_com_error err(hr);
+		LPCTSTR errMsg = err.ErrorMessage();
+
 		std::ostringstream oss;
-		oss << file << "(" << line << "): " << message;
+		oss << file << "(" << line << "): " << message << std::endl;
+		oss << errMsg;
 		std::string buffer;
 		buffer.resize(1024);
 
 		vsprintf_s(&(buffer.at(0)), 1024, oss.str().c_str(), args);
 		va_end(args);
 
-		MessageBoxA(NULL, buffer.c_str(), "Error!", MB_ICONSTOP | MB_OK);
+		MessageBoxA(NULL, buffer.c_str(), "D3D error", MB_ICONSTOP | MB_OK);
 		exit(-1);
 	}
 	va_end(args);

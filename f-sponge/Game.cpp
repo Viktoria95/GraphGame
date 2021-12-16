@@ -52,7 +52,7 @@ uint32_t changeToArrayIndex(uint32_t x, uint32_t y, uint32_t z, uint32_t n) {
 };
 
 
-Game::Game(Microsoft::WRL::ComPtr<ID3D11Device> device) : Egg11::App(device)
+Game::Game(Microsoft::WRL::ComPtr<ID3D11Device2> device) : Egg11::App(device)
 {
 }
 
@@ -62,6 +62,8 @@ Game::~Game(void)
 
 HRESULT Game::createResources()
 {
+//no	device->OpenSharedResource1(sharedHandles[L"mortons"], __uuidof(ID3D11Resource), (void**)(mortonsBuffer.GetAddressOf()));
+
 	CreateCommon();
 	CreateParticles();
 	CreateControlMesh();
@@ -415,36 +417,38 @@ void Game::CreateParticles()
 		particleBufferDesc.StructureByteStride = sizeof(float);
 		particleBufferDesc.ByteWidth = defaultParticleCount * sizeof(float);
 
-		D3D11_SUBRESOURCE_DATA initialParticleData;
-		void* initData = calloc(sizeof(float), defaultParticleCount);
-		initialParticleData.pSysMem = initData;
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleHashBuffer.GetAddressOf());
-
-		free(initData);
+//to12		D3D11_SUBRESOURCE_DATA initialParticleData;
+//to12		void* initData = calloc(sizeof(float), defaultParticleCount);
+//to12		initialParticleData.pSysMem = initData;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleHashBuffer.GetAddressOf());
+//to12
+//to12		free(initData);
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
 		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
 		particleSRVDesc.Buffer.FirstElement = 0;
 		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(particleHashBuffer.Get(), &particleSRVDesc, &particleHashSRV);
-
+		Egg11::ThrowOnFail("Could not create mortons srv.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(particleHashBuffer.Get(), &particleSRVDesc, &particleHashSRV);
+			device->CreateShaderResourceView(sharedHandles[L"mortons"].Get(), &particleSRVDesc, &particleHashSRV);
 
 		// Unordered Access View
 		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		particleUAVDesc.Buffer.FirstElement = 0;
 		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
+		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+			//to12 D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
 
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(particleHashBuffer.Get(), &particleUAVDesc, &particleHashUAV);
+		Egg11::ThrowOnFail("Could not create mortonsUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(particleHashBuffer.Get(), &particleUAVDesc, &particleHashUAV);
+			device->CreateUnorderedAccessView(sharedHandles[L"mortons"].Get(), &particleUAVDesc, &particleHashUAV);
 	}
 
 	/// Friction
@@ -492,176 +496,78 @@ void Game::CreateParticles()
 
 	/// Hashtables
 	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistDataBuffer.Get(), &particleSRVDesc, &clistSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistDataBuffer.Get(), &particleUAVDesc, &clistUAV);
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, clistDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(clistDataBuffer.Get(), &particleSRVDesc, &clistSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(clistDataBuffer.Get(), &particleUAVDesc, &clistUAV);
+//to12	}
+//to12	{
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, clistLengthDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(clistLengthDataBuffer.Get(), &particleSRVDesc, &clistLengthSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(clistLengthDataBuffer.Get(), &particleUAVDesc, &clistLengthUAV);
 	}
 	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistLengthDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistLengthDataBuffer.Get(), &particleSRVDesc, &clistLengthSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistLengthDataBuffer.Get(), &particleUAVDesc, &clistLengthUAV);
-	}
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistBeginDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistBeginDataBuffer.Get(), &particleSRVDesc, &clistBeginSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistBeginDataBuffer.Get(), &particleUAVDesc, &clistBeginUAV);
-	}
-
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = 1 * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, clistCellCountDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = 1;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(clistCellCountDataBuffer.Get(), &particleSRVDesc, &clistCellCountSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = 1;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(clistCellCountDataBuffer.Get(), &particleUAVDesc, &clistCellCountUAV);
-	}
-
-	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (defaultParticleCount) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, hlistDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(hlistDataBuffer.Get(), &particleSRVDesc, &hlistSRV);
-
-
 		// Unordered Access View
 		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
@@ -669,81 +575,196 @@ void Game::CreateParticles()
 		particleUAVDesc.Buffer.FirstElement = 0;
 		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+		
+		Egg11::ThrowOnFail("Could not create sorted pins UAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(sharedHandles[L"sortedPins"].Get(), &particleUAVDesc, &sortedParticleIndicesUAV);
+		Egg11::ThrowOnFail("Could not create cell lut UAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(sharedHandles[L"sortedCellLut"].Get(), &particleUAVDesc, &cellLutUAV);
+		Egg11::ThrowOnFail("Could not create cell lut UAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(sharedHandles[L"hashLut"].Get(), &particleUAVDesc, &cellLutUAV);
 
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(hlistDataBuffer.Get(), &particleUAVDesc, &hlistUAV);
 	}
 	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, hlistLengthDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = hashCount;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(hlistLengthDataBuffer.Get(), &particleSRVDesc, &hlistLengthSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = hashCount;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(hlistLengthDataBuffer.Get(), &particleUAVDesc, &hlistLengthUAV);
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (defaultParticleCount + 1) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, clistBeginDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(clistBeginDataBuffer.Get(), &particleSRVDesc, &clistBeginSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = defaultParticleCount + 1;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(clistBeginDataBuffer.Get(), &particleUAVDesc, &clistBeginUAV);
+//to12	}
+//to12
+//to12	{
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = 1 * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, clistCellCountDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = 1;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(clistCellCountDataBuffer.Get(), &particleSRVDesc, &clistCellCountSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = 1;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(clistCellCountDataBuffer.Get(), &particleUAVDesc, &clistCellCountUAV);
+//to12	}
+//to12
+//to12	{
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (defaultParticleCount) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, hlistDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(hlistDataBuffer.Get(), &particleSRVDesc, &hlistSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(hlistDataBuffer.Get(), &particleUAVDesc, &hlistUAV);
+//to12	}
+//to12	{
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, hlistLengthDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = hashCount;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(hlistLengthDataBuffer.Get(), &particleSRVDesc, &hlistLengthSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = hashCount;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(hlistLengthDataBuffer.Get(), &particleUAVDesc, &hlistLengthUAV);
 	}
 	{
-		// Data Buffer
-		D3D11_BUFFER_DESC particleBufferDesc;
-		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		particleBufferDesc.CPUAccessFlags = 0;
-		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
-		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
-
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, NULL, hlistBeginDataBuffer.GetAddressOf());
-
-
-		// Shader Resource View
-		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
-		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
-		particleSRVDesc.Buffer.FirstElement = 0;
-		particleSRVDesc.Buffer.NumElements = hashCount;
-
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(hlistBeginDataBuffer.Get(), &particleSRVDesc, &hlistBeginSRV);
-
-
-		// Unordered Access View
-		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
-		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = hashCount;
-		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(hlistBeginDataBuffer.Get(), &particleUAVDesc, &hlistBeginUAV);
+//to12		// Data Buffer
+//to12		D3D11_BUFFER_DESC particleBufferDesc;
+//to12		particleBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+//to12		particleBufferDesc.CPUAccessFlags = 0;
+//to12		particleBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+//to12		particleBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+//to12		particleBufferDesc.StructureByteStride = sizeof(uint32_t);
+//to12		particleBufferDesc.ByteWidth = (hashCount) * sizeof(uint32_t);
+//to12
+//to12		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+//to12			device->CreateBuffer(&particleBufferDesc, NULL, hlistBeginDataBuffer.GetAddressOf());
+//to12
+//to12
+//to12		// Shader Resource View
+//to12		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
+//to12		particleSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+//to12		particleSRVDesc.Format = DXGI_FORMAT_R32_UINT;
+//to12		particleSRVDesc.Buffer.FirstElement = 0;
+//to12		particleSRVDesc.Buffer.NumElements = hashCount;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+//to12			device->CreateShaderResourceView(hlistBeginDataBuffer.Get(), &particleSRVDesc, &hlistBeginSRV);
+//to12
+//to12
+//to12		// Unordered Access View
+//to12		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
+//to12		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+//to12		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+//to12		particleUAVDesc.Buffer.FirstElement = 0;
+//to12		particleUAVDesc.Buffer.NumElements = hashCount;
+//to12		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+//to12
+//to12		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+//to12			device->CreateUnorderedAccessView(hlistBeginDataBuffer.Get(), &particleUAVDesc, &hlistBeginUAV);
 	}
 
 	{
@@ -3313,13 +3334,18 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 		context->PSSetShaderResources(3, 1, particleHashSRV.GetAddressOf());
 
-		ID3D11UnorderedAccessView* ppUnorderedAccessViews[4];
-		ppUnorderedAccessViews[0] = hlistBeginUAV.Get();
-		ppUnorderedAccessViews[1] = hlistLengthUAV.Get();
-		ppUnorderedAccessViews[2] = clistBeginUAV.Get();
-		ppUnorderedAccessViews[3] = clistLengthUAV.Get();
-		uint t[4] = { 0, 0, 0, 0 };
-		context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, 1, 4, ppUnorderedAccessViews, t);
+//to12		ID3D11UnorderedAccessView* ppUnorderedAccessViews[4];
+//to12		ppUnorderedAccessViews[0] = hlistBeginUAV.Get();
+//to12		ppUnorderedAccessViews[1] = hlistLengthUAV.Get();
+//to12		ppUnorderedAccessViews[2] = clistBeginUAV.Get();
+//to12		ppUnorderedAccessViews[3] = clistLengthUAV.Get();
+		ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
+		ppUnorderedAccessViews[0] = cellLutUAV.Get();
+		ppUnorderedAccessViews[1] = hashLutUAV.Get();
+//to12		uint t[4] = { 0, 0, 0, 0 };
+		uint t[2] = { 0, 0 };
+///to12		context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, 1, 4, ppUnorderedAccessViews, t);
+		context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, 1, 2, ppUnorderedAccessViews, t);
 	}
 
 	switch (billboardsLoadAlgorithm)
@@ -3491,6 +3517,7 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
 }
 
+/*to12
 void Game::renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	uint zeros[2] = { 0, 0 };
 
@@ -3662,7 +3689,7 @@ void Game::renderLengthHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	context->CSSetUnorderedAccessViews(0, 3, ppUnorderedAccessViews, zeros);
 	context->Dispatch(hashCount, 1, 1);
 }
-
+to12*/
 void Game::renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	uint zeros[1] = { 0 };
@@ -3715,7 +3742,9 @@ void Game::renderControlMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	float4x4 matrices[4];
 	matrices[0] = float4x4::identity;
 	matrices[1] = float4x4::identity;
-	matrices[2] = float4x4::scaling(float3(controlMeshScale, controlMeshScale, controlMeshScale)) * fillCam->getViewMatrix()/* * fillCam->getProjMatrix()*/;
+	matrices[2] = float4x4::scaling(float3(controlMeshScale, controlMeshScale, controlMeshScale)) * fillCam->getViewMatrix()
+		// * fillCam->getProjMatrix();
+		;
 	matrices[3] = float4x4::identity;
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
@@ -4708,37 +4737,37 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	clearRenderTarget(context);
 
 	// Hash
-	if (billboardsLoadAlgorithm == HashSimple)
-	{
-		// Sort
-		renderSort(context);
-		clearContext(context);
-
-		// CLists
-		renderInitCList(context);
-		clearContext(context);
-
-		renderNonZeroPrefix(context);
-		clearContext(context);
-		
-		renderCompactCList(context);
-		clearContext(context);
-
-		renderLengthCList(context);
-		clearContext(context);
-
-		renderInitHList(context);
-		clearContext(context);
-
-		renderSortCList(context);
-		clearContext(context);
-
-		renderBeginHList(context);
-		clearContext(context);
-
-		renderLengthHList(context);
-		clearContext(context);
-	}
+//to12	if (billboardsLoadAlgorithm == HashSimple)
+//to12	{
+//to12		// Sort
+//to12		renderSort(context);
+//to12		clearContext(context);
+//to12
+//to12		// CLists
+//to12		renderInitCList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderNonZeroPrefix(context);
+//to12		clearContext(context);
+//to12		
+//to12		renderCompactCList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderLengthCList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderInitHList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderSortCList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderBeginHList(context);
+//to12		clearContext(context);
+//to12
+//to12		renderLengthHList(context);
+//to12		clearContext(context);
+//to12	}
 	
 	//return;
 

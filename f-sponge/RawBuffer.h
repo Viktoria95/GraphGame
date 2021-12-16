@@ -9,12 +9,18 @@ class RawBuffer {
 	com_ptr<ID3D12Resource>     uploadBuffer;
 	com_ptr<ID3D12Resource>		readbackBuffer;
 	com_ptr<ID3D11Resource>		wrappedBuffer;
+//no	HANDLE sharedBufferHandle;
 	uint bufferUintSize;
 	std::wstring debugName;
+	bool sharedWithD3D11;
 public:
+//no	HANDLE getSharedHandle() { return sharedBufferHandle; }
+	com_ptr<ID3D11Resource>		getWrappedBuffer() { return wrappedBuffer; }
+
 	RawBuffer(
 		std::wstring debugName,
-		uint bufferUintSize = 32 * 32 * 32):debugName(debugName), bufferUintSize(bufferUintSize) {
+		bool sharedWithD3D11 = false,
+		uint bufferUintSize = 32 * 32 * 32):debugName(debugName), sharedWithD3D11(sharedWithD3D11), bufferUintSize(bufferUintSize) {
  
 	}
 
@@ -28,7 +34,7 @@ public:
 		DX_API("commited resource")
 			device->CreateCommittedResource(
 				&defaultHeapProperties,
-				//D3D12_HEAP_FLAG_SHARED,  TODO use this for 11 interop
+				//not needed for d3d11 interop, do not believe bogus warning: sharedWithD3D11?D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE, 
 				D3D12_HEAP_FLAG_NONE,
 				&bufferDesc,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
@@ -66,19 +72,26 @@ public:
 		uploadBuffer->SetName((debugName + L" [UPLOAD]").c_str());
 
 		//TODO share
-//		HANDLE sharedBufferHandle;
-//		device->CreateSharedHandle(buffer.Get(), NULL, GENERIC_ALL, debugName.c_str(), &sharedBufferHandle);
-		// use ID3D11Device1::OpenSharedResource1 in d3d11 to get this resource
-/*		does not work for resources?
-D3D11_RESOURCE_FLAGS d3d11Flags = {D3D11_BIND_UNORDERED_ACCESS};
-		DX_API("Failed to wrap 12 back buffer for d3d11")
-			device11on12->CreateWrappedResource(
-				buffer.Get(),
-				&d3d11Flags,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-				IID_PPV_ARGS(wrappedBuffer.GetAddressOf())
-			);*/
+		if (sharedWithD3D11) {
+//not this way			DX_API("create shared handle")
+//not this way				device->CreateSharedHandle(buffer.Get(), NULL, GENERIC_ALL, debugName.c_str(), &sharedBufferHandle);
+// not: use ID3D11Device1::OpenSharedResource1 in d3d11 to get this resource
+
+			//*		does not work for resources?
+			D3D11_RESOURCE_FLAGS d3d11Flags;
+			d3d11Flags.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+			d3d11Flags.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+			d3d11Flags.CPUAccessFlags = 0;
+			d3d11Flags.StructureByteStride = 0;
+			DX_API("wrap 12 uav buffer for d3d11")
+				device11on12->CreateWrappedResource(
+					buffer.Get(),
+					&d3d11Flags,
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+					IID_PPV_ARGS(wrappedBuffer.GetAddressOf())
+				);
+		}
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 		uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;

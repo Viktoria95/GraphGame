@@ -34,7 +34,7 @@ void csMerge( uint3 tid : SV_GroupThreadID)
 				uint emptyPipeIndex = firstbitlow(emptyPipes);
 				uint snoopy = (emptyPipeIndex * 32 * 32 + inprog[emptyPipeIndex] + tid.x) << 2;
 				inpipe[emptyPipeIndex * 32 + tid.x] = input.Load(snoopy);
-				//			linpipe[emptyPipeIndex * 32 + tid.x] = inputIndices.Load(snoopy);
+				linpipe[emptyPipeIndex * 32 + tid.x] = inputIndices.Load(snoopy);
 				if (tid.x == emptyPipeIndex) {
 					inprog[emptyPipeIndex] += 32;
 					ip = 0;
@@ -54,7 +54,7 @@ void csMerge( uint3 tid : SV_GroupThreadID)
 				if (WaveIsFirstLane()) {
 					outpipe[iOp] = winner;
 					//				GroupMemoryBarrierWithGroupSync();
-									//				loutpipe[op] = linpipe[ip | (tid.x << 5)];
+					loutpipe[iOp] = linpipe[ip | (tid.x << 5)];
 									//good di			loutpipe[op] = ip | (tid.x << 5);
 													//op++;
 					ip++;
@@ -69,8 +69,9 @@ void csMerge( uint3 tid : SV_GroupThreadID)
 			//AllMemoryBarrierWithGroupSync();
 		}
 		output.Store((iLine * 32 + tid.x) << 2, outpipe[tid.x]);
+		outputIndices.Store((iLine * 32 + tid.x) << 2, loutpipe[tid.x]);
 		//AllMemoryBarrierWithGroupSync();
-		//			outputIndices.Store((outprog + tid.x) << 2, loutpipe[tid.x]);
+		//outputIndices.Store((outprog + tid.x) << 2, loutpipe[tid.x]);
 	}
 
 //	output.Store(tid.x, outpipe[tid.x]*/);

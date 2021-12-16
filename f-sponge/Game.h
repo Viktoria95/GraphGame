@@ -74,9 +74,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleForceBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleForceSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFroceUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> particleHashBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> particleHashBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleHashSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleHashUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleHashUAV; // view on 12 resource
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleFrictionBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleFrictionSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleFrictionUAV;
@@ -163,28 +163,31 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidShaderResourceView;
 
 	// Hashtables
-	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> clistLengthDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistLengthSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistLengthUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> clistBeginDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistBeginSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistBeginUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> clistCellCountDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistCellCountSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistCellCountUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistLengthDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistLengthSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistLengthUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistBeginDataBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistBeginSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistBeginUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> clistDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> clistLengthDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistLengthSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistLengthUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> clistBeginDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistBeginSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistBeginUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> clistCellCountDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clistCellCountSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clistCellCountUAV;
+//to12
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistLengthDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistLengthSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistLengthUAV;
+//to12	Microsoft::WRL::ComPtr<ID3D11Buffer> hlistBeginDataBuffer;
+//to12	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> hlistBeginSRV;
+//to12	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hlistBeginUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> sortedParticleIndicesUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> cellLutUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> hashLutUAV;
 
 	Egg11::Mesh::Shader::P clistShaderInit;
 	Egg11::Mesh::Shader::P clistShaderCompact;
@@ -326,8 +329,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> bonePositionsBufferCB;
 
 
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mortonsBuffer;
+
 public:
-	Game(Microsoft::WRL::ComPtr<ID3D11Device> device);
+	Game(Microsoft::WRL::ComPtr<ID3D11Device2> device);
 	~Game(void);
 
 	HRESULT createResources();
@@ -371,15 +376,15 @@ public:
 	void renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderSpongeMesh(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderCompactCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderLengthCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderInitHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderSortCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderBeginHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	void renderLengthHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderSort(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderInitCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderNonZeroPrefix(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderCompactCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderLengthCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderInitHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderSortCList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderBeginHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+//to12	void renderLengthHList(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
 	void renderPrefixSum(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	void renderPrefixSumV2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
