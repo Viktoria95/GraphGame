@@ -11,5 +11,5 @@ void csSortParticles( uint3 DTid : SV_DispatchThreadID )
 	uint tid = DTid.x;
 	uint i = sortedPins.Load(tid << 2);
 
-	news[i] = olds[tid];
+	news[tid] = olds[i];
 }
