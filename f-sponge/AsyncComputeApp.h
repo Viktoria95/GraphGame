@@ -64,6 +64,7 @@ protected:
 	WaveSort mortonSort;
 	WaveSort hashSort;
 	ComputePass fillPins;
+	ComputePass fillSortedPins;
 	ComputePass mortonCountStarters;
 	ComputePass createCellList;
 	ComputePass clearHashList;
@@ -123,7 +124,8 @@ public:
 
 		app11->createResources();
 
-		buffers[mortons].fillRandomMask(0x7);
+		//buffers[mortons].fillRandomMask(0x7);
+		buffers[mortons].fillFFFFFFFF();
 
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
 		ComputeShader csLocalSort;
@@ -150,6 +152,7 @@ public:
 		ComputeShader csFillPins;
 		csFillPins.createResources(device, "Shaders/csFillBufferIndices.cso");
 		fillPins.createResources(csFillPins, dhStart, pins, dhIncrSize, buffers, 1);
+		fillSortedPins.createResources(csFillPins, dhStart, sortedPins, dhIncrSize, buffers, 1);
 
 		ComputeShader csCreateHashList;
 		csCreateHashList.createResources(device, "Shaders/csCreateHashList.cso");
@@ -276,6 +279,7 @@ public:
 		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
 		fillPins.populate(computeCommandLists[swapChainBackBufferIndex]);
+		//fillSortedPins.populate(computeCommandLists[swapChainBackBufferIndex]);
 		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
 		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
 		clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
