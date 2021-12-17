@@ -1,10 +1,11 @@
 #include "particle.hlsli"
 
-RWByteAddressBuffer sortedPins;
 StructuredBuffer<float4> olds;
 RWStructuredBuffer<float4> news;
+RWByteAddressBuffer sortedPins;
 
-[numthreads(32, 32, 1)]
+//particlePerCore
+[numthreads(128, 1, 1)]
 void csSortParticles( uint3 DTid : SV_DispatchThreadID )
 {
 	uint tid = DTid.x;

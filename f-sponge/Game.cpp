@@ -251,8 +251,10 @@ void Game::CreateParticles()
 		}
 		initialParticleData.pSysMem = &posInitData[0];
 
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particlePositionBuffer.GetAddressOf());
+		for (int i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleBufferDesc, &initialParticleData, particlePositionBuffer[i].GetAddressOf());
+		}
 
 		// Shader Resource View
 		D3D11_SHADER_RESOURCE_VIEW_DESC particleSRVDesc;
@@ -261,8 +263,10 @@ void Game::CreateParticles()
 		particleSRVDesc.Buffer.FirstElement = 0;
 		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(particlePositionBuffer.Get(), &particleSRVDesc, &particlePositionSRV);
+		for (uint i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(particlePositionBuffer[i].Get(), &particleSRVDesc, &particlePositionSRV[i]);
+		}
 
 
 		// Unordered Access View
@@ -272,9 +276,11 @@ void Game::CreateParticles()
 		particleUAVDesc.Buffer.FirstElement = 0;
 		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
-
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(particlePositionBuffer.Get(), &particleUAVDesc, &particlePositionUAV);
+		
+		for (int i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(particlePositionBuffer[i].Get(), &particleUAVDesc, &particlePositionUAV[i]);
+		}
 	}
 
 	/// Velocity
@@ -292,8 +298,10 @@ void Game::CreateParticles()
 		void* initData = calloc(sizeof(float), defaultParticleCount * 4);
 		initialParticleData.pSysMem = initData;
 
-		Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
-			device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleVelocityBuffer.GetAddressOf());
+		for (int i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create particleDataBuffer.", __FILE__, __LINE__) ^
+				device->CreateBuffer(&particleBufferDesc, &initialParticleData, particleVelocityBuffer[i].GetAddressOf());
+		}
 
 		free(initData);
 
@@ -304,9 +312,10 @@ void Game::CreateParticles()
 		particleSRVDesc.Buffer.FirstElement = 0;
 		particleSRVDesc.Buffer.NumElements = defaultParticleCount;
 
-		Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
-			device->CreateShaderResourceView(particleVelocityBuffer.Get(), &particleSRVDesc, &particleVelocitySRV);
-
+		for (int i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create metaballVSParticleSRV.", __FILE__, __LINE__) ^
+				device->CreateShaderResourceView(particleVelocityBuffer[i].Get(), &particleSRVDesc, &particleVelocitySRV[i]);
+		}
 
 		// Unordered Access View
 		D3D11_UNORDERED_ACCESS_VIEW_DESC particleUAVDesc;
@@ -316,8 +325,10 @@ void Game::CreateParticles()
 		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER; // WHY????
 
-		Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(particleVelocityBuffer.Get(), &particleUAVDesc, &particleVelocityUAV);
+		for (int i = 0; i < 2; i++) {
+			Egg11::ThrowOnFail("Could not create animationUAV.", __FILE__, __LINE__) ^
+				device->CreateUnorderedAccessView(particleVelocityBuffer[i].Get(), &particleUAVDesc, &particleVelocityUAV[i]);
+		}
 	}
 
 	/// MassDensity
@@ -2717,6 +2728,9 @@ void Game::CreateMetaball() {
 void Game::CreateAnimation() {
 	using namespace Microsoft::WRL;
 
+	ComPtr<ID3DBlob>sortParticlesShaderByteCode = loadShaderCode("csSortParticles.cso");
+	sortParticlesShader = Egg11::Mesh::Shader::create("csSortParticles.cso", device, sortParticlesShaderByteCode);
+
 	ComPtr<ID3DBlob>simpleSortEvenShaderByteCode = loadShaderCode("csSimpleSortEven.cso");
 	simpleSortEvenShader = Egg11::Mesh::Shader::create("csSimpleSortEven.cso", device, simpleSortEvenShaderByteCode);
 
@@ -3103,7 +3117,7 @@ void Game::renderParticleBillboard(Microsoft::WRL::ComPtr<ID3D11DeviceContext> c
 	perFrameVectors[0] = firstPersonCam->getEyePosition().xyz1;
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 
 	billboards->getMaterial()->setCb("billboardGSMatricesCB", modelViewProjCB, Egg11::Mesh::ShaderStageFlag::Vertex);
 
@@ -3147,7 +3161,7 @@ void Game::renderBillboardA(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
@@ -3172,7 +3186,7 @@ void Game::renderBillboardS1(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
@@ -3196,7 +3210,7 @@ void Game::renderBillboardSV21(Microsoft::WRL::ComPtr<ID3D11DeviceContext> conte
 	matrices[2] = (firstPersonCam->getViewMatrix() * firstPersonCam->getProjMatrix());
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[2];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
@@ -3218,7 +3232,7 @@ void Game::renderBillboardS2(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
 	ppUnorderedAccessViews[1] = countUAV.Get();
@@ -3240,7 +3254,7 @@ void Game::renderBillboardSV22(Microsoft::WRL::ComPtr<ID3D11DeviceContext> conte
 	matrices[3] = firstPersonCam->getViewDirMatrix();
 	context->UpdateSubresource(modelViewProjCB.Get(), 0, nullptr, matrices, 0, 0);
 
-	context->VSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->VSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	ID3D11UnorderedAccessView* ppUnorderedAccessViews[3];
 	ppUnorderedAccessViews[0] = offsetUAV.Get();
 	ppUnorderedAccessViews[1] = countUAV.Get();
@@ -3321,7 +3335,7 @@ void Game::renderMetaball(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
 	context->PSSetShaderResources(1, 1, solidShaderResourceView.GetAddressOf());
-	context->PSSetShaderResources(2, 1, particlePositionSRV.GetAddressOf());
+	context->PSSetShaderResources(2, 1, particlePositionSRV[0].GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer || billboardsLoadAlgorithm == SBuffer || billboardsLoadAlgorithm == SBufferV2)
 		context->PSSetShaderResources(3, 1, offsetSRV.GetAddressOf());
 	if (billboardsLoadAlgorithm == ABuffer)
@@ -3449,7 +3463,7 @@ void Game::renderBalls(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->UpdateSubresource(eyePosCB.Get(), 0, nullptr, perFrameVectors, 0, 0);
 
 	context->PSSetShaderResources(0, 1, envSrv.GetAddressOf());
-	context->PSSetShaderResources(1, 1, particlePositionSRV.GetAddressOf());
+	context->PSSetShaderResources(1, 1, particlePositionSRV[0].GetAddressOf());
 
 	metaballs->getMaterial()->setShader(Egg11::Mesh::ShaderStageFlag::Pixel, particleBallPixelShader);
 
@@ -3470,8 +3484,29 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 
 	uint zeros[2] = { 0, 0 };
 
+	context->CSSetShader(static_cast<ID3D11ComputeShader*>(sortParticlesShader->getShader().Get()), nullptr, 0);
+	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, particlePositionUAV[1].GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, sortedParticleIndicesUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+
+	context->CSSetShaderResources(0, 1, particleVelocitySRV[0].GetAddressOf());
+	context->CSSetUnorderedAccessViews(0, 1, particleVelocityUAV[1].GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, sortedParticleIndicesUAV.GetAddressOf(), zeros);
+	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
+
+	std::swap(particlePositionBuffer[0], particlePositionBuffer[1]);
+	std::swap(particlePositionSRV[0], particlePositionSRV[1]);
+	std::swap(particlePositionUAV[0], particlePositionUAV[1]);
+
+	std::swap(particleVelocityBuffer[0], particleVelocityBuffer[1]);
+	std::swap(particleVelocitySRV[0], particleVelocitySRV[1]);
+	std::swap(particleVelocityUAV[0], particleVelocityUAV[1]);
+
+	clearContext(context);
+
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationMassPressShader->getShader().Get()), nullptr, 0);
-	context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, particleMassDensityUAV.GetAddressOf(), zeros);
 	context->CSSetUnorderedAccessViews(1, 1, particlePressureUAV.GetAddressOf(), zeros);
 	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
@@ -3481,8 +3516,8 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	if (flowControl == RealisticFlow)
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationForcesShader->getShader().Get()), nullptr, 0);
-		context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
-		context->CSSetShaderResources(1, 1, particleVelocitySRV.GetAddressOf());
+		context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
+		context->CSSetShaderResources(1, 1, particleVelocitySRV[0].GetAddressOf());
 		context->CSSetShaderResources(2, 1, particleMassDensitySRV.GetAddressOf());
 		context->CSSetShaderResources(3, 1, particlePressureSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, particleFroceUAV.GetAddressOf(), zeros);
@@ -3492,8 +3527,8 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	else
 	{
 		context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationForcesControlledShader->getShader().Get()), nullptr, 0);
-		context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
-		context->CSSetShaderResources(1, 1, particleVelocitySRV.GetAddressOf());
+		context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
+		context->CSSetShaderResources(1, 1, particleVelocitySRV[0].GetAddressOf());
 		context->CSSetShaderResources(2, 1, particleMassDensitySRV.GetAddressOf());
 		context->CSSetShaderResources(3, 1, particlePressureSRV.GetAddressOf());
 		context->CSSetUnorderedAccessViews(0, 1, particleFroceUAV.GetAddressOf(), zeros);
@@ -3511,8 +3546,8 @@ void Game::renderAnimation(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(fluidSimulationFinalShader->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, particleMassDensitySRV.GetAddressOf());
 	context->CSSetShaderResources(1, 1, particleFrictionSRV.GetAddressOf());
-	context->CSSetUnorderedAccessViews(0, 1, particlePositionUAV.GetAddressOf(), zeros);
-	context->CSSetUnorderedAccessViews(1, 1, particleVelocityUAV.GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(0, 1, particlePositionUAV[0].GetAddressOf(), zeros);
+	context->CSSetUnorderedAccessViews(1, 1, particleVelocityUAV[0].GetAddressOf(), zeros);
 	context->CSSetUnorderedAccessViews(2, 1, particleFroceUAV.GetAddressOf(), zeros);
 	context->CSSetShaderResources(2, 1, PBDTestMeshPosSRV.GetAddressOf());
 	context->Dispatch(defaultParticleCount / particlePerCore, 1, 1);
@@ -3958,7 +3993,7 @@ void Game::setAdaptiveControlPressure(Microsoft::WRL::ComPtr<ID3D11DeviceContext
 {
 	uint zeros[1] = { 0 };
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(adaptiveControlPressureShader->getShader().Get()), nullptr, 0);
-	context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	context->CSSetShaderResources(1, 1, controlParticlePositionSRV.GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, controlParticlePressureRatioUAV.GetAddressOf(), zeros);
 
@@ -4237,8 +4272,8 @@ void Game::renderPBD(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(PBDShaderVelocityFilter->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, controlParticlePositionSRV.GetAddressOf());
 	context->CSSetShaderResources(1, 1, controlParticleCounterSRV.GetAddressOf());
-	context->CSSetShaderResources(2, 1, particlePositionSRV.GetAddressOf());
-	context->CSSetShaderResources(3, 1, particleVelocitySRV.GetAddressOf());
+	context->CSSetShaderResources(2, 1, particlePositionSRV[0].GetAddressOf());
+	context->CSSetShaderResources(3, 1, particleVelocitySRV[0].GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, controlParticleVelocityUAV.GetAddressOf(), zeros);
 	context->Dispatch(controlParticleCount, 1, 1);
 	
@@ -4943,7 +4978,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	uint zeros[2] = { 0, 0 };
 
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(mortonHashShader->getShader().Get()), nullptr, 0);
-	context->CSSetShaderResources(0, 1, particlePositionSRV.GetAddressOf());
+	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, particleHashUAV.GetAddressOf(), zeros);
 	context->Dispatch(defaultParticleCount, 1, 1);
 

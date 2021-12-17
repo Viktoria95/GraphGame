@@ -59,12 +59,12 @@ private:
 	bool controlParticleAnimtaionIsActive;
 
 	// Particle
-	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePositionBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePositionSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePositionUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> particleVelocityBuffer;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleVelocitySRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleVelocityUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particlePositionBuffer[2];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particlePositionSRV[2];
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particlePositionUAV[2];
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleVelocityBuffer[2];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleVelocitySRV[2];
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleVelocityUAV[2];
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleMassDensityBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleMassDensitySRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> particleMassDensityUAV;
@@ -279,6 +279,7 @@ private:
 	Egg11::Mesh::Shader::P fluidSimulationForcesControlledShader;
 	Egg11::Mesh::Shader::P fluidSimulationFinalShader;
 
+	Egg11::Mesh::Shader::P sortParticlesShader;
 	Egg11::Mesh::Shader::P simpleSortEvenShader;
 	Egg11::Mesh::Shader::P simpleSortOddShader;
 	Egg11::Mesh::Shader::P mortonHashShader;
