@@ -4747,236 +4747,241 @@ void Game::renderPBDOnCPU(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {
 void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	using namespace Egg11::Math;
-	
-	context->OMSetRenderTargets(0, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 
-	clearSolidRenderTarget(context);
-	//clearRenderTarget(context);
-	if (controlParticlePlacement == PBD)
+	static bool firstRenderLoop = true;
+
+	if (!firstRenderLoop)
 	{
-		renderPBD(context);
-	}
 
-	if (controlParticlePlacement == CPU)
-	{
-		renderPBDOnCPU(context);
-	}
+		context->OMSetRenderTargets(0, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
 
-	context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
-	renderSpongeMesh(context);
-	clearContext(context);
-
-	context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
-	renderTestMesh(context);
-	clearContext(context);
-
-	clearRenderTarget(context);
-
-	// Hash
-//to12	if (billboardsLoadAlgorithm == HashSimple)
-//to12	{
-//to12		// Sort
-//to12		renderSort(context);
-//to12		clearContext(context);
-//to12
-//to12		// CLists
-//to12		renderInitCList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderNonZeroPrefix(context);
-//to12		clearContext(context);
-//to12		
-//to12		renderCompactCList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderLengthCList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderInitHList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderSortCList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderBeginHList(context);
-//to12		clearContext(context);
-//to12
-//to12		renderLengthHList(context);
-//to12		clearContext(context);
-//to12	}
-
-	stepAnimationKey(context);
-
-	Egg11::Math::float4 billboardSize((1.0 / radius) * 0.04, (1.0 / radius) * 0.04, 0, 0);
-	//Egg11::Math::float4 billboardSize(0.001, 0.001, 0, 0);
-
-	context->UpdateSubresource(billboardSizeCB.Get(), 0, nullptr, &billboardSize, 0, 0);
-
-	static bool first = true;
-
-	
-	
-	
-	//currentKey = 45;
-	//if (first) stepAnimationKey(context);
-
-	if ((first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render)) && controlParticlePlacement != PBD && controlParticlePlacement != CPU)
-		//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
-	{
-		//if (controlParticlePlacement == Render)
+		clearSolidRenderTarget(context);
+		//clearRenderTarget(context);
+		if (controlParticlePlacement == PBD)
 		{
+			renderPBD(context);
+		}
+
+		if (controlParticlePlacement == CPU)
+		{
+			renderPBDOnCPU(context);
+		}
+
+		context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+		renderSpongeMesh(context);
+		clearContext(context);
+
+		context->OMSetRenderTargets(1, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
+		renderTestMesh(context);
+		clearContext(context);
+
+		clearRenderTarget(context);
+
+		// Hash
+	//to12	if (billboardsLoadAlgorithm == HashSimple)
+	//to12	{
+	//to12		// Sort
+	//to12		renderSort(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		// CLists
+	//to12		renderInitCList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderNonZeroPrefix(context);
+	//to12		clearContext(context);
+	//to12		
+	//to12		renderCompactCList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderLengthCList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderInitHList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderSortCList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderBeginHList(context);
+	//to12		clearContext(context);
+	//to12
+	//to12		renderLengthHList(context);
+	//to12		clearContext(context);
+	//to12	}
+
+		stepAnimationKey(context);
+
+		Egg11::Math::float4 billboardSize((1.0 / radius) * 0.04, (1.0 / radius) * 0.04, 0, 0);
+		//Egg11::Math::float4 billboardSize(0.001, 0.001, 0, 0);
+
+		context->UpdateSubresource(billboardSizeCB.Get(), 0, nullptr, &billboardSize, 0, 0);
+
+		static bool first = true;
+
+
+
+
+		//currentKey = 45;
+		//if (first) stepAnimationKey(context);
+
+		if ((first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Render)) && controlParticlePlacement != PBD && controlParticlePlacement != CPU)
+			//if (first || (animtedIsActive && controlParticlePlacement == ControlParticlePlacement::Animated))
+		{
+			//if (controlParticlePlacement == Render)
 			{
-				// Round1
-				if (animtedIsActive)
 				{
-					if (controlParticlePlacement == Render)
+					// Round1
+					if (animtedIsActive)
 					{
-						renderAnimatedControlMesh(context);
+						if (controlParticlePlacement == Render)
+						{
+							renderAnimatedControlMesh(context);
+						}
+						if (controlParticlePlacement == Animated)
+						{
+							renderAnimatedControlMeshInTPose(context);
+						}
 					}
-					if (controlParticlePlacement == Animated)
+					else
 					{
-						renderAnimatedControlMeshInTPose(context);
+						renderControlMesh(context);
 					}
-				}
-				else
-				{
-					renderControlMesh(context);
-				}
 
-				clearContext(context);
-			}
-			{
-				// Round2
-				fillControlParticles(context);
-				clearContext(context);
-
-				setBufferForIndirectDispatch(context);
-				clearContext(context);
-
-				if (controlParticlePlacement == Animated)
-				{
-					rigControlParticles(context);
 					clearContext(context);
 				}
+				{
+					// Round2
+					fillControlParticles(context);
+					clearContext(context);
+
+					setBufferForIndirectDispatch(context);
+					clearContext(context);
+
+					if (controlParticlePlacement == Animated)
+					{
+						rigControlParticles(context);
+						clearContext(context);
+					}
+				}
 			}
 		}
-	}
-	first = false;
+		first = false;
 
-	if (controlParticlePlacement == Animated)
-	{
-		animateControlParticles(context);
-		clearContext(context);
-	}
-
-	if (adapticeControlPressureIsActive)
-	{
-		setAdaptiveControlPressure(context);
-		clearContext(context);
-	}
-
-	if (renderMode == Realistic || renderMode == Gradient)
-	{
-
-		// Billboard
-		if (billboardsLoadAlgorithm == ABuffer)
+		if (controlParticlePlacement == Animated)
 		{
-			renderBillboardA(context);
+			animateControlParticles(context);
 			clearContext(context);
 		}
-		else if (billboardsLoadAlgorithm == SBuffer)
+
+		if (adapticeControlPressureIsActive)
 		{
-			renderBillboardS1(context);
-			clearContext(context);
-
-			renderPrefixSum(context);
-			clearContext(context);
-
-			// Clear count buffer
-			const UINT zeros[4] = { 0,0,0,0 };
-			context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
-
-			renderBillboardS2(context);
+			setAdaptiveControlPressure(context);
 			clearContext(context);
 		}
-		else if (billboardsLoadAlgorithm == SBufferV2)
-		{
-			renderBillboardSV21(context);
-			clearContext(context);
 
-			renderPrefixSumV2(context);
-			clearContext(context);
-
-			// Clear count buffer
-			const UINT zeros[4] = { 0,0,0,0 };
-			context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
-
-			renderBillboardS2(context);
-			clearContext(context);
-		}
-		else if (billboardsLoadAlgorithm == HashSimple)
+		if (renderMode == Realistic || renderMode == Gradient)
 		{
 
+			// Billboard
+			if (billboardsLoadAlgorithm == ABuffer)
+			{
+				renderBillboardA(context);
+				clearContext(context);
+			}
+			else if (billboardsLoadAlgorithm == SBuffer)
+			{
+				renderBillboardS1(context);
+				clearContext(context);
+
+				renderPrefixSum(context);
+				clearContext(context);
+
+				// Clear count buffer
+				const UINT zeros[4] = { 0,0,0,0 };
+				context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
+
+				renderBillboardS2(context);
+				clearContext(context);
+			}
+			else if (billboardsLoadAlgorithm == SBufferV2)
+			{
+				renderBillboardSV21(context);
+				clearContext(context);
+
+				renderPrefixSumV2(context);
+				clearContext(context);
+
+				// Clear count buffer
+				const UINT zeros[4] = { 0,0,0,0 };
+				context->ClearUnorderedAccessViewUint(countUAV.Get(), zeros);
+
+				renderBillboardS2(context);
+				clearContext(context);
+			}
+			else if (billboardsLoadAlgorithm == HashSimple)
+			{
+
+			}
+			clearContext(context);
+
+			// Metaball
+			renderMetaball(context);
+			clearContext(context);
+
 		}
+
+		else if (renderMode == Particles)
+		{
+			renderParticleBillboard(context);
+			//renderBalls(context);
+			clearContext(context);
+		}
+		else if (renderMode == ControlParticles)
+		{
+			renderControlParticleBillboard(context);
+			//renderControlBalls(context);
+			clearContext(context);
+		}
+
+		// Animation
+		renderAnimation(context);
 		clearContext(context);
 
-		// Metaball
-		renderMetaball(context);
-		clearContext(context);
+		// Sort
+		//renderSort(context);
+		//clearContext(context);
 
-	}
-
-	else if (renderMode == Particles)
-	{
-		renderParticleBillboard(context);
-		//renderBalls(context);
-		clearContext(context);
-	}
-	else if (renderMode == ControlParticles)
-	{
-		renderControlParticleBillboard(context);
-		//renderControlBalls(context);
-		clearContext(context);
-	}
-
-	// Animation
-	renderAnimation(context);
-	clearContext(context);
-
-	// Sort
-	//renderSort(context);
-	//clearContext(context);
-
-	//renderAnimatedControlMesh(context);
-	//clearContext(context);
+		//renderAnimatedControlMesh(context);
+		//clearContext(context);
 
 
-	if (drawFlatControlMesh)
-	{
-		if (animtedIsActive)
+		if (drawFlatControlMesh)
 		{
-			renderFlatAnimatedControlMesh(context);
+			if (animtedIsActive)
+			{
+				renderFlatAnimatedControlMesh(context);
+			}
+			else
+			{
+				renderFlatControlMesh(context);
+			}
 		}
-		else
-		{
-			renderFlatControlMesh(context);
-		}
+
+		clearContext(context);
+
+
+
+		context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
+
+
+		//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
+		//context->Unmap(uavCounterReadback.Get(), 0);
+		//auto b = 1;
 	}
-
-	clearContext(context);
-
-	
-
-	context->CopyStructureCount(uavCounterReadback.Get(), 0, linkUAV.Get());
-
-	
-	//context->CopyStructureCount(uavCounterReadback.Get(), 0, idUAV.Get());
-	//context->Unmap(uavCounterReadback.Get(), 0);
-	//auto b = 1;
 
 	// compute mortons
 	uint zeros[2] = { 0, 0 };
-
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(mortonHashShader->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, particleHashUAV.GetAddressOf(), zeros);
@@ -4984,6 +4989,8 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	clearContext(context);
 
+
+	firstRenderLoop = false;
 }
 
 void Game::animate(double dt, double t)
