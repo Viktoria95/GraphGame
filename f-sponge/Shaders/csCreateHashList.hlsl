@@ -28,9 +28,9 @@ void csCreateHashList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 
-	uint myMorton = sorted.Load(initialElementIndex << 2);
-	uint prevMorton = initialElementIndex ? sorted.Load((initialElementIndex - 1) << 2) : 0xffffffff;
-	bool meNonstarter = (myMorton == prevMorton);
+	uint myHash = sorted.Load(initialElementIndex << 2);
+	uint prevHash = initialElementIndex ? sorted.Load((initialElementIndex - 1) << 2) : 0xffffffff;
+	bool meNonstarter = (myHash == prevHash);
 	uint nonStartersUpToMe = WavePrefixCountBits(meNonstarter) + (meNonstarter ? 1 : 0);
 	if (tid.x == 31) {
 		perRowStarterCount[tid.y] = 32 - nonStartersUpToMe;
@@ -62,6 +62,6 @@ void csCreateHashList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 		clength += (tid.y==31) ? starterCounts.Load((gid.x+1)<<2)>>16 : perRowLeadingNonstarterCount[tid.y + 1];
 	}
 	if (!meNonstarter) {
-		hbegin.Store(myMorton << 2, clength << 16 | initialElementIndex);
+		hbegin.Store(myHash << 2, clength << 16 | initialElementIndex);
 	}
 }

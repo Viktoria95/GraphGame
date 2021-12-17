@@ -592,8 +592,8 @@ void Game::CreateParticles()
 			device->CreateUnorderedAccessView(sharedHandles[L"sortedPins"].Get(), &particleUAVDesc, &sortedParticleIndicesUAV);
 		Egg11::ThrowOnFail("Could not create cell lut UAV.", __FILE__, __LINE__) ^
 			device->CreateUnorderedAccessView(sharedHandles[L"sortedCellLut"].Get(), &particleUAVDesc, &cellLutUAV);
-		Egg11::ThrowOnFail("Could not create cell lut UAV.", __FILE__, __LINE__) ^
-			device->CreateUnorderedAccessView(sharedHandles[L"hashLut"].Get(), &particleUAVDesc, &cellLutUAV);
+		Egg11::ThrowOnFail("Could not create hash lut UAV.", __FILE__, __LINE__) ^
+			device->CreateUnorderedAccessView(sharedHandles[L"hashLut"].Get(), &particleUAVDesc, &hashLutUAV);
 
 	}
 	{
