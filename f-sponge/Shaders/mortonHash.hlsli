@@ -1,4 +1,23 @@
 
+#define mortonStep 0.08
+
+uint3 getCellIndex(float3 pos) {
+	uint cellX = (pos.x + boundarySide) / mortonStep;
+	uint cellZ = (pos.z + boundarySide) / mortonStep;
+	uint cellY = (pos.y - boundaryBottom) / mortonStep;
+
+	return uint3 (cellX, cellY, cellZ);
+}
+
+uint mortonHashFromCellIndex(uint3 cellIndex) {
+	uint hash = 0;
+	uint i;
+	for (i = 0; i < 7; ++i)
+	{
+		hash |= ((cellIndex.x & (1 << i)) << 2 * i) | ((cellIndex.z & (1 << i)) << (2 * i + 1)) | ((cellIndex.y & (1 << i)) << (2 * i + 2));
+	}
+	return hash;
+}
 
 uint mortonHash(float3 pos) {
 	//uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * 1023.0;
@@ -10,20 +29,37 @@ uint mortonHash(float3 pos) {
 	//uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * maxIndex;
 	//uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * maxIndex;
 	//uint y = (pos.y - boundaryBottom) / (boundaryBottom + boundaryTop) * maxIndex;
-	uint x = (pos.x + boundarySide * 2.0) / 0.08;
-	uint z = (pos.z + boundarySide * 2.0) / 0.08;
-	uint y = (pos.y - boundaryBottom * 2.0) / 0.08;
+
+
+	//uint x = (pos.x + boundarySide * 2.0) / mortonStep;
+	//uint z = (pos.z + boundarySide * 2.0) / mortonStep;
+	//uint y = (pos.y - boundaryBottom * 2.0) / mortonStep;
+
+	//uint x = (pos.x + boundarySide) / 2.0 / mortonStep;
+	//uint z = (pos.z + boundarySide) / 2.0 / mortonStep;
+	//uint y = (pos.y - boundaryBottom) / 2.0 / mortonStep;
+
+
+	//uint x = (pos.x + boundarySide * 2.0) / 0.01;
+	//uint z = (pos.z + boundarySide * 2.0) / 0.01;
+	//uint y = (pos.y - boundaryBottom * 2.0) / 0.01;
+
+
+
 	//if (pos.z < 100000.0) {
 		//x = y = z = 0;
 	//}
 	
-
+	uint3 cellIndex = getCellIndex(pos);
+	return mortonHashFromCellIndex(cellIndex);
+	/*
 	uint hash = 0;
 	uint i;
 	for (i = 0; i < 7; ++i)
 	{
-		hash |= ((x & (1 << i)) << 2 * i) | ((z & (1 << i)) << (2 * i + 1)) | ((y & (1 << i)) << (2 * i + 2));
+		hash |= ((cellIndex.x & (1 << i)) << 2 * i) | ((cellIndex.z & (1 << i)) << (2 * i + 1)) | ((cellIndex.y & (1 << i)) << (2 * i + 2));
 	}
+	*/
 	/*
 	if (pos.x > 0.0 && pos.z > 0.0)
 		return 0;
@@ -35,7 +71,7 @@ uint mortonHash(float3 pos) {
 		return 3;
 	*/
 	
-	return hash;
+	//return hash;
 }
 
 /*

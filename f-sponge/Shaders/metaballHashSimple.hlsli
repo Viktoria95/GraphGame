@@ -2,6 +2,8 @@
 //to12 #include "hash.hlsli"
 #include "hhash.hlsli"
 
+#define displacementDist 1
+
 //to12 StructuredBuffer<uint> hashes;
 //to12 RWByteAddressBuffer hlistBegin;
 //to12 RWByteAddressBuffer hlistLength;
@@ -18,8 +20,7 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 	bool result = false;
 	float acc = 0.0;
 
-	const float displacementStep = 0.08;
-	const int displacementDist = 1;
+	uint3 cellIdx = getCellIndex (p);
 
 	int xDis;
 	int yDis;
@@ -30,9 +31,9 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
 			[loop]
 			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
-				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
-
-				uint zIndex = mortonHash(testp);
+				int3 localCellIndex = cellIdx;
+				localCellIndex += int3 (xDis, yDis, zDis);
+				uint zIndex = mortonHashFromCellIndex(localCellIndex);
 				uint zHash = hhash(zIndex);
 
 				uint hl = hashLut.Load(zHash * 4);
@@ -47,7 +48,7 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
-						//if (hashes.Load(pIdx*4) == zIndex) 
+						if (hashes.Load(pIdx*4) == zIndex) 
 						{
 							//acc += 0.0001; //to12 *(hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
 							if (metaballTester.testFunction(p, positions[pIdx].xyz, acc, acc) == true)
@@ -77,8 +78,7 @@ float3 Grad_HashSimple(float3 p)
 	float3 grad;
 	const float r = metaBallRadius;// 0.005;
 
-	const float displacementStep = 0.08;
-	const int displacementDist = 1;
+	uint3 cellIdx = getCellIndex(p);
 
 	int xDis;
 	int yDis;
@@ -89,9 +89,9 @@ float3 Grad_HashSimple(float3 p)
 		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
 			[loop]
 			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
-				float3 testp = p.xyz + displacementStep * float3(float(xDis), float(yDis), float(zDis));
-
-				uint zIndex = mortonHash(testp);
+				int3 localCellIndex = cellIdx;
+				localCellIndex += int3 (xDis, yDis, zDis);
+				uint zIndex = mortonHashFromCellIndex(localCellIndex);
 				uint zHash = hhash(zIndex);
 
 				uint hl = hashLut.Load(zHash * 4);
@@ -106,7 +106,7 @@ float3 Grad_HashSimple(float3 p)
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
-						//if (hashes.Load(pIdx*4) == zIndex) 
+						if (hashes.Load(pIdx*4) == zIndex) 
 						{
 							//acc += 0.0001; //to12 *(hlistBegin.Load(0) + hlistLength.Load(0) + clistBegin.Load(0) + clistLength.Load(0));
 							grad = calculateGrad(p, positions[pIdx].xyz, grad);
