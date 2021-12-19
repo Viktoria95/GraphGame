@@ -5,8 +5,8 @@
 StructuredBuffer<float4> positions;
 RWByteAddressBuffer hashes;
 
-[numthreads(1, 1, 1)]
-void csMortonHash(uint3 DTid : SV_GroupID)
+[numthreads(128, 1, 1)]
+void csMortonHash(uint3 DTid : SV_DispatchThreadID)
 {
 	unsigned int tid = DTid.x;
 	hashes.Store( tid << 2, mortonHash(positions[tid].xyz) );

@@ -3,7 +3,7 @@ uint hhash(uint morton) {
 	// % 32749; // to fit in 32k
 	//% 33391; // to exceed 32k
 
-	//return (morton * 499) % 11;
-	//return (morton * 499) % 32749;
+	//return (morton * 499) % 1103;
 	return (morton * 499) % 32749;
+	//return morton;
 }

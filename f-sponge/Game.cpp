@@ -247,7 +247,11 @@ void Game::CreateParticles()
 		std::vector<float4> posInitData;
 		for (auto& pIt : particles)
 		{
-			posInitData.push_back(float4(pIt.position.x, pIt.position.y, pIt.position.z, 1.0));
+//			posInitData.push_back(float4(pIt.position.x*10.0, pIt.position.y * 10.0, pIt.position.z * 10.0, 1.0));
+			float4 q = float4::random(-0.35, 0.35);
+			q.y += 0.4;
+			q.w = 1.0;
+			posInitData.push_back(q);
 		}
 		initialParticleData.pSysMem = &posInitData[0];
 
@@ -585,7 +589,7 @@ void Game::CreateParticles()
 		particleUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		particleUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		particleUAVDesc.Buffer.FirstElement = 0;
-		particleUAVDesc.Buffer.NumElements = defaultParticleCount;
+		particleUAVDesc.Buffer.NumElements = 32 * 32 * 32;// defaultParticleCount;
 		particleUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 		
 		Egg11::ThrowOnFail("Could not create sorted pins UAV.", __FILE__, __LINE__) ^
@@ -4750,7 +4754,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 
 	static bool firstRenderLoop = true;
 
-	if (!firstRenderLoop)
+	//if (!firstRenderLoop)
 	{
 
 		context->OMSetRenderTargets(0, solidRenderTargetView.GetAddressOf(), defaultDepthStencilView.Get());
@@ -4985,7 +4989,7 @@ void Game::render(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 	context->CSSetShader(static_cast<ID3D11ComputeShader*>(mortonHashShader->getShader().Get()), nullptr, 0);
 	context->CSSetShaderResources(0, 1, particlePositionSRV[0].GetAddressOf());
 	context->CSSetUnorderedAccessViews(0, 1, particleHashUAV.GetAddressOf(), zeros);
-	context->Dispatch(defaultParticleCount, 1, 1);
+	context->Dispatch(defaultParticleCount / 128, 1, 1);
 
 	clearContext(context);
 

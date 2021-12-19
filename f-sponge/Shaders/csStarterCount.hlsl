@@ -37,14 +37,16 @@ void csStarterCount(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 
 	if (tid.y == 0) {
 		uint nonstarterCount = perRowLeadingNonstarterCount[tid.x];
-		uint hasStarterMask = (WaveActiveBallot(nonstarterCount != 32) << (32-tid.x)) | 0x1;
+		uint hasStarterMask = WaveActiveBallot(nonstarterCount != 32);
 		//uint precedingRowsWithNoStarterCount = (tid.x)?firstbithigh(hasStarterMask):0;
 		//uint hasStarterMask = WaveActiveBallot(nonstarterCount != 32).x;
-		uint firstNotEmpty = firstbitlow(hasStarterMask); // no starter on entire page would be weird
-		uint leadingNonStarterCount = firstNotEmpty * 32 + perRowLeadingNonstarterCount[firstNotEmpty];
 			
 		uint perPageStarterCount = WavePrefixSum(perRowStarterCount[tid.x]) + perRowStarterCount[31];
 		if (tid.x == 31) {
+			uint firstNotEmpty = firstbitlow(hasStarterMask); // no starter on entire page would be weird
+			if (firstNotEmpty == 0xffffffff)
+				firstNotEmpty = 0;
+			uint leadingNonStarterCount = firstNotEmpty * 32 + perRowLeadingNonstarterCount[firstNotEmpty];
 			starterCounts.Store(gid.x<<2, (leadingNonStarterCount << 16) | perPageStarterCount);
 		}
 	}

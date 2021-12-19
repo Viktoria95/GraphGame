@@ -14,7 +14,7 @@ uint mortonHashFromCellIndex(uint3 cellIndex) {
 	uint i;
 	for (i = 0; i < 7; ++i)
 	{
-		hash |= ((cellIndex.x & (1 << i)) << 2 * i) | ((cellIndex.z & (1 << i)) << (2 * i + 1)) | ((cellIndex.y & (1 << i)) << (2 * i + 2));
+		hash |= ((cellIndex.x & (1 << i)) << (2 * i)) | ((cellIndex.z & (1 << i)) << (2 * i + 1)) | ((cellIndex.y & (1 << i)) << (2 * i + 2));
 	}
 	return hash;
 }

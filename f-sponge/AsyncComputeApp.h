@@ -10,8 +10,34 @@
 #include "Game.h"
 #include "FenceChain.h"
 
+bool verifyStarterCount(uint* data, uint* starterCount) {
+	uint prev = 0xffffffff;
+	for (uint iPage = 0; iPage < 32; iPage++)
+	{
+		uint aStarters = 0;
+		uint aLeadingNonStarters = 0;
+		if (data[iPage * 32 * 32]  == 0xffffffff)
+			return true; // end of useful data, this is an empty page already
+		for (uint i = 0; i < 32 * 32; i++) {
+			uint c = data[iPage * 32 * 32 + i];
+
+			if (c != prev)
+				aStarters++;
+			if (aStarters == 0)
+				aLeadingNonStarters++;
+			prev = c;
+		}
+		if (starterCount[iPage] != ((aLeadingNonStarters << 16) | aStarters))
+//			if(aLeadingNonStarters != 32*32)
+				return false;
+	}
+	return true;
+}
+
 class AsyncComputeApp : public Egg::SimpleApp {
 	Egg11::App::P app11;
+
+	uint frameCount;
 protected:
 	com_ptr<ID3D11On12Device> device11on12;
 	com_ptr<ID3D11Device> device11;
@@ -68,6 +94,7 @@ protected:
 	ComputePass mortonCountStarters;
 	ComputePass createCellList;
 	ComputePass clearHashList;
+	ComputePass clearHashLut;
 	ComputePass hashCountStarters;
 	ComputePass createHashList;
 public:
@@ -75,6 +102,8 @@ public:
 
 	virtual void CreateResources() override {
 		Egg::SimpleApp::CreateResources();
+
+		frameCount = 0;
 
 		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 		d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -127,6 +156,9 @@ public:
 		//buffers[mortons].fillRandomMask(0x7);
 		buffers[mortons].fillFFFFFFFF();
 
+		uint zeros[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+		uint ffffs[] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
+
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
 		ComputeShader csLocalSort;
 		ComputeShader csMerge;
@@ -145,9 +177,10 @@ public:
 		csCreateCellList.createResources(device, "Shaders/csCreateCellList.cso");
 		createCellList.createResources(csCreateCellList, dhStart, sortedMortons, dhIncrSize, buffers, 4);
 
-		ComputeShader csClearHashList;
-		csClearHashList.createResources(device, "Shaders/csClearBuffer.cso");
-		clearHashList.createResources(csClearHashList, dhStart, hashList, dhIncrSize, buffers, 1);
+		ComputeShader csClearBuffer;
+		csClearBuffer.createResources(device, "Shaders/csClearBuffer.cso");
+		clearHashList.createResources(csClearBuffer, dhStart, hashList, dhIncrSize, buffers, 1, ffffs, 1);
+		clearHashLut.createResources(csClearBuffer, dhStart, hashLut, dhIncrSize, buffers, 1, zeros, 1);
 
 		ComputeShader csFillPins;
 		csFillPins.createResources(device, "Shaders/csFillBufferIndices.cso");
@@ -278,15 +311,19 @@ public:
 		ID3D12DescriptorHeap* pHeaps[] = { uavHeap.Get() };
 		computeCommandLists[swapChainBackBufferIndex]->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
-		fillPins.populate(computeCommandLists[swapChainBackBufferIndex]);
-		//fillSortedPins.populate(computeCommandLists[swapChainBackBufferIndex]);
-		mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
-		mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
-		clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
-		createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
-		hashSort.populate(computeCommandLists[swapChainBackBufferIndex]);
-		hashCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
-		createHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+		if (frameCount > 0) {
+			fillPins.populate(computeCommandLists[swapChainBackBufferIndex]);
+			mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
+			mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+			clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+			createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
+			hashSort.populate(computeCommandLists[swapChainBackBufferIndex]);
+			hashCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+			clearHashLut.populate(computeCommandLists[swapChainBackBufferIndex]);
+			createHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+		} else {
+			fillSortedPins.populate(computeCommandLists[swapChainBackBufferIndex]);
+		}
 	}
 
 	void recordCopyCommands() {}
@@ -354,6 +391,7 @@ public:
 		//for (auto name : { BUFFERNAMES }) {
 		//	buffers[name].mapReadback();
 		//}
+		if (frameCount > 1)
 		{
 			uint* pMortons = buffers[mortons].mapReadback();
 			bool ok = true;
@@ -363,7 +401,8 @@ public:
 			buffers[mortons].unmapReadback();
 		}
 		//		buffers[pins].mapReadback();
-		//		
+		//	
+		if(frameCount > 1)
 		{
 			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
@@ -371,14 +410,57 @@ public:
 
 			uint* pMortonStarterCount = buffers[sortedMortonPerPageStarterCounts].mapReadback();
 			//TODO verify startercount
+			bool scok = verifyStarterCount(pSortedMortons, pMortonStarterCount);
 
 			uint* pHlist = buffers[hashList].mapReadback();
 			uint* pCellLut = buffers[cellLut].mapReadback();
 			uint* pSortedCellLut = buffers[sortedCellLut].mapReadback();
 
 			uint* pSortedHlist = buffers[sortedHashList].mapReadback();
+			bool hok = std::is_sorted(pSortedHlist, pSortedHlist + 32 * 32 * 32);
+
 			uint* pHlistStarters = buffers[sortedHashPerPageStarterCounts].mapReadback();
+			bool hscok = verifyStarterCount(pSortedHlist, pHlistStarters);
 			uint* pHashLut = buffers[hashLut].mapReadback();
+
+			//hash to cell
+			for (int i = 0; i < 32 * 32 * 32; i++) {
+				uint hl = pHashLut[i];
+				uint hStart = hl & 0xffff;
+				uint hLength = hl >> 16;
+				for (int ih = hStart; ih < hStart + hLength; ih++) {
+					uint cl = pSortedCellLut[ih];
+					uint cStart = cl & 0xffff;
+					uint cLength = cl >> 16;
+					for (int ip = cStart; ip < cStart + cLength; ip++) {
+						if (i != (pSortedMortons[ip] * 499) % 32749)
+//						if (i != pSortedMortons[ip])
+							bool gaz = true;
+					}
+				}
+			}
+			//cell to hash
+			for (int i = 0; i < 32 * 32 * 32; i++) {
+				uint morton = pSortedMortons[i];
+				if (morton == 0xffffffff)
+					break;
+				uint hash = (morton * 499) % 32749;
+//				uint hash = morton;
+				uint hl = pHashLut[hash];
+				uint hStart = hl & 0xffff;
+				uint hLength = hl >> 16;
+				bool found = false;
+				for (int ih = hStart; ih < hStart + hLength; ih++) {
+					uint cl = pSortedCellLut[ih];
+					uint cStart = cl & 0xffff;
+					uint cLength = cl >> 16;
+					if (cStart <= i && i < cStart + cLength) {
+						found = true;
+					}
+				}
+				if (!found)
+					bool gaz = true;
+			}
 
 			buffers[sortedPins].unmapReadback();
 			buffers[hashLut].unmapReadback();
@@ -424,6 +506,8 @@ public:
 		graphicsFenceChain.signal(commandQueue, swapChainBackBufferIndex);
 
 		WaitForPreviousFrame();
+
+		frameCount++;
 
 	}
 

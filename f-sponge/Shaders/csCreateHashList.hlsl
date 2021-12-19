@@ -45,6 +45,8 @@ void csCreateHashList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	if (tid.y == 0) {
 		bool rowNotFull = perRowLeadingNonstarterCount[tid.x] != 32;
 		uint notFullMask = WaveActiveBallot(rowNotFull).x >> (tid.x + 1);
+		if (tid.x == 31)
+			notFullMask = 0;
 		uint nFullRowsAfterMe = firstbitlow(notFullMask);
 		if (!rowNotFull && nFullRowsAfterMe != 0xffffffff) {
 			uint nextNonFullLeadingNonStarterCount = perRowLeadingNonstarterCount[tid.x + 1 + nFullRowsAfterMe];
@@ -56,6 +58,8 @@ void csCreateHashList(uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 	GroupMemoryBarrierWithGroupSync();
 
 	uint starterMask = WaveActiveBallot(!meNonstarter).x >> (tid.x + 1);
+	if (tid.x == 31)
+		starterMask = 0;
 	uint clength = firstbitlow(starterMask) + 1;
 	if (clength == 0) { // runs over row end
 		clength = 32 - tid.x;

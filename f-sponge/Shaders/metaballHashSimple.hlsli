@@ -10,8 +10,8 @@
 //to12 RWByteAddressBuffer clistBegin;
 //to12 RWByteAddressBuffer clistLength;
 ByteAddressBuffer hashes;
-RWByteAddressBuffer cellLut;
-RWByteAddressBuffer hashLut;
+RWByteAddressBuffer cellLut : register(u1);
+RWByteAddressBuffer hashLut : register(u2);
 
 bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 {
@@ -28,11 +28,11 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 	[loop]
 	for (xDis = -displacementDist; xDis <= displacementDist; xDis++) {
 		[loop]
-		for (yDis = -displacementDist; yDis <= displacementDist; yDis++) {
+		for (yDis = - displacementDist; yDis <= displacementDist; yDis++) {
 			[loop]
 			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
 				int3 localCellIndex = cellIdx;
-				localCellIndex += int3 (xDis, yDis, zDis);
+				localCellIndex += int3(xDis, yDis, zDis);
 				uint zIndex = mortonHashFromCellIndex(localCellIndex);
 				uint zHash = hhash(zIndex);
 
@@ -44,7 +44,7 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 				for (; cIdx < cIdxMax; cIdx++) {
 					uint cl = cellLut.Load(cIdx * 4);
 					uint pIdx = cl & 0xffff;
-					uint pIdxMax = pIdx + ( cl >> 16);
+					uint pIdxMax = pIdx + (cl >> 16);
 
 					[loop]
 					for (; pIdx < pIdxMax; pIdx++) {
