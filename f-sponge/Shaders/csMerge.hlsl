@@ -1,12 +1,13 @@
 #define SortSig "RootFlags( 0 )," \
 				"RootConstants(num32BitConstants=1, b0)," \
-                "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1))" 
+                "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1), UAV(u4, numDescriptors=1))" 
 
 // uav offset @mortons or @ (#0 or #4)
 RWByteAddressBuffer input : register(u0);
 RWByteAddressBuffer inputIndices : register(u1);
-RWByteAddressBuffer outputIndices : register(u2);
-RWByteAddressBuffer output : register(u3);
+// u2 would be the bucket count, but merge is not using it
+RWByteAddressBuffer outputIndices : register(u3);
+RWByteAddressBuffer output : register(u4);
 
 #define groupSize 32
 

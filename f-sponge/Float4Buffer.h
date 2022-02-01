@@ -2,24 +2,23 @@
 #include "Egg/Common.h"
 #include <d3d11on12.h>
 #include <string>
+#include "Egg/Math/Math.h"
 
-
-class RawBuffer {
+class Float4Buffer {
 	com_ptr<ID3D12Resource>		buffer;
 	com_ptr<ID3D12Resource>     uploadBuffer;
 	com_ptr<ID3D12Resource>		readbackBuffer;
 	com_ptr<ID3D11Resource>		wrappedBuffer;
-	uint bufferUintSize;
+	uint bufferFloat4Size;
 	std::wstring debugName;
 	bool sharedWithD3D11;
 public:
 	com_ptr<ID3D11Resource>		getWrappedBuffer() { return wrappedBuffer; }
 
-	RawBuffer(
+	Float4Buffer(
 		std::wstring debugName,
 		bool sharedWithD3D11 = false,
-		uint bufferUintSize = 32 * 32 * 32) :debugName(debugName), sharedWithD3D11(sharedWithD3D11), bufferUintSize(bufferUintSize) {
-
+		uint bufferFloat4Size = 32 * 32 * 32) :debugName(debugName), sharedWithD3D11(sharedWithD3D11), bufferFloat4Size(bufferFloat4Size) {
 	}
 
 	void createResources(com_ptr<ID3D12Device> device,
@@ -27,7 +26,7 @@ public:
 		const D3D12_CPU_DESCRIPTOR_HANDLE& handle
 	) {
 		const D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		const D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(4 * bufferUintSize,
+		const D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(4 * 4 * bufferFloat4Size,
 			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, 0);
 		DX_API("commited resource")
 			device->CreateCommittedResource(
@@ -43,7 +42,7 @@ public:
 		CD3DX12_HEAP_PROPERTIES rbheapProps(D3D12_HEAP_TYPE_READBACK);
 
 		D3D12_RESOURCE_ALLOCATION_INFO info = {};
-		info.SizeInBytes = 4 * bufferUintSize;
+		info.SizeInBytes = 4 * 4 * bufferFloat4Size;
 		info.Alignment = 0;
 		const D3D12_RESOURCE_DESC tempBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(info);
 		DX_API("readback resource")
@@ -55,7 +54,6 @@ public:
 				nullptr,
 				IID_PPV_ARGS(readbackBuffer.ReleaseAndGetAddressOf()));
 		readbackBuffer->SetName((debugName + L" [READBACK]").c_str());
-
 
 		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
 
@@ -72,7 +70,7 @@ public:
 		if (sharedWithD3D11) {
 			D3D11_RESOURCE_FLAGS d3d11Flags;
 			d3d11Flags.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-			d3d11Flags.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+			d3d11Flags.MiscFlags = 0; // no structured
 			d3d11Flags.CPUAccessFlags = 0;
 			d3d11Flags.StructureByteStride = 0;
 			DX_API("wrap 12 uav buffer for d3d11")
@@ -87,12 +85,12 @@ public:
 		}
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
-		uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		uavDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 		uavDesc.Buffer.CounterOffsetInBytes = 0;
 		uavDesc.Buffer.FirstElement = 0;
-		uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-		uavDesc.Buffer.NumElements = bufferUintSize;
+		uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+		uavDesc.Buffer.NumElements = bufferFloat4Size;
 		uavDesc.Buffer.StructureByteStride = 0;
 		// create uav
 		device->CreateUnorderedAccessView(buffer.Get(), nullptr, &uavDesc, handle);
@@ -132,81 +130,16 @@ public:
 		);
 	}
 
-	void fillFFFFFFFF() {
-		void* pData;
-		CD3DX12_RANGE range(0, bufferUintSize);
-		uploadBuffer->Map(0, &range, &pData);
-		unsigned int* m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
-		unsigned int* m_arrayDataEnd = m_arrayDataBegin + bufferUintSize;
-
-		for (auto ip = m_arrayDataBegin; ip < m_arrayDataEnd; ip++) {
-			*ip = 0xffffffff;
-		}
-		uploadBuffer->Unmap(0, &range);
-	}
-
-	void fillRandomMask(uint m) {
-		void* pData;
-		CD3DX12_RANGE range(0, bufferUintSize);
-		uploadBuffer->Map(0, &range, &pData);
-		unsigned int* m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
-		unsigned int* m_arrayDataEnd = m_arrayDataBegin + bufferUintSize;
-
-		for (auto ip = m_arrayDataBegin; ip < m_arrayDataEnd; ip++) {
-			*ip = rand() & m;
-			*ip |= (rand() & m) << 8;
-			*ip |= (rand() & m) << 16;
-			*ip |= (rand() & m) << 24;
-		}
-		uploadBuffer->Unmap(0, &range);
-	}
-
 	void fillRandom() {
 		void* pData;
-		CD3DX12_RANGE range(0, bufferUintSize);
+		CD3DX12_RANGE range(0, bufferFloat4Size);
 		uploadBuffer->Map(0, &range, &pData);
-		unsigned int* m_arrayDataBegin = reinterpret_cast<unsigned int*>(pData);
-		unsigned int* m_arrayDataEnd = m_arrayDataBegin + bufferUintSize;
+		Egg::Math::Float4* m_arrayDataBegin = reinterpret_cast<Egg::Math::Float4*>(pData);
+		Egg::Math::Float4* m_arrayDataEnd = m_arrayDataBegin + bufferFloat4Size;
 
 		for (auto ip = m_arrayDataBegin; ip < m_arrayDataEnd; ip++) {
-			*ip = rand() & 0xff;
-			*ip |= (rand() & 0xff) << 8;
-			*ip |= (rand() & 0xff) << 16;
-			*ip |= (rand() & 0xff) << 24;
+			ip->Random();
 		}
-
-		m_arrayDataBegin[0] = 0x1454abff;
-		m_arrayDataBegin[1] = 0xa1667600;
-		m_arrayDataBegin[2] = 0x23144bca;
-		m_arrayDataBegin[3] = 0x004156fe;
-		m_arrayDataBegin[4] = 0xf4541bff;
-		m_arrayDataBegin[5] = 0xa5667100;
-		m_arrayDataBegin[6] = 0x232441ca;
-		m_arrayDataBegin[7] = 0x004156f1;
-		m_arrayDataBegin[8] = 0x4454abfd;
-		m_arrayDataBegin[9] = 0xa4667600;
-		m_arrayDataBegin[10] = 0x23444bca;
-		m_arrayDataBegin[11] = 0x004456fe;
-		m_arrayDataBegin[12] = 0x34544bfb;
-		m_arrayDataBegin[13] = 0xa4667400;
-		m_arrayDataBegin[14] = 0x235444cb;
-		m_arrayDataBegin[15] = 0x004656f4;
-		m_arrayDataBegin[16] = 0xf4547bfc;
-		m_arrayDataBegin[17] = 0xaf667800;
-		m_arrayDataBegin[18] = 0x23f44b9a;
-		m_arrayDataBegin[19] = 0x004f56fa;
-		m_arrayDataBegin[20] = 0xf454fbff;
-		m_arrayDataBegin[21] = 0xa5667f09;
-		m_arrayDataBegin[22] = 0x3243fca;
-		m_arrayDataBegin[23] = 0xc04156ff;
-		m_arrayDataBegin[24] = 0xfc54abf8;
-		m_arrayDataBegin[25] = 0xa5c67606;
-		m_arrayDataBegin[26] = 0x232c4b57;
-		m_arrayDataBegin[27] = 0x0041c4fe;
-		m_arrayDataBegin[28] = 0xf4543cf5;
-		m_arrayDataBegin[29] = 0xa56976c0;
-		m_arrayDataBegin[30] = 0x23844bc3;
-		m_arrayDataBegin[31] = 0x074156f2;
 
 		uploadBuffer->Unmap(0, &range);
 	}

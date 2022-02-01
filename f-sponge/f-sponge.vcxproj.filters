@@ -110,6 +110,9 @@
     <ClInclude Include="FenceChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Float4Buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\csCListCompact.hlsl">
@@ -414,6 +417,12 @@
     </FxCompile>
     <FxCompile Include="Shaders\csSortParticles.hlsl">
       <Filter>Shaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPack.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csLocalSortInPlace.hlsl">
+      <Filter>Shaders\Cell</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

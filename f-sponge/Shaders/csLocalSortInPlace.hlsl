@@ -1,13 +1,11 @@
 #define SortSig "RootFlags( 0 )," \
 				"RootConstants(num32BitConstants=1, b0)," \
-                "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1), UAV(u4, numDescriptors=1))" 
+                "DescriptorTable(UAV(u0, numDescriptors=1), UAV(u1, numDescriptors=1), UAV(u2, numDescriptors=1), UAV(u3, numDescriptors=1))" 
 
 //SRV(t0, numDescriptors=1), 
-RWByteAddressBuffer output : register(u0);
-RWByteAddressBuffer outputIndices : register(u1);
+RWByteAddressBuffer input : register(u0);
+RWByteAddressBuffer inputIndices : register(u1);
 RWByteAddressBuffer perPageBucketCounts : register(u2);
-RWByteAddressBuffer inputIndices : register(u3);
-RWByteAddressBuffer input : register(u4);
 uint maskOffsets : register(b0);
 
 #define rowSize 32
@@ -19,7 +17,7 @@ groupshared uint ls[rowSize * nRowsPerPage]; // lookup
 groupshared uint ld[rowSize * nRowsPerPage]; // lookup
 
 uint mortonMask(uint a) {
-	return
+	return 
 		(a >> (maskOffsets & 0xff)) & 0x1 |
 		(a >> ((maskOffsets & 0xff00) >> 8) << 1) & 0x2 |
 		(a >> ((maskOffsets & 0xff0000) >> 16) << 2) & 0x4 |
@@ -28,7 +26,7 @@ uint mortonMask(uint a) {
 
 [RootSignature(SortSig)]
 [numthreads(rowSize, nRowsPerPage, 1)]
-void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
+void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 {
 	uint rowst = tid.y << 5;
 	uint flatid = rowst | tid.x;
@@ -71,7 +69,7 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 
 	uint bucketId = mortonMask(s[flatid]);
 	d[flatid] = 0; // count goes here
-	uint bucketIdNeighbor = mortonMask(s[flatid + 1]);
+	uint bucketIdNeighbor = mortonMask(s[flatid+1]);
 	uint step = (tid.x == 31)?1:(bucketIdNeighbor - bucketId);
 	uint stepMask =  WaveActiveBallot(step).x;
 	if (stepMask & (0x1 << tid.x)) {
@@ -105,8 +103,8 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	GroupMemoryBarrierWithGroupSync();
 	uint target = d[16 + bucketId + rowst] + tid.x;
 
-	output.Store((target + rowSize * nRowsPerPage * gid.x) << 2 , s[flatid]);
-	outputIndices.Store((target + rowSize * nRowsPerPage * gid.x) << 2, ls[flatid]);
+	input.Store((target + rowSize * nRowsPerPage * gid.x) << 2 , s[flatid]);
+	inputIndices.Store((target + rowSize * nRowsPerPage * gid.x) << 2, ls[flatid]);
 //	input.Store(flatid << 2, d[flatid]);
 /*
 	DeviceMemoryBarrierWithGroupSync();

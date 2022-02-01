@@ -33,7 +33,9 @@ bool MetaBallTest_HashSimple(float3 p, IMetaballTester metaballTester)
 			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
 				int3 localCellIndex = cellIdx;
 				localCellIndex += int3(xDis, yDis, zDis);
-				uint zIndex = mortonHashFromCellIndex(localCellIndex);
+				uint zIndex =
+					//mortonHashFromCellIndex(localCellIndex);
+					packedIndexFromCellIndex(localCellIndex);
 				uint zHash = hhash(zIndex);
 
 				uint hl = hashLut.Load(zHash * 4);
@@ -91,7 +93,9 @@ float3 Grad_HashSimple(float3 p)
 			for (zDis = -displacementDist; zDis <= displacementDist; zDis++) {
 				int3 localCellIndex = cellIdx;
 				localCellIndex += int3 (xDis, yDis, zDis);
-				uint zIndex = mortonHashFromCellIndex(localCellIndex);
+				uint zIndex = 
+					//mortonHashFromCellIndex(localCellIndex);
+					packedIndexFromCellIndex(localCellIndex);
 				uint zHash = hhash(zIndex);
 
 				uint hl = hashLut.Load(zHash * 4);

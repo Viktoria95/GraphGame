@@ -19,6 +19,15 @@ uint mortonHashFromCellIndex(uint3 cellIndex) {
 	return hash;
 }
 
+uint packedIndexFromCellIndex(uint3 cellIndex) {
+	return cellIndex.x | (cellIndex.y << 11) | (cellIndex.z << 22);
+}
+
+uint packedIndex(float3 pos) {
+	uint3 cellIndex = getCellIndex(pos);
+	return cellIndex.x | (cellIndex.y << 11) | (cellIndex.z << 22);
+}
+
 uint mortonHash(float3 pos) {
 	//uint x = (pos.x + boundarySide) / (2.0f * boundarySide) * 1023.0;
 	//uint z = (pos.z + boundarySide) / (2.0f * boundarySide) * 1023.0;

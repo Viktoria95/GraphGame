@@ -4,6 +4,7 @@
 #include <d3d11on12.h>
 #include <algorithm>
 
+#include "Float4Buffer.h"
 #include "RawBuffer.h"
 #include "ComputePass.h"
 #include "WaveSort.h"
@@ -33,6 +34,26 @@ bool verifyStarterCount(uint* data, uint* starterCount) {
 	}
 	return true;
 }
+
+struct MaskedComp {
+	MaskedComp(uint offsets) : maskOffsets(offsets){
+	}
+	uint maskOffsets;
+	bool operator()(const uint& a, const uint& b)const {
+		uint ma = 
+			(a >> (maskOffsets & 0xff)) & 0x1 |
+			(a >> ((maskOffsets & 0xff00) >> 8) << 1) & 0x2 |
+			(a >> ((maskOffsets & 0xff0000) >> 16) << 2) & 0x4 |
+			(a >> ((maskOffsets & 0xff000000) >> 24) << 3) & 0x8;
+		uint mb = 
+			(b >> (maskOffsets & 0xff)) & 0x1 |
+			(b >> ((maskOffsets & 0xff00) >> 8) << 1) & 0x2 |
+			(b >> ((maskOffsets & 0xff0000) >> 16) << 2) & 0x4 |
+			(b >> ((maskOffsets & 0xff000000) >> 24) << 3) & 0x8;
+		return ma < mb;
+	}
+};
+
 
 class AsyncComputeApp : public Egg::SimpleApp {
 	Egg11::App::P app11;
@@ -66,7 +87,7 @@ protected:
 	com_ptr<ID3D12DescriptorHeap> uavHeap;
 	std::vector<RawBuffer> buffers;
 
-#define BUFFERNAMES 		mortons, pins, sortedPins, sortedMortons, sortedMortonPerPageStarterCounts, hashList, cellLut, sortedCellLut, sortedHashList, sortedHashPerPageStarterCounts, hashLut
+#define BUFFERNAMES 		mortons, pins, mortonPerPageBucketCounts, sortedPins, sortedMortons, sortedMortonPerPageStarterCounts, hashList, cellLut, hashPerPageBucketCounts, sortedCellLut, sortedHashList, sortedHashPerPageStarterCounts, hashLut
 
 	enum BufferRole {
 		BUFFERNAMES
@@ -75,11 +96,13 @@ protected:
 		switch (r) {
 		case mortons: return L"mortons";
 		case pins: return L"pins";
+		case mortonPerPageBucketCounts: return L"mortonPerPageBucketCounts";
 		case sortedPins: return L"sortedPins";
 		case sortedMortons: return L"sortedMortons";
 		case sortedMortonPerPageStarterCounts: return L"sortedMortonPerPageStarterCounts";
 		case hashList: return L"hashList";
 		case cellLut: return L"cellLut";
+		case hashPerPageBucketCounts: return L"hashPerPageBucketCounts";
 		case sortedCellLut: return L"sortedCellLut";
 		case sortedHashList: return L"sortedHashList";
 		case sortedHashPerPageStarterCounts: return L"sortedHashPerPageStarterCounts";
@@ -160,17 +183,19 @@ public:
 		uint ffffs[] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
 
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
+		ComputeShader csLocalSortInPlace;
 		ComputeShader csLocalSort;
 		ComputeShader csMerge;
+		csLocalSortInPlace.createResources(device, "Shaders/csLocalSortInPlace.cso");
 		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
-		csMerge.createResources(device, "Shaders/csMerge.cso");
+		csMerge.createResources(device, "Shaders/csPack.cso");
 
-		mortonSort.creaseResources(csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers);
-		hashSort.creaseResources(csLocalSort, csMerge, dhStart, hashList, dhIncrSize, buffers);
+		mortonSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers, true);
+		hashSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, hashList, dhIncrSize, buffers);
 
 		ComputeShader csStarterCount;
 		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
-		mortonCountStarters.createResources(csStarterCount, dhStart, 3, dhIncrSize, buffers, 2);
+		mortonCountStarters.createResources(csStarterCount, dhStart, sortedMortons, dhIncrSize, buffers, 2);
 		hashCountStarters.createResources(csStarterCount, dhStart, sortedHashList, dhIncrSize, buffers, 2);
 
 		ComputeShader csCreateCellList;
@@ -396,7 +421,10 @@ public:
 			uint* pMortons = buffers[mortons].mapReadback();
 			bool ok = true;
 			for (uint i = 0; i < 32; i++) {
-				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32);
+				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32
+					, MaskedComp(0x01160b00)
+					//TODO mortoncomp
+				);
 			}
 			buffers[mortons].unmapReadback();
 		}
@@ -404,9 +432,14 @@ public:
 		//	
 		if(frameCount > 1)
 		{
+			uint* pMortonPerPageBucketCounts = buffers[mortonPerPageBucketCounts].mapReadback();
+
 			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
-			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32);
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32
+				, MaskedComp(0x01160b00)
+				//TODO mortoncomp
+			);
 
 			uint* pMortonStarterCount = buffers[sortedMortonPerPageStarterCounts].mapReadback();
 			//TODO verify startercount
@@ -462,6 +495,7 @@ public:
 					bool gaz = true;
 			}
 
+			buffers[mortonPerPageBucketCounts].unmapReadback();
 			buffers[sortedPins].unmapReadback();
 			buffers[hashLut].unmapReadback();
 			buffers[sortedHashPerPageStarterCounts].unmapReadback();

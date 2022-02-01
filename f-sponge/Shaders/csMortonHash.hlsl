@@ -9,7 +9,8 @@ RWByteAddressBuffer hashes;
 void csMortonHash(uint3 DTid : SV_DispatchThreadID)
 {
 	unsigned int tid = DTid.x;
-	hashes.Store( tid << 2, mortonHash(positions[tid].xyz) );
+//	hashes.Store( tid << 2, mortonHash(positions[tid].xyz) );
+	hashes.Store(tid << 2, packedIndex(positions[tid].xyz));
 }
 
 
