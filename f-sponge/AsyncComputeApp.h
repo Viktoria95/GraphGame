@@ -128,7 +128,7 @@ public:
 
 		frameCount = 0;
 
-		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+/*noelf		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 		d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 
 		auto featl = D3D_FEATURE_LEVEL_11_0;
@@ -148,7 +148,7 @@ public:
 
 		device11->QueryInterface<ID3D11On12Device>(device11on12.GetAddressOf());
 		device11->QueryInterface<ID3D11Device2>(device211.GetAddressOf());
-		app11 = Game::Create(device211);
+		app11 = Game::Create(device211);*/
 
 		uploadFence.createResources(device);
 
@@ -163,7 +163,7 @@ public:
 			device->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(uavHeap.GetAddressOf()));
 
 		for (auto name : { BUFFERNAMES }) {
-			bool sharedWithD3D11 = name == mortons || name == sortedPins || name == sortedCellLut || name == hashLut;
+			bool sharedWithD3D11 = false; //noelf name == mortons || name == sortedPins || name == sortedCellLut || name == hashLut;
 			std::wstring wname = bufferToString(name);
 			buffers.push_back(RawBuffer(wname, sharedWithD3D11));
 			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(
@@ -171,10 +171,10 @@ public:
 				name,
 				device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 			buffers[name].createResources(device, device11on12, handle);
-			app11->setSharedResource(wname, buffers[name].getWrappedBuffer());
+			//noelf app11->setSharedResource(wname, buffers[name].getWrappedBuffer());
 		}
 
-		app11->createResources();
+		//noelf app11->createResources();
 
 		//buffers[mortons].fillRandomMask(0x7);
 		buffers[mortons].fillFFFFFFFF();
@@ -250,6 +250,7 @@ public:
 		graphicsFenceChain.createResources(device, swapChainBackBufferCount);
 		copyFenceChain.createResources(device, swapChainBackBufferCount);
 
+		/* //noelf
 		renderTargets11.resize(swapChainBackBufferCount);
 		defaultRtvs11.resize(swapChainBackBufferCount);
 		depthStencils11.resize(swapChainBackBufferCount);
@@ -294,6 +295,7 @@ public:
 				defaultDsvs11[i].GetAddressOf()
 			);
 		}
+		*/
 
 		computeCommandLists.resize(swapChainBackBufferCount);
 		computeAllocators.resize(swapChainBackBufferCount);
@@ -513,6 +515,7 @@ public:
 		ID3D12CommandList* cLists[] = { commandList.Get() };
 		commandQueue->ExecuteCommandLists(_countof(cLists), cLists);
 
+		/*//noelf
 		device11on12->AcquireWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
 		device11on12->AcquireWrappedResources(depthStencils11[swapChainBackBufferIndex].GetAddressOf(), 1);
 
@@ -536,6 +539,7 @@ public:
 		device11on12->ReleaseWrappedResources(renderTargets11[swapChainBackBufferIndex].GetAddressOf(), 1);
 
 		context11->Flush();
+		*/
 
 		graphicsFenceChain.signal(commandQueue, swapChainBackBufferIndex);
 
@@ -548,21 +552,22 @@ public:
 	virtual void Resize(int width, int height) override {
 		SimpleApp::Resize(width, height);
 
-		CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
-		context11->RSSetViewports(1, &screenViewport);
+		//noelf CD3D11_VIEWPORT screenViewport(0.0f, 0.0f, width, height);
+		//noelf context11->RSSetViewports(1, &screenViewport);
 	}
 
 	virtual void Update(float dt, float T) override {
-		app11->animate(dt, T);
+		//noelf app11->animate(dt, T);
 	}
 
 	virtual void ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
 		if (uMsg != 18) {
-			app11->processMessage(hWnd, uMsg, wParam, lParam);
+			//noelf app11->processMessage(hWnd, uMsg, wParam, lParam);
 		}
 	}
 
 	virtual void ReleaseSwapChainResources() {
+		/* //noelf 
 		app11->releaseSwapChainResources();
 
 		for (com_ptr<ID3D11Resource>& i : renderTargets11) {
@@ -586,15 +591,18 @@ public:
 		defaultDsvs11.clear();
 
 		context11->Flush();
+		*/
 
 		__super::ReleaseSwapChainResources();
 	}
 
 	virtual void ReleaseResources() override {
+		/* //noelf
 		app11->releaseResources();
 		app11.reset();
 		device11.Reset();
 		context11.Reset();
+		*/
 
 		uavHeap.Reset();
 

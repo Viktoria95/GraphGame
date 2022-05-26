@@ -93,7 +93,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	DX_API("Failed to create debug layer")
 		D3D12GetDebugInterface(IID_PPV_ARGS(debugController.GetAddressOf()));
 
-	debugController->EnableDebugLayer();
+	//nodebug debugController->EnableDebugLayer();
 
 	// needed to load WIC files (Windows Imaging Component) such as Jpg-s.
 	DX_API("Failed to initialize COM library (ImportTexture)")

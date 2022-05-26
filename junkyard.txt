@@ -1,14 +1,106 @@
-//	com_ptr<ID3D12PipelineState> m_computePSO;
-//	com_ptr<ID3D12RootSignature> m_computeRootSignature;
-//	com_ptr<ID3D12PipelineState> m_mergePSO;
-//	com_ptr<ID3D12RootSignature> m_mergeRootSignature;
+	com_ptr<ID3D12PipelineState> m_computePSO;
+	com_ptr<ID3D12RootSignature> m_computeRootSignature;
+	com_ptr<ID3D12PipelineState> m_mergePSO;
+	com_ptr<ID3D12RootSignature> m_mergeRootSignature;
 
-//	unsigned int* m_arrayDataBegin;
-//	unsigned int* m_arrayDataEnd;
+	unsigned int* m_arrayDataBegin;
+	unsigned int* m_arrayDataEnd;
 
-//	com_ptr<ID3D12Resource>      m_arrayToBeSorted;
-//	com_ptr<ID3D12Resource>      m_sortedArray;
-//	com_ptr<ID3D12Resource>      m_indicesToBeSorted;
-//	com_ptr<ID3D12Resource>      m_sortedIndices;
-//	com_ptr<ID3D12Resource>      m_arrayForUpload;
-//	com_ptr<ID3D12Resource>      m_arrayForReadback;
+	com_ptr<ID3D12Resource>      m_arrayToBeSorted;
+	com_ptr<ID3D12Resource>      m_sortedArray;
+	com_ptr<ID3D12Resource>      m_indicesToBeSorted;
+	com_ptr<ID3D12Resource>      m_sortedIndices;
+	com_ptr<ID3D12Resource>      m_arrayForUpload;
+	com_ptr<ID3D12Resource>      m_arrayForReadback;
+
+	enum ResourceBufferState : uint32_t
+	{
+		ResourceState_ReadyCompute,
+		ResourceState_Computing,    // async is currently running on this resource buffer
+		ResourceState_Computed,     // async buffer has been updated, no one is using it, moved to this state by async thread, only render will access in this state
+		ResourceState_Switching,    // switching buffer from texture to unordered, from render to compute access
+		ResourceState_Rendering,    // buffer is currently being used by the render system for the frame
+		ResourceState_Rendered      // render frame finished for this resource. possible to switch to computing by render thread if needed
+	};
+
+	std::atomic<ResourceBufferState> m_resourceState[2];
+
+		/*		if (m_resourceState[0] == ResourceState_Computed)			// async has finished with an update, so swap out the buffers
+				{
+					m_renderResourceFenceValue++;
+		//			EnsureResourceState(RenderIndex(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		//			m_resourceState[RenderIndex()] = ResourceState_Switching;
+		//			SwapRenderComputeIndex();
+				}
+				else if (m_resourceState[0] == ResourceState_Switching)	// the compute buffer has finished being swapped from a pixel shader view to an unordered access view
+				{																		// it's now ready for the async compute thread to use
+					m_resourceState[0] = ResourceState_ReadyCompute;
+				}
+				else if (m_resourceState[0] == ResourceState_ReadyCompute)	// the async compute thread hasn't kicked off and starting using the compute buffer
+				{
+					// do nothing, still waiting on async compute to actually do work
+				}
+				else //if (m_windowUpdated)												// need to kick off a new async compute, the user has changed the view area with the controller
+				{
+		//			assert((m_resourceState[0] == ResourceState_ReadyCompute) || (m_resourceState[RenderIndex()] == ResourceState_Rendered));
+					m_renderResourceFenceValue++;
+		//			EnsureResourceState(RenderIndex(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					m_resourceState[0] = ResourceState_Switching;
+		//			SwapRenderComputeIndex();
+				}*/	
+
+
+
+				//if (m_windowUpdated)
+				{
+					//					while (true)
+					//					{
+					//						if (m_resourceState[0/*ComputeIndex()*/] == ResourceState_Switching)						// render kicked off a resource switch to unordered,
+					//						{																					// check the fence for completed for quickest turn around
+					//							if (m_renderResourceFence->GetCompletedValue() >= m_renderResourceFenceValue)	// render might also check first and switch the state to ready compute
+					//							{
+					//								m_resourceState[0/*ComputeIndex()*/] = ResourceState_ReadyCompute;
+					//								break;
+					//							}
+					//						}
+					//						if (m_resourceState[0/*ComputeIndex()*/] == ResourceState_ReadyCompute)					// render detected compute buffer switched to unordered access first
+					//						{
+					//							break;
+					//						}
+					//						if (!m_usingAsyncCompute)															// user has request synchronous compute
+					//						{
+					//							break;
+					//						}
+					//					}
+					//					if (!m_usingAsyncCompute)																// user has request synchronous compute
+					//					{
+					//						continue;
+					//					}				
+
+
+
+
+		//		ID3D12DescriptorHeap* descriptorHeaps[] = { uavHeap.Get() };
+		//		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		//
+		//		commandList->SetGraphicsRootDescriptorTable(0, uavHeap->GetGPUDescriptorHandleForHeapStart());
+		//		commandList->Dispatch(1, 0, 0);
+
+
+
+				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+		uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer.CounterOffsetInBytes = 0;
+		uavDesc.Buffer.FirstElement = 0;
+		uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+		uavDesc.Buffer.NumElements = 32 * 32 * 32;
+		uavDesc.Buffer.StructureByteStride = 0;
+		// create uav
+		device->CreateUnorderedAccessView(m_arrayToBeSorted.Get(), nullptr, &uavDesc, uavHeap->GetCPUDescriptorHandleForHeapStart());
+		device->CreateUnorderedAccessView(m_sortedArray.Get(), nullptr, &uavDesc,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 1, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
+		device->CreateUnorderedAccessView(m_indicesToBeSorted.Get(), nullptr, &uavDesc,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 2, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
+		device->CreateUnorderedAccessView(m_sortedIndices.Get(), nullptr, &uavDesc,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE(uavHeap->GetCPUDescriptorHandleForHeapStart(), 3, device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)));
