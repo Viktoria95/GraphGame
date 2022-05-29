@@ -54,6 +54,24 @@ struct MaskedComp {
 	}
 };
 
+struct MortonComp {
+	uint mortonHashFromCellIndex(uint a) const {
+		uint x = (a      ) & 0x7ff;
+		uint y = (a >> 11) & 0x7ff;
+		uint z = (a >> 22) & 0x7ff;
+		uint hash = 0;
+		uint i;
+		for (i = 0; i < 7; ++i)
+		{
+			hash |= ((x & (1 << i)) << (2 * i)) | ((y & (1 << i)) << (2 * i + 1)) | ((z & (1 << i)) << (2 * i + 2));
+		}
+		return hash;
+	}
+
+	bool operator()(const uint& a, const uint& b)const {
+		return mortonHashFromCellIndex(a) < mortonHashFromCellIndex(b);
+	}
+};
 
 class AsyncComputeApp : public Egg::SimpleApp {
 	Egg11::App::P app11;
@@ -176,8 +194,9 @@ public:
 
 		//noelf app11->createResources();
 
+		buffers[mortons].fillRandom();
 		//buffers[mortons].fillRandomMask(0x7);
-		buffers[mortons].fillFFFFFFFF();
+		//buffers[mortons].fillFFFFFFFF();
 
 		uint zeros[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 		uint ffffs[] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
@@ -190,7 +209,7 @@ public:
 		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
 		csMerge.createResources(device, "Shaders/csPack.cso");
 
-		mortonSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers, true);
+		mortonSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers, false /*true*/);
 		hashSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, hashList, dhIncrSize, buffers);
 
 		ComputeShader csStarterCount;
@@ -424,7 +443,8 @@ public:
 			bool ok = true;
 			for (uint i = 0; i < pageCount; i++) {
 				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32
-					, MaskedComp(0x01160b00)
+					//, MaskedComp(0x01160b00)
+					, MortonComp()
 					//TODO mortoncomp
 				);
 			}
@@ -438,8 +458,10 @@ public:
 
 			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
-			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * pageCount
-				, MaskedComp(0x01160b00)
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32
+				, MaskedComp(0xffffffff)
+				//, MaskedComp(0x01160b00)
+				//, MortonComp()
 				//TODO mortoncomp
 			);
 
