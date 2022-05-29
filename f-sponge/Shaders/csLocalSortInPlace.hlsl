@@ -15,6 +15,7 @@ groupshared uint s[rowSize * nRowsPerPage]; // sort step buffer, then sorted row
 groupshared uint d[rowSize * nRowsPerPage]; // sort step buffer, then bucket counts for sorted rows
 groupshared uint ls[rowSize * nRowsPerPage]; // lookup
 groupshared uint ld[rowSize * nRowsPerPage]; // lookup
+groupshared uint perPageBucketOffsets[16];
 
 uint mortonMask(uint a) {
 	return 
@@ -32,7 +33,7 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 	s[flatid] = input.Load(initialElementIndex << 2 );
-	ls[flatid] = inputIndices.Load(initialElementIndex << 2);  //initialElementIndex;
+	ls[flatid] = inputIndices.Load(initialElementIndex << 2);//  initialElementIndex;
 	//scan on bit i
 	for (uint i = 0; i < 32; i+=8) {
 		uint imask = 0x1 << ((maskOffsets >> i) & 0xff);
@@ -82,23 +83,25 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	// count': we scan the count matrix 32-length row by 32-length row, adding previous row sum sum
 	uint crossid = (tid.x << 5) | tid.y;
 
-	if (tid.y < 16)
-		d[16 + crossid] = WavePrefixSum(d[crossid]);
+	if (tid.y < 16) {
+		uint perRowBucketCount = d[crossid];
+		d[16 + crossid] = WavePrefixSum(perRowBucketCount);// +perRowBucketCount;
+	}
 
 	GroupMemoryBarrierWithGroupSync();
-	if (tid.y == 1 && tid.x < 16) {
-		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x] + d[32 * 31 + tid.x];
+	if (tid.y == 0 && tid.x < 16) {
+		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x] +d[32 * 31 + tid.x];
 		uint perPageBucketOffset = WavePrefixSum(perPageBucketCount);
 		perPageBucketCounts.Store((tid.x | (gid.x << 4)) << 2, 
 			perPageBucketOffset + perPageBucketCount
 			);
-		d[tid.x + 16] = perPageBucketOffset;
+		perPageBucketOffsets[tid.x] = perPageBucketOffset;
 	}
 	// write these out to resource mem, per 1024-page
 
 	GroupMemoryBarrierWithGroupSync();
 	if (tid.x < 16)
-		d[16 + flatid] += (tid.y?d[16 + tid.x]:0) - WavePrefixSum(d[flatid]);
+		d[16 + flatid] += (tid.y?perPageBucketOffsets[tid.x]:0) - WavePrefixSum(d[flatid]);// -d[flatid];
 
 	GroupMemoryBarrierWithGroupSync();
 	uint target = d[16 + bucketId + rowst] + tid.x;

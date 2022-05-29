@@ -13,7 +13,7 @@
 
 bool verifyStarterCount(uint* data, uint* starterCount) {
 	uint prev = 0xffffffff;
-	for (uint iPage = 0; iPage < 32; iPage++)
+	for (uint iPage = 0; iPage < pageCount; iPage++)
 	{
 		uint aStarters = 0;
 		uint aLeadingNonStarters = 0;
@@ -422,7 +422,7 @@ public:
 		{
 			uint* pMortons = buffers[mortons].mapReadback();
 			bool ok = true;
-			for (uint i = 0; i < 32; i++) {
+			for (uint i = 0; i < pageCount; i++) {
 				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32
 					, MaskedComp(0x01160b00)
 					//TODO mortoncomp
@@ -438,7 +438,7 @@ public:
 
 			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
-			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * pageCount
 				, MaskedComp(0x01160b00)
 				//TODO mortoncomp
 			);
@@ -452,14 +452,14 @@ public:
 			uint* pSortedCellLut = buffers[sortedCellLut].mapReadback();
 
 			uint* pSortedHlist = buffers[sortedHashList].mapReadback();
-			bool hok = std::is_sorted(pSortedHlist, pSortedHlist + 32 * 32 * 32);
+			bool hok = std::is_sorted(pSortedHlist, pSortedHlist + 32 * 32 * pageCount);
 
 			uint* pHlistStarters = buffers[sortedHashPerPageStarterCounts].mapReadback();
 			bool hscok = verifyStarterCount(pSortedHlist, pHlistStarters);
 			uint* pHashLut = buffers[hashLut].mapReadback();
 
 			//hash to cell
-			for (int i = 0; i < 32 * 32 * 32; i++) {
+			for (int i = 0; i < 32 * 32 * pageCount; i++) {
 				uint hl = pHashLut[i];
 				uint hStart = hl & 0xffff;
 				uint hLength = hl >> 16;
@@ -475,7 +475,7 @@ public:
 				}
 			}
 			//cell to hash
-			for (int i = 0; i < 32 * 32 * 32; i++) {
+			for (int i = 0; i < 32 * 32 * pageCount; i++) {
 				uint morton = pSortedMortons[i];
 				if (morton == 0xffffffff)
 					break;
