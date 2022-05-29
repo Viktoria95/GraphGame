@@ -3,7 +3,7 @@
 #include <d3d11on12.h>
 #include <string>
 
-constexpr int pageCount = 1024;
+constexpr int pageCount = 32;
 
 class RawBuffer {
 	com_ptr<ID3D12Resource>		buffer;

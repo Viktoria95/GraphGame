@@ -15,7 +15,6 @@ groupshared uint s[rowSize * nRowsPerPage]; // sort step buffer, then sorted row
 groupshared uint d[rowSize * nRowsPerPage]; // sort step buffer, then bucket counts for sorted rows
 groupshared uint ls[rowSize * nRowsPerPage]; // lookup
 groupshared uint ld[rowSize * nRowsPerPage]; // lookup
-groupshared uint perPageBucketOffsets[16];
 
 uint mortonMask(uint a) {
 	return 
@@ -95,13 +94,13 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 		perPageBucketCounts.Store((tid.x | (gid.x << 4)) << 2, 
 			perPageBucketOffset + perPageBucketCount
 			);
-		perPageBucketOffsets[tid.x] = perPageBucketOffset;
+		d[16 + tid.x] = perPageBucketOffset;
 	}
 	// write these out to resource mem, per 1024-page
 
 	GroupMemoryBarrierWithGroupSync();
 	if (tid.x < 16)
-		d[16 + flatid] += (tid.y?perPageBucketOffsets[tid.x]:0) - WavePrefixSum(d[flatid]);// -d[flatid];
+		d[16 + flatid] += (tid.y?d[16 + tid.x]:0) - WavePrefixSum(d[flatid]);// -d[flatid];
 
 	GroupMemoryBarrierWithGroupSync();
 	uint target = d[16 + bucketId + rowst] + tid.x;
