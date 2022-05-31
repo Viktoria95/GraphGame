@@ -10,10 +10,12 @@ RWByteAddressBuffer outputIndices : register(u3);
 RWByteAddressBuffer output : register(u4);
 uint maskOffsets : register(b0);
 
-#define groupSize 32
 #define nBuckets 16
-
-groupshared uint bucketSat[nBuckets * 32];
+#define nElementsPerRow 32
+#define nRowsPerPage 32
+#define nPagesPerChunk 32
+#define nChunks 32
+#define groupDivisor 4
 
 uint mortonMask(uint a) {
 	return
@@ -24,43 +26,44 @@ uint mortonMask(uint a) {
 }
 
 [RootSignature(SortSig)]
-[numthreads(groupSize, groupSize, 1)]
+[numthreads(nElementsPerRow, nRowsPerPage / groupDivisor, 1)]
 void csPack( uint3 tid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 {
-	uint onpageindex = tid.x | (tid.y << 5);
-	uint globalid = onpageindex | (gid.x << 10);
+	uint onpageindex = tid.x + (tid.y + gid.y * nRowsPerPage / groupDivisor) * nElementsPerRow;
+	uint globalid = onpageindex + gid.x * nElementsPerRow * nRowsPerPage;
 
-	uint value = input.Load(globalid << 2);
-	uint lvalue = inputIndices.Load(globalid << 2);
-	uint bucketId = mortonMask(value);
+	uint key = input.Load(globalid << 2);
+	uint pin = inputIndices.Load(globalid << 2);
+	uint bucketid = mortonMask(key);
 
-	if (tid.y < 16) {
-		uint bucketCount = perPageBucketCounts.Load(((tid.x << 4) | tid.y) << 2);
-		bucketSat[tid.y | (tid.x << 4)] = WavePrefixSum(bucketCount) + bucketCount;
-	}
-	uint mybucketoffsetonpage = 
-		bucketId  ? 
-		perPageBucketCounts.Load( ( (bucketId - 1)  | ( gid.x << 4) ) << 2)
-		:
-		0;
+	uint target = onpageindex
+		+ (bucketid ? perPageBucketCounts.Load(((bucketid    ) * nChunks * nPagesPerChunk - 1) << 2):0)
+		+ (gid.x    ? perPageBucketCounts.Load(( bucketid      * nChunks * nPagesPerChunk + (gid.x-1)) << 2):0)
+		- (bucketid ? perPageBucketCounts.Load(((bucketid - 1) * nChunks * nPagesPerChunk + gid.x) << 2):0)
+		;
+	/*
+	onpageindex 
+	  - mylocalbucketoffset : sat[bucketid-1, pageid+1] - sat[bucketid-1, pageid]
+	  + myglobalbucketoffset: sat[bucketid-1, top] + sat[bucketid, pageid] - sat[bucketid-1, pageid]
 
-	GroupMemoryBarrierWithGroupSync();
+	  ==
 
+	  onpageindex + top[bucketid-1] + sat[bucketid, pageid-1] - sat[bucketid-1, pageid]
+	     preceding global buckets - preceding local buckets
+		*/
 //	output.Store(onpageindex - mybucketoffsetperpage + wheredoesmyperpagebucketstartinglobal, );
-	uint target = (
+/*	uint target = (
 		bucketId ? 
 			onpageindex - mybucketoffsetonpage
-			+ bucketSat[bucketId - 1 + 31*16]
-			+ (gid.x?bucketSat[bucketId + (gid.x-1) * 16]:0)
+			+ bucketSat[bucketId - 1 + 31*16]  // my page's ppfcount in local bucket
+			+ (gid.x?bucketSat[bucketId + (gid.x-1) * 16]:0) // excluding last: my page's offset in local bucket
 			- (gid.x?bucketSat[bucketId - 1 + (gid.x-1) * 16]:0)
 		:
 			(
 			onpageindex
 		    + (gid.x?bucketSat[bucketId + (gid.x-1) * 16]:0)
 			)
-		) << 2;
-	output.Store(target, value);
-	outputIndices.Store(target, lvalue);
-
-
+		) << 2;*/
+	output.Store(target << 2, key);
+	outputIndices.Store(target << 2, pin);
 }

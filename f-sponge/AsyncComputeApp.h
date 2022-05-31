@@ -13,7 +13,7 @@
 
 bool verifyStarterCount(uint* data, uint* starterCount) {
 	uint prev = 0xffffffff;
-	for (uint iPage = 0; iPage < pageCount; iPage++)
+	for (uint iPage = 0; iPage < nPagesPerChunk * nChunks; iPage++)
 	{
 		uint aStarters = 0;
 		uint aLeadingNonStarters = 0;
@@ -51,6 +51,15 @@ struct MaskedComp {
 			(b >> ((maskOffsets & 0xff0000) >> 16) << 2) & 0x4 |
 			(b >> ((maskOffsets & 0xff000000) >> 24) << 3) & 0x8;
 		return ma < mb;
+	}
+};
+
+struct PartialComp {
+	PartialComp(uint mask) : mask(mask) {
+	}
+	uint mask;
+	bool operator()(const uint& a, const uint& b)const {
+		return (a & mask) < (b & mask);
 	}
 };
 
@@ -204,13 +213,17 @@ public:
 		auto dhStart = CD3DX12_GPU_DESCRIPTOR_HANDLE(uavHeap->GetGPUDescriptorHandleForHeapStart());
 		ComputeShader csLocalSortInPlace;
 		ComputeShader csLocalSort;
-		ComputeShader csMerge;
+		ComputeShader csSumPages;
+		ComputeShader csSumChunks;
+		ComputeShader csPack;
 		csLocalSortInPlace.createResources(device, "Shaders/csLocalSortInPlace.cso");
 		csLocalSort.createResources(device, "Shaders/csLocalSort.cso");
-		csMerge.createResources(device, "Shaders/csPack.cso");
+		csSumPages.createResources(device, "Shaders/csSumPages.cso");
+		csSumChunks.createResources(device, "Shaders/csSumChunks.cso");
+		csPack.createResources(device, "Shaders/csPack.cso");
 
-		mortonSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, mortons, dhIncrSize, buffers, false /*true*/);
-		hashSort.creaseResources(csLocalSortInPlace, csLocalSort, csMerge, dhStart, hashList, dhIncrSize, buffers);
+		mortonSort.creaseResources(csLocalSortInPlace, csLocalSort, csSumPages, csSumChunks, csPack, dhStart, mortons, dhIncrSize, buffers, false /*true*/);
+		hashSort.creaseResources(csLocalSortInPlace, csLocalSort, csSumPages, csSumChunks, csPack, dhStart, hashList, dhIncrSize, buffers);
 
 		ComputeShader csStarterCount;
 		csStarterCount.createResources(device, "Shaders/csStarterCount.cso");
@@ -360,13 +373,13 @@ public:
 		if (frameCount > 0) {
 			fillPins.populate(computeCommandLists[swapChainBackBufferIndex]);
 			mortonSort.populate(computeCommandLists[swapChainBackBufferIndex]);
-			mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
+/*			mortonCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
 			clearHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
 			createCellList.populate(computeCommandLists[swapChainBackBufferIndex]);
 			hashSort.populate(computeCommandLists[swapChainBackBufferIndex]);
 			hashCountStarters.populate(computeCommandLists[swapChainBackBufferIndex]);
 			clearHashLut.populate(computeCommandLists[swapChainBackBufferIndex]);
-			createHashList.populate(computeCommandLists[swapChainBackBufferIndex]);
+			createHashList.populate(computeCommandLists[swapChainBackBufferIndex]);*/
 		} else {
 			fillSortedPins.populate(computeCommandLists[swapChainBackBufferIndex]);
 		}
@@ -441,10 +454,12 @@ public:
 		{
 			uint* pMortons = buffers[mortons].mapReadback();
 			bool ok = true;
-			for (uint i = 0; i < pageCount; i++) {
+			for (uint i = 0; i < nPagesPerChunk * nChunks; i++) {
 				ok = ok && std::is_sorted(pMortons + i * 32 * 32, pMortons + i * 32 * 32 + 32 * 32
+					//, std::less<uint>()
+					, PartialComp(0x0000ffff)
 					//, MaskedComp(0x01160b00)
-					, MortonComp()
+					//, MortonComp()
 					//TODO mortoncomp
 				);
 			}
@@ -458,9 +473,9 @@ public:
 
 			uint* pSortedPins = buffers[sortedPins].mapReadback();
 			uint* pSortedMortons = buffers[sortedMortons].mapReadback();
-			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * 32
-				, MaskedComp(0xffffffff)
-				//, MaskedComp(0x01160b00)
+			bool ok = std::is_sorted(pSortedMortons, pSortedMortons + 32 * 32 * nPagesPerChunk * nChunks
+				, std::less<uint>()
+				//, PartialComp(0x0000ffff)
 				//, MortonComp()
 				//TODO mortoncomp
 			);
@@ -474,14 +489,14 @@ public:
 			uint* pSortedCellLut = buffers[sortedCellLut].mapReadback();
 
 			uint* pSortedHlist = buffers[sortedHashList].mapReadback();
-			bool hok = std::is_sorted(pSortedHlist, pSortedHlist + 32 * 32 * pageCount);
+			bool hok = std::is_sorted(pSortedHlist, pSortedHlist + 32 * 32 * nPagesPerChunk * nChunks);
 
 			uint* pHlistStarters = buffers[sortedHashPerPageStarterCounts].mapReadback();
 			bool hscok = verifyStarterCount(pSortedHlist, pHlistStarters);
 			uint* pHashLut = buffers[hashLut].mapReadback();
 
 			//hash to cell
-			for (int i = 0; i < 32 * 32 * pageCount; i++) {
+			for (int i = 0; i < 32 * 32 * nPagesPerChunk * nChunks; i++) {
 				uint hl = pHashLut[i];
 				uint hStart = hl & 0xffff;
 				uint hLength = hl >> 16;
@@ -497,7 +512,7 @@ public:
 				}
 			}
 			//cell to hash
-			for (int i = 0; i < 32 * 32 * pageCount; i++) {
+			for (int i = 0; i < 32 * 32 * nPagesPerChunk * nChunks; i++) {
 				uint morton = pSortedMortons[i];
 				if (morton == 0xffffffff)
 					break;

@@ -12,6 +12,9 @@ uint maskOffsets : register(b0);
 
 #define rowSize 32
 #define nRowsPerPage 32
+#define nPagesPerChunk 32
+#define nChunks 32
+#define groupDivisor 4
 
 groupshared uint s[rowSize * nRowsPerPage]; // sort step buffer, then sorted rows
 groupshared uint d[rowSize * nRowsPerPage]; // sort step buffer, then bucket counts for sorted rows
@@ -27,14 +30,16 @@ uint mortonMask(uint a) {
 }
 
 [RootSignature(SortSig)]
-[numthreads(rowSize, nRowsPerPage, 1)]
+[numthreads(rowSize, nRowsPerPage / groupDivisor, 1)]
 void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 {
+	d[flatid] = 0; // count goes here
+
 	uint rowst = tid.y << 5;
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
 	uint key = input.Load(initialElementIndex << 2 );
-	uint locals = initialElementIndex << 5 | mortonMask(key);
+	uint locals = (initialElementIndex << 5) | mortonMask(key);
 	//scan on bit i
 	for (uint i = 0; i < 4; i++) {
 		bool pred = (locals >> i) & 0x1;
@@ -51,10 +56,9 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	}
 	//compute step
 
-	uint bucketId = locals & 0x1f;
-	d[flatid] = 0; // count goes here
-	uint bucketIdNeighbor = s[flatid + 1] & 0x1f;
-	uint step = (tid.x == 31)?1:(bucketIdNeighbor - bucketId);
+	uint bucketId = locals & 0xf;  //TODO 0x1f here caused an error????
+	uint bucketIdNeighbor = s[flatid + 1] & 0xf; //TODO 0x1f here caused an error????
+	uint step = (tid.x == 31)?1:(bucketIdNeighbor - bucketId); //TODO the test here should not matter as we shift that bit out later
 	uint stepMask =  WaveActiveBallot(step).x;
 	if (stepMask & (0x1 << tid.x)) {
 		d[bucketId + rowst] = 32 - firstbithigh(((stepMask << 1) | 0x1) << (31-tid.x));
@@ -75,7 +79,7 @@ void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	if (tid.y == 1 && tid.x < 16) {
 		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x];// +d[32 * 31 + tid.x];
 		uint perPageBucketOffset = WavePrefixSum(perPageBucketCount);
-		perPageBucketCounts.Store((tid.x | (gid.x << 4)) << 2, 
+		perPageBucketCounts.Store(((tid.x * nPagesPerChunk * nChunks) | gid.x) << 2,
 			perPageBucketOffset + perPageBucketCount
 			);
 		d[tid.x + 16] = perPageBucketOffset;

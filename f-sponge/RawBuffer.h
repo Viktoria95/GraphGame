@@ -3,7 +3,9 @@
 #include <d3d11on12.h>
 #include <string>
 
-constexpr int pageCount = 32;
+constexpr int nPagesPerChunk = 32;
+constexpr int nChunks = 32;
+constexpr int nBuckets = 16;
 
 class RawBuffer {
 	com_ptr<ID3D12Resource>		buffer;
@@ -19,7 +21,7 @@ public:
 	RawBuffer(
 		std::wstring debugName,
 		bool sharedWithD3D11 = false,
-		uint bufferUintSize = 32 * 32 * pageCount) :debugName(debugName), sharedWithD3D11(sharedWithD3D11), bufferUintSize(bufferUintSize) {
+		uint bufferUintSize = 32 * 32 * nPagesPerChunk * nChunks) :debugName(debugName), sharedWithD3D11(sharedWithD3D11), bufferUintSize(bufferUintSize) {
 
 	}
 
@@ -114,7 +116,7 @@ public:
 	}
 
 	unsigned int* mapReadback() {
-		D3D12_RANGE readbackBufferRange{ 0, 4 * 32 * 32 * pageCount };
+		D3D12_RANGE readbackBufferRange{ 0, 4 * 32 * 32 * nPagesPerChunk * nChunks };
 		unsigned int* pReadbackBufferData;
 		readbackBuffer->Map
 		(

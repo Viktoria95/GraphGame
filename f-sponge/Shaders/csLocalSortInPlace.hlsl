@@ -10,6 +10,8 @@ uint maskOffsets : register(b0);
 
 #define rowSize 32
 #define nRowsPerPage 32
+#define nPagesPerChunk 32
+#define nChunks 32
 
 groupshared uint s[rowSize * nRowsPerPage]; // sort step buffer, then sorted rows
 groupshared uint d[rowSize * nRowsPerPage]; // sort step buffer, then bucket counts for sorted rows
@@ -31,10 +33,11 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	uint rowst = tid.y << 5;
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
-	s[flatid] = input.Load(initialElementIndex << 2 );
+	s[flatid] = reversebits(initialElementIndex * 13) * 17; // input.Load(initialElementIndex << 2);
 	ls[flatid] = inputIndices.Load(initialElementIndex << 2);//  initialElementIndex;
+
 	//scan on bit i
-	for (uint i = 0; i < 32; i+=8) {
+	for (uint i = 0; i < 32; i += 8) {
 		uint imask = 0x1 << ((maskOffsets >> i) & 0xff);
 		{
 			bool pred = s[flatid] & imask;
@@ -49,6 +52,7 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 				ld[flatid - prefixBits] = ls[flatid];
 			}
 		}
+		GroupMemoryBarrierWithGroupSync();
 		i+=8;
 		imask = 0x1 << ((maskOffsets >> i) & 0xff);
 		{
@@ -66,6 +70,7 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 		}
 	}
 	//compute step
+	GroupMemoryBarrierWithGroupSync();
 
 	uint bucketId = mortonMask(s[flatid]);
 	d[flatid] = 0; // count goes here
@@ -89,9 +94,9 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 
 	GroupMemoryBarrierWithGroupSync();
 	if (tid.y == 0 && tid.x < 16) {
-		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x] +d[32 * 31 + tid.x];
+		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x] + d[32 * 31 + tid.x];
 		uint perPageBucketOffset = WavePrefixSum(perPageBucketCount);
-		perPageBucketCounts.Store((tid.x | (gid.x << 4)) << 2, 
+		perPageBucketCounts.Store(((tid.x * nPagesPerChunk * nChunks) | gid.x) << 2, 
 			perPageBucketOffset + perPageBucketCount
 			);
 		d[16 + tid.x] = perPageBucketOffset;

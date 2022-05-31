@@ -424,6 +424,15 @@
     <FxCompile Include="Shaders\csLocalSortInPlace.hlsl">
       <Filter>Shaders\Cell</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\csSumPages.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csSumChunks.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\csPackSingleChunk.hlsl">
+      <Filter>Shaders\Cell</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\hash.hlsli">
