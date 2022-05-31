@@ -20,6 +20,7 @@ groupshared uint s[rowSize * nRowsPerPage]; // sort step buffer, then sorted row
 groupshared uint d[rowSize * nRowsPerPage]; // sort step buffer, then bucket counts for sorted rows
 //groupshared uint ls[rowSize * nRowsPerPage]; // lookup
 //groupshared uint ld[rowSize * nRowsPerPage]; // lookup
+groupshared uint perPageBucketOffsets[16];
 
 uint mortonMask(uint a) {
 	return
@@ -33,73 +34,97 @@ uint mortonMask(uint a) {
 [numthreads(rowSize, nRowsPerPage / groupDivisor, 1)]
 void csLocalSort( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 {
-	d[flatid] = 0; // count goes here
+	uint localasses[groupDivisor];
+	for (int did = 0; did < groupDivisor; did++) {
+		uint rowst = (tid.y + did * nRowsPerPage / groupDivisor) << 5;
+		uint flatid = rowst | tid.x;
 
-	uint rowst = tid.y << 5;
-	uint flatid = rowst | tid.x;
-	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
-	uint key = input.Load(initialElementIndex << 2 );
-	uint locals = (initialElementIndex << 5) | mortonMask(key);
+		uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
+		uint key = input.Load(initialElementIndex << 2);
+		localasses[did] = (initialElementIndex << 5) | mortonMask(key);
+	}
 	//scan on bit i
 	for (uint i = 0; i < 4; i++) {
-		bool pred = (locals >> i) & 0x1;
-		uint prefixBits = WavePrefixCountBits(pred);
-		uint allBits = WaveActiveCountBits(pred);
-		if (pred) {
-			s[rowst | (rowSize - (allBits - prefixBits))] = locals;
-		}
-		else {
-			s[flatid - prefixBits] = locals;
-		}
-		GroupMemoryBarrierWithGroupSync();
-		locals = s[flatid];
-	}
-	//compute step
+		for (int did = 0; did < groupDivisor; did++) {
+			uint rowst = (tid.y + did * nRowsPerPage / groupDivisor) << 5;
+			uint flatid = rowst | tid.x;
 
-	uint bucketId = locals & 0xf;  //TODO 0x1f here caused an error????
-	uint bucketIdNeighbor = s[flatid + 1] & 0xf; //TODO 0x1f here caused an error????
-	uint step = (tid.x == 31)?1:(bucketIdNeighbor - bucketId); //TODO the test here should not matter as we shift that bit out later
-	uint stepMask =  WaveActiveBallot(step).x;
-	if (stepMask & (0x1 << tid.x)) {
-		d[bucketId + rowst] = 32 - firstbithigh(((stepMask << 1) | 0x1) << (31-tid.x));
+			bool pred = (localasses[did] >> i) & 0x1;
+			uint prefixBits = WavePrefixCountBits(pred);
+			uint allBits = WaveActiveCountBits(pred);
+			if (pred) {
+				s[rowst | (rowSize - (allBits - prefixBits))] = localasses[did];
+			}
+			else {
+				s[flatid - prefixBits] = localasses[did];
+			}
+			GroupMemoryBarrierWithGroupSync();
+			localasses[did] = s[flatid];
+		}
+	}
+		//compute step
+	for (int did = 0; did < groupDivisor; did++) {
+		uint rowst = (tid.y + did * nRowsPerPage / groupDivisor) << 5;
+		uint flatid = rowst | tid.x;
+
+		uint bucketId = localasses[did] & 0xf;  //TODO 0x1f here caused an error????
+		uint bucketIdNeighbor = s[flatid + 1] & 0xf; //TODO 0x1f here caused an error????
+		uint step = (tid.x == 31) ? 1 : (bucketIdNeighbor - bucketId); //TODO the test here should not matter as we shift that bit out later
+		uint stepMask = WaveActiveBallot(step).x;
+		if (stepMask & (0x1 << tid.x)) {
+			d[bucketId + rowst] = 32 - firstbithigh(((stepMask << 1) | 0x1) << (31 - tid.x));
+		}
 	}
 
 	GroupMemoryBarrierWithGroupSync();
 
 	// d has count now (every second 16-segment is 0)
 	// count': we scan the count matrix 32-length row by 32-length row, adding previous row sum sum
-	uint crossid = (tid.x << 5) | tid.y;
+	for (int did = 0; did < groupDivisor / 2 /*tid.y < 16 for 4 bit keys*/; did++) {
+		uint crossid = (tid.x << 5) | (tid.y + did * rowSize / groupDivisor );
 
-	if (tid.y < 16) {
-		uint perRowBucketCount = d[crossid];
-		d[16 + crossid] = WavePrefixSum(perRowBucketCount) + perRowBucketCount;
+//		if (tid.y < 16) {
+			uint perRowBucketCount = d[crossid];
+			d[16 + crossid] = WavePrefixSum(perRowBucketCount) + perRowBucketCount;
+//		}
 	}
-
 	GroupMemoryBarrierWithGroupSync();
-	if (tid.y == 1 && tid.x < 16) {
+	if (tid.y == 0 && tid.x < 16) {
 		uint perPageBucketCount = d[(32 * 31 + 16) + tid.x];// +d[32 * 31 + tid.x];
 		uint perPageBucketOffset = WavePrefixSum(perPageBucketCount);
 		perPageBucketCounts.Store(((tid.x * nPagesPerChunk * nChunks) | gid.x) << 2,
 			perPageBucketOffset + perPageBucketCount
 			);
-		d[tid.x + 16] = perPageBucketOffset;
+		perPageBucketOffsets[tid.x] = perPageBucketOffset;
 	}
 	// write these out to resource mem, per 1024-page
 
 	GroupMemoryBarrierWithGroupSync();
-	if (tid.x < 16) {
-		// we do not add perPageBucketOffset in the first row as it is already there
-		d[16 + flatid] += (tid.y?d[16 + tid.x] - d[flatid]:0) - WavePrefixSum(d[flatid]);
+	for (int did = 0; did < groupDivisor; did++) {
+		uint rowst = (tid.y + did * nRowsPerPage / groupDivisor) << 5;
+		uint flatid = rowst | tid.x;
+
+		if (tid.x < 16) {
+			// we do not add perPageBucketOffset in the first row as it is already there
+			d[16 + flatid] += perPageBucketOffsets[tid.x] - d[flatid] - WavePrefixSum(d[flatid]);
+		}
 	}
 
 	GroupMemoryBarrierWithGroupSync();
-	uint target = d[16 + bucketId + rowst] + tid.x;
 
-	uint pin = inputIndices.Load( (locals >> 5) /*pin only*/ << 2);
-	key = input.Load((locals >> 5) /*pin only*/ << 2);
+	for (int did = 0; did < groupDivisor; did++) {
+		uint rowst = (tid.y + did * nRowsPerPage / groupDivisor) << 5;
+		uint bucketId = localasses[did] & 0xf;
+		uint flatid = rowst | tid.x;
 
-	output.Store((target + rowSize * nRowsPerPage * gid.x) << 2 , key);
-	outputIndices.Store((target + rowSize * nRowsPerPage * gid.x) << 2, pin);
+		uint target = d[16 + bucketId + rowst] + tid.x;
+
+		uint pin = inputIndices.Load((localasses[did] >> 5) /*pin only*/ << 2);
+		uint key = input.Load((localasses[did] >> 5) /*pin only*/ << 2);
+
+		output.Store((target + rowSize * nRowsPerPage * gid.x) << 2, key);
+		outputIndices.Store((target + rowSize * nRowsPerPage * gid.x) << 2, pin);
+	}
 //	input.Store(flatid << 2, d[flatid]);
 /*
 	DeviceMemoryBarrierWithGroupSync();

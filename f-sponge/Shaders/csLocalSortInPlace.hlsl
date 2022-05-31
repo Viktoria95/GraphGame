@@ -33,7 +33,7 @@ void csLocalSortInPlace( uint3 tid : SV_GroupThreadID , uint3 gid : SV_GroupID )
 	uint rowst = tid.y << 5;
 	uint flatid = rowst | tid.x;
 	uint initialElementIndex = flatid + gid.x * rowSize * nRowsPerPage;
-	s[flatid] = reversebits(initialElementIndex * 13) * 17; // input.Load(initialElementIndex << 2);
+	s[flatid] = initialElementIndex;// reversebits(initialElementIndex * 13) * 17; // input.Load(initialElementIndex << 2);
 	ls[flatid] = inputIndices.Load(initialElementIndex << 2);//  initialElementIndex;
 
 	//scan on bit i
